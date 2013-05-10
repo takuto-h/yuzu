@@ -34,20 +34,18 @@ let parse_param parser =
   end
 
 let rec parse_expr parser =
-  let expr = parse_atom parser in
-  begin match parser.token with
-    | Token.LParen -> begin
+  let expr_ref = ref (parse_atom parser) in begin
+  while parser.token = Token.LParen do
+    lookahead parser;
+    let arg = parse_expr parser in
+    if parser.token <> Token.RParen then
+      failwith "expected RParen"
+    else begin
       lookahead parser;
-      let arg = parse_expr parser in
-      if parser.token <> Token.RParen then
-        failwith "expected RParen"
-      else begin
-        lookahead parser;
-        Expr.App(expr,arg)
-      end
+      expr_ref := Expr.App(!expr_ref,arg)
     end
-    | _ ->
-      expr
+  done;
+  !expr_ref
   end
 
 and parse_atom parser =
