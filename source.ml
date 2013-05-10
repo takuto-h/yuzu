@@ -2,50 +2,39 @@
 open Printf
 
 type t = {
-  src_fname : string;
-  mutable src_lnum : int;
-  mutable src_cnum : int;
-  mutable src_bol : int;
-  src_strm : char Stream.t;
-}
-
-type pos = {
-  pos_fname : string;
-  pos_lnum : int;
-  pos_cnum : int;
-  pos_bol : int;
+  fname : string;
+  mutable lnum : int;
+  mutable cnum : int;
+  mutable bol : int;
+  strm : char Stream.t;
 }
 
 let create fname chan = {
-  src_fname = fname;
-  src_lnum = 1;
-  src_cnum = 0;
-  src_bol = 0;
-  src_strm = Stream.of_channel chan;
+  fname = fname;
+  lnum = 1;
+  cnum = 0;
+  bol = 0;
+  strm = Stream.of_channel chan;
 }
 
-let pos src = {
-  pos_fname = src.src_fname;
-  pos_lnum = src.src_lnum;
-  pos_cnum = src.src_cnum;
-  pos_bol = src.src_bol;
-}
+let pos src =
+  Pos.make src.fname src.lnum src.cnum src.bol
 
 let peek src =
-  Stream.peek src.src_strm
+  Stream.peek src.strm
 
 let junk src =
   begin match peek src with
     | None ->
       ()
     | Some('\n') -> begin
-      src.src_lnum <- src.src_lnum + 1;
-      src.src_cnum <- src.src_cnum + 1;
-      src.src_bol <- src.src_cnum;
-      Stream.junk src.src_strm
+      src.lnum <- src.lnum + 1;
+      src.cnum <- src.cnum + 1;
+      src.bol <- src.cnum;
+      Stream.junk src.strm
     end
     | Some(_) -> begin
-      src.src_cnum <- src.src_cnum + 1;
-      Stream.junk src.src_strm
+      src.cnum <- src.cnum + 1;
+      Stream.junk src.strm
     end
   end

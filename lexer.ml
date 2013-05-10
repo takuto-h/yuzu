@@ -66,7 +66,6 @@ let rec next lexer =
     | None ->
       None
     | Some(c) -> begin
-      Source.junk lexer.source;
       lex_token lexer c
     end
   end
@@ -74,28 +73,42 @@ let rec next lexer =
 and lex_token lexer c =
   begin match c with
     | '=' ->
+      Source.junk lexer.source;
       Some(Token.EQ)
     | '{' ->
+      Source.junk lexer.source;
       Some(Token.LBrace)
     | '}' ->
+      Source.junk lexer.source;
       Some(Token.RBrace)
     | '(' ->
+      Source.junk lexer.source;
       Some(Token.LParen)
     | ')' ->
+      Source.junk lexer.source;
       Some(Token.RParen)
     | ';' ->
+      Source.junk lexer.source;
       Some(Token.Semi)
     | '^' ->
+      Source.junk lexer.source;
       Some(Token.Hat)
     | _ when is_whitespace c ->
+      Source.junk lexer.source;
       next lexer
     | _ when is_digit c ->
+      Source.junk lexer.source;
       lex_int lexer (int_of_digit c)
     | _ when is_ident_start c ->
       let buf = Buffer.create 10 in begin
       Buffer.add_char buf c;
+      Source.junk lexer.source;
       lex_ident lexer buf
       end
     | _ ->
-      failwith (sprintf "lexer: unknown character: %c" c)
+      let pos = Source.pos lexer.source in
+      failwith
+        (sprintf
+           "%s: error: unknown character: %c\n%s"
+           (Pos.show pos) c (Pos.show_source pos))
   end

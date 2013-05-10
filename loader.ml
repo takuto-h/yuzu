@@ -56,3 +56,7 @@ let load loader fname =
       raise exn
     end
   end
+
+let create_and_load fname =
+  let loader = create () in
+  load loader fname
