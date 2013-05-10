@@ -5,7 +5,7 @@ type t = {
   asp : (Ident.t * Scheme.t) list;
   let_level : int;
 }
-
+    
 let make_type_var let_level =
   Type.Var(let_level,ref None)
 
@@ -92,14 +92,21 @@ let rec infer_expr inf expr =
 
 let infer_top inf top =
   begin match top with
-    | Top.Expr(expr) -> generalize inf.let_level (infer_expr inf expr)
+    | Top.LetVal(ident,val_expr) ->
+      let val_scm = Scheme.mono (infer_expr inf val_expr) in
+      let inf_body = {inf with asp=(ident,val_scm)::inf.asp} in
+      (val_scm, inf_body)
+    | Top.LetFun(ident,fun_expr) ->
+      let let_level = inf.let_level in
+      let fun_type_var = make_type_var (let_level+1) in
+      let inf_fun = {inf with let_level=let_level+1} in
+      let inf_fun = {inf_fun with asp=(ident,Scheme.mono fun_type_var)::inf.asp} in
+      let fun_type = infer_expr inf_fun fun_expr in begin
+      Type.unify fun_type_var fun_type;
+      let fun_scm = generalize let_level fun_type in
+      let inf_body = {inf with asp=(ident,fun_scm)::inf.asp} in
+      (fun_scm, inf_body)
+      end
+    | Top.Expr(expr) ->
+      (generalize inf.let_level (infer_expr inf expr), inf)
   end
-    
-let x = Ident.intern "x"
-let e123 = Expr.Con(Literal.Int(123))
-let eid = Expr.Abs(x,Expr.Var(x))
-let eapp = Expr.App(eid,e123)
-let inf = {asp=[]; let_level=0}
-let id = Ident.intern "id"
-let elet1 = Expr.LetFun(id,eid,eapp)
-let elet2 = Expr.LetFun(id,eid,Expr.App(eid,eid))
