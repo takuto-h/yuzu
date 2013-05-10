@@ -110,11 +110,28 @@ let parse_top_let_val parser =
       failwith "expected Ident"
   end
 
+let parse_top_let_fun parser =
+  begin match parser.token with
+    | Token.Ident(str) ->
+      let ident = Ident.intern str in begin
+      lookahead parser;
+      let param_ident = parse_param parser in
+      let body_expr = parse_block parser in
+      Top.LetFun(ident, Expr.Abs(param_ident, body_expr))
+      end
+    | _ ->
+      failwith "expected Ident"
+  end
+
 let parse_top parser =
   begin match parser.token with
     | Token.Var -> begin
       lookahead parser;
       parse_top_let_val parser
+    end
+    | Token.Def -> begin
+      lookahead parser;
+      parse_top_let_fun parser
     end
     | _ ->
       Top.Expr(parse_expr parser)
