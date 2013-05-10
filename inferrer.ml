@@ -90,6 +90,11 @@ let rec infer inf expr =
       end
   end
 
+let infer_top inf top =
+  begin match top with
+    | Top.Expr(expr) -> generalize inf.let_level (infer inf expr)
+  end
+    
 let x = Ident.intern "x"
 let e123 = Expr.Con(Literal.Int(123))
 let eid = Expr.Abs(x,Expr.Var(x))
