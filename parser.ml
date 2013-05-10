@@ -68,12 +68,18 @@ and parse_atom parser =
     end
     | Token.LParen -> begin
       lookahead parser;
-      let expr = parse_expr parser in
-      if parser.token <> Token.RParen then
-        failwith "expected RParen"
-      else begin
+      if parser.token = Token.RParen then begin
         lookahead parser;
-        expr
+        Expr.Con(Literal.Unit)
+      end
+      else begin
+        let expr = parse_expr parser in
+        if parser.token <> Token.RParen then
+          failwith "expected RParen"
+        else begin
+          lookahead parser;
+          expr
+        end
       end
     end
     | Token.Hat -> begin
