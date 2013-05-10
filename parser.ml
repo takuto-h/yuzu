@@ -25,7 +25,7 @@ let lookahead parser =
 
 let expected str_token parser =
   sprintf
-    "%s: unexpected %s, expected %s\n%s"
+    "%s: error: unexpected %s, expected %s\n%s"
     (Pos.show parser.pos) (Token.show parser.token) str_token (Pos.show_source parser.pos)
 
 let parse_param parser =

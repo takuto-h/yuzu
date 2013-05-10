@@ -1,4 +1,6 @@
 
+open Printf
+
 type t = {env:Value.env; dummy:unit}
 
 let empty = {env=[]; dummy=()}
@@ -11,7 +13,11 @@ let rec eval_expr eva expr =
       begin try
         List.assoc ident eva.env
       with
-        | Not_found -> failwith "unbound variable"
+        | Not_found ->
+          failwith
+            (sprintf
+               "%s: RUNTIME ERROR: unbound variable: %s\n%s"
+               (Pos.show expr.Expr.pos) (Ident.show ident) (Pos.show_source expr.Expr.pos))
       end
     | Expr.Abs(para_ident,body_expr) ->
       Value.Closure(ref eva.env, para_ident, body_expr)

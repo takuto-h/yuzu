@@ -1,6 +1,7 @@
 
 open Type.Open
-
+open Printf
+  
 type t = {
   asp : (Ident.t * Scheme.t) list;
   let_level : int;
@@ -62,7 +63,11 @@ let rec infer_expr inf expr =
       begin try
         instantiate inf.let_level (List.assoc ident inf.asp)
       with
-        | Not_found -> failwith "unbound variable"
+        | Not_found ->
+          failwith
+            (sprintf
+               "%s: error: unbound variable: %s\n%s"
+               (Pos.show expr.Expr.pos) (Ident.show ident) (Pos.show_source expr.Expr.pos))
       end
     | Expr.Abs(para_ident,body_expr) ->
       let para_type = make_type_var inf.let_level in
