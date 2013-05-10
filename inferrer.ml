@@ -21,8 +21,8 @@ let generalize let_level t =
         begin match !tref with
           | Some(tt) ->
             gen tt
-          | None when lv > let_level -> begin
-            try
+          | None when lv > let_level ->
+            begin try
               Hashtbl.find table tref
             with
               | Not_found ->
@@ -30,7 +30,7 @@ let generalize let_level t =
                 Hashtbl.add table tref tgen;
                 tgen
                 end
-          end
+            end
           | None ->
             t
         end
