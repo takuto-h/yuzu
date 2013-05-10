@@ -1,7 +1,7 @@
 
 open Printf
 
-type t = {stream : CharStream.t}
+type t = {stream : Source.t}
 
 let reserved = Hashtbl.create 11
 let () = Hashtbl.add reserved "def" Token.Def
@@ -29,9 +29,9 @@ let int_of_digit c =
   Char.code c - Char.code '0'
     
 let rec lex_int lexer num =
-  begin match CharStream.peek lexer.stream with
+  begin match Source.peek lexer.stream with
     | Some(c) when is_digit c -> begin
-      CharStream.junk lexer.stream;
+      Source.junk lexer.stream;
       lex_int lexer (num * 10 + int_of_digit c)
     end
     | Some(_) ->
@@ -49,10 +49,10 @@ let ident_or_reserved str = begin
 end
     
 let rec lex_ident lexer buf =
-  begin match CharStream.peek lexer.stream with
+  begin match Source.peek lexer.stream with
     | Some(c) when is_ident_part c -> begin
       Buffer.add_char buf c;
-      CharStream.junk lexer.stream;
+      Source.junk lexer.stream;
       lex_ident lexer buf
     end
     | Some(_) ->
@@ -62,11 +62,11 @@ let rec lex_ident lexer buf =
   end
     
 let rec next lexer =
-  begin match CharStream.peek lexer.stream with
+  begin match Source.peek lexer.stream with
     | None ->
       None
     | Some(c) -> begin
-      CharStream.junk lexer.stream;
+      Source.junk lexer.stream;
       lex_token lexer c
     end
   end
@@ -101,5 +101,5 @@ and lex_token lexer c =
   end
 
 let of_string str =
-  let strm = CharStream.of_string str in
+  let strm = Source.of_string str in
   make_lexer strm
