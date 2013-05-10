@@ -4,7 +4,7 @@ type t = {env:Value.env; dummy:unit}
 let empty = {env=[]; dummy=()}
     
 let rec eval_expr eva expr =
-  begin match expr with
+  begin match expr.Expr.raw with
     | Expr.Con(lit) ->
       Value.Con(lit)
     | Expr.Var(ident) ->

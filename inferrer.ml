@@ -55,7 +55,7 @@ let instantiate let_level {Scheme.gen_num;Scheme.body} =
   inst body
 
 let rec infer_expr inf expr =
-  begin match expr with
+  begin match expr.Expr.raw with
     | Expr.Con(lit) ->
       Literal.type_of_literal lit
     | Expr.Var(ident) ->

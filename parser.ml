@@ -52,41 +52,43 @@ let parse_param parser =
 let rec parse_expr parser =
   let expr_ref = ref (parse_atom parser) in begin
   while parser.token = Token.LParen do
+    let pos = parser.pos in
     lookahead parser;
     let arg = parse_expr parser in
     if parser.token <> Token.RParen then
       failwith (expected "')'" parser)
     else begin
       lookahead parser;
-      expr_ref := Expr.App(!expr_ref,arg)
+      expr_ref := Expr.at pos (Expr.App(!expr_ref,arg))
     end
   done;
   !expr_ref
   end
 
 and parse_atom parser =
+  let pos = parser.pos in
   begin match parser.token with
     | Token.Int(n) -> begin
       lookahead parser;
-      Expr.Con(Literal.Int(n))
+      Expr.at pos (Expr.Con(Literal.Int(n)))
     end
     | Token.True -> begin
       lookahead parser;
-      Expr.Con(Literal.Bool(true))
+      Expr.at pos (Expr.Con(Literal.Bool(true)))
     end
     | Token.False -> begin
       lookahead parser;
-      Expr.Con(Literal.Bool(false))
+      Expr.at pos (Expr.Con(Literal.Bool(false)))
     end
     | Token.Ident(str) -> begin
       lookahead parser;
-      Expr.Var(Ident.intern str)
+      Expr.at pos (Expr.Var(Ident.intern str))
     end
     | Token.LParen -> begin
       lookahead parser;
       if parser.token = Token.RParen then begin
         lookahead parser;
-        Expr.Con(Literal.Unit)
+        Expr.at pos (Expr.Con(Literal.Unit))
       end
       else begin
         let expr = parse_expr parser in
@@ -102,11 +104,11 @@ and parse_atom parser =
       lookahead parser;
       let param_ident = parse_param parser in
       let body_expr = parse_block parser in
-      Expr.Abs(param_ident,body_expr)
+      Expr.at pos (Expr.Abs(param_ident,body_expr))
     end
     | Token.If -> begin
       lookahead parser;
-      parse_if parser
+      parse_if parser pos
     end
     | _ ->
       failwith (expected "expression" parser)
@@ -126,7 +128,8 @@ and parse_block parser =
     end
   end
 
-and parse_if parser =
+and parse_if parser pos_if =
+  let pos_cond = parser.pos in
   if parser.token <> Token.LParen then
     failwith (expected "'('" parser)
   else begin
@@ -136,15 +139,19 @@ and parse_if parser =
       failwith (expected "')'" parser)
     else begin
       lookahead parser;
+      let pos_then = parser.pos in
       let then_expr = parse_block parser in
       if parser.token <> Token.Else then
         failwith (expected "'else'" parser)
       else begin
         lookahead parser;
+        let pos_else = parser.pos in
         let else_expr = parse_block parser in
-        Expr.App(
-          Expr.App(Expr.App(Expr.Var(Ident.intern "if"),cond_expr),then_expr),else_expr
-        )
+        let fun_expr = Expr.at pos_if (Expr.Var(Ident.intern "if")) in
+        let app_cond_expr = Expr.at pos_cond (Expr.App(fun_expr, cond_expr)) in
+        let app_then_expr = Expr.at pos_then (Expr.App(app_cond_expr, then_expr)) in
+        let app_else_expr = Expr.at pos_else (Expr.App(app_then_expr, else_expr)) in
+        app_else_expr
       end
     end
   end
@@ -168,11 +175,12 @@ let parse_top_let_val parser =
 let parse_top_let_fun parser =
   begin match parser.token with
     | Token.Ident(str) ->
+      let pos_abs = parser.pos in
       let ident = Ident.intern str in begin
       lookahead parser;
       let param_ident = parse_param parser in
       let body_expr = parse_block parser in
-      Top.LetFun(ident, Expr.Abs(param_ident, body_expr))
+      Top.LetFun(ident, Expr.at pos_abs (Expr.Abs(param_ident, body_expr)))
       end
     | _ ->
       failwith (expected "identifier" parser)
