@@ -16,7 +16,7 @@ let generalize let_level t =
   let alist = ref [] in
   let rec gen t =
     begin match t with
-      | Type.Con(_) ->
+      | Type.Con(_,_) ->
         t
       | Type.Var(lv,tref) ->
         begin match !tref with
@@ -47,7 +47,7 @@ let instantiate let_level {Scheme.gen_num;Scheme.body} =
   let type_vars = Array.init gen_num (fun _ -> make_type_var let_level) in
   let rec inst t =
     begin match t with
-      | Type.Con(_) -> t
+      | Type.Con(_,_) -> t
       | Type.Var(_,_) -> t
       | Type.Gen(n) -> Array.get type_vars n
       | Type.App(t1,t2) -> Type.App(inst t1,inst t2)
@@ -58,7 +58,11 @@ let instantiate let_level {Scheme.gen_num;Scheme.body} =
 let rec infer_expr inf expr =
   begin match expr.Expr.raw with
     | Expr.Con(lit) ->
-      Literal.type_of_literal lit
+      begin match lit with
+        | Literal.Unit -> Type.Con(expr.Expr.pos, Ident.intern "()")
+        | Literal.Int(_) -> Type.Con(expr.Expr.pos, Ident.intern "Int")
+        | Literal.Bool(_) -> Type.Con(expr.Expr.pos, Ident.intern "Bool")
+      end
     | Expr.Var(ident) ->
       begin try
         instantiate inf.let_level (List.assoc ident inf.asp)
@@ -73,12 +77,12 @@ let rec infer_expr inf expr =
       let para_type = make_type_var inf.let_level in
       let inf = {inf with asp=(para_ident,Scheme.mono para_type)::inf.asp} in
       let body_type = infer_expr inf body_expr in
-      para_type @-> body_type
+      (para_type @-> body_type) expr.Expr.pos
     | Expr.App(fun_expr,arg_expr) ->
       let fun_type = infer_expr inf fun_expr in
       let arg_type = infer_expr inf arg_expr in
       let ret_type = make_type_var inf.let_level in begin
-      Type.unify fun_type (arg_type @-> ret_type);
+      Type.unify fun_type ((arg_type @-> ret_type) expr.Expr.pos);
       ret_type
       end
     | Expr.LetVal(ident,val_expr,body_expr) ->

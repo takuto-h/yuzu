@@ -1,14 +1,16 @@
 
+open Printf
+
 (* Pay attention to *unify* *)
 type t =
-  | Con of Ident.t
+  | Con of Pos.t * Ident.t
   | Var of int * (t option) ref
   | Gen of int
   | App of t * t
 
 let rec occurs t1ref t2 =
   begin match t2 with
-    | Con(_) ->
+    | Con(_,_) ->
       false
     | Var(_,t2ref) when t2ref == t1ref ->
       true
@@ -25,7 +27,7 @@ let rec occurs t1ref t2 =
 
 let rec unify t1 t2 =
   begin match (t1,t2) with
-    | (Con(id1),Con(id2)) when id1 = id2 ->
+    | (Con(_,id1),Con(_,id2)) when id1 = id2 ->
       ()
     | (Var(_,t1ref),Var(_,t2ref)) when t1ref == t2ref ->
       ()
@@ -47,7 +49,8 @@ let rec unify t1 t2 =
         | Some(t10) ->
           unify t10 t2
         | None when occurs t1ref t2 ->
-          failwith "occurs check failed"
+          failwith
+            "occurs error\n"
         | None ->
           t1ref := Some(t2)
       end
@@ -56,7 +59,8 @@ let rec unify t1 t2 =
         | Some(t20) ->
           unify t20 t1
         | None when occurs t2ref t1 ->
-          failwith "occurs check failed"
+          failwith
+            "occurs error\n"
         | None ->
           t2ref := Some(t1)
       end
@@ -65,9 +69,13 @@ let rec unify t1 t2 =
       unify t12 t22
     end
     | (_,_) ->
-      failwith "unification error"
+      failwith "unification failed\n"
+(*        (sprintf
+           "%s: error: unification failed: %s and %s\n%s%s%s"
+           (Pos.show pos) (show_types t1 t2) (Pos.show_source pos)
+           (show_origin t1) (show_origin t2))*)
   end
       
 module Open = struct
-  let (@->) t1 t2 = App(App(Con(Ident.intern "->"),t1),t2)
+  let (@->) t1 t2 = fun pos -> App(App(Con(pos,Ident.intern "->"),t1),t2)
 end

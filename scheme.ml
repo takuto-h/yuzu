@@ -12,7 +12,7 @@ let show {gen_num=n; body=t} =
   let type_var_strs = Array.init n (fun i -> sprintf "t%d" i) in
   let rec loop t =
     begin match t with
-      | Type.Con(ident) ->
+      | Type.Con(_,ident) ->
         Ident.show ident
       | Type.Var(_,tref) ->
         begin match !tref with
@@ -31,7 +31,7 @@ let show {gen_num=n; body=t} =
         end
       | Type.Gen(n) ->
         Array.get type_var_strs n
-      | Type.App(Type.App(Type.Con({Ident.name="->"}),t1),t2) ->
+      | Type.App(Type.App(Type.Con(_,{Ident.name="->"}),t1),t2) ->
         sprintf "(%s -> %s)" (loop t1) (loop t2)
       | Type.App(t1,t2) ->
         sprintf "%s(%s)" (loop t1) (loop t2)
