@@ -1,7 +1,7 @@
 
 type t = {lexer:Lexer.t; mutable token:Token.t}
 
-let make_parser lexer =
+let create lexer =
   {lexer=lexer; token=Token.EOF}
 
 let lookahead parser =
@@ -190,11 +190,7 @@ let parse_stmt parser =
 let parse parser = begin
   lookahead parser;
   if parser.token = Token.EOF then
-    raise End_of_file
+    None
   else
-    parse_stmt parser
+    Some(parse_stmt parser)
 end
-
-let of_string str =
-  let lexer = Lexer.of_string str in
-  make_parser lexer

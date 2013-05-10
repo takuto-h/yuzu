@@ -1,7 +1,7 @@
 
 open Printf
 
-type t = {stream : Source.t}
+type t = {source : Source.t}
 
 let reserved = Hashtbl.create 11
 let () = Hashtbl.add reserved "def" Token.Def
@@ -11,7 +11,7 @@ let () = Hashtbl.add reserved "false" Token.False
 let () = Hashtbl.add reserved "if" Token.If
 let () = Hashtbl.add reserved "else" Token.Else
 
-let make_lexer strm = {stream=strm}
+let create src = {source=src}
     
 let is_digit c =
   String.contains "0123456789" c
@@ -29,9 +29,9 @@ let int_of_digit c =
   Char.code c - Char.code '0'
     
 let rec lex_int lexer num =
-  begin match Source.peek lexer.stream with
+  begin match Source.peek lexer.source with
     | Some(c) when is_digit c -> begin
-      Source.junk lexer.stream;
+      Source.junk lexer.source;
       lex_int lexer (num * 10 + int_of_digit c)
     end
     | Some(_) ->
@@ -49,10 +49,10 @@ let ident_or_reserved str = begin
 end
     
 let rec lex_ident lexer buf =
-  begin match Source.peek lexer.stream with
+  begin match Source.peek lexer.source with
     | Some(c) when is_ident_part c -> begin
       Buffer.add_char buf c;
-      Source.junk lexer.stream;
+      Source.junk lexer.source;
       lex_ident lexer buf
     end
     | Some(_) ->
@@ -62,11 +62,11 @@ let rec lex_ident lexer buf =
   end
     
 let rec next lexer =
-  begin match Source.peek lexer.stream with
+  begin match Source.peek lexer.source with
     | None ->
       None
     | Some(c) -> begin
-      Source.junk lexer.stream;
+      Source.junk lexer.source;
       lex_token lexer c
     end
   end
@@ -99,7 +99,3 @@ and lex_token lexer c =
     | _ ->
       failwith (sprintf "lexer: unknown character: %c" c)
   end
-
-let of_string str =
-  let strm = Source.of_string str in
-  make_lexer strm

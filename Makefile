@@ -1,8 +1,8 @@
 
 SOURCES =\
-  token.ml charStream.ml source.ml lexer.ml\
+  token.ml source.ml lexer.ml\
   ident.ml type.ml literal.ml expr.ml top.ml parser.ml\
-  scheme.ml inferrer.ml value.ml eva.ml main.ml
+  scheme.ml inferrer.ml value.ml eva.ml loader.ml
 
 EXEC = myml
 
