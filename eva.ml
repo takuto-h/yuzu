@@ -29,7 +29,12 @@ let rec eval_expr eva expr =
           let eva_body = {eva with env=(para_ident,arg_val)::!envref} in
           eval_expr eva_body body_expr
         | _ ->
-          failwith "function required"
+          failwith
+            (sprintf
+               "%s: RUNTIME ERROR: function required, but got: %s\n%s"
+               (Pos.show fun_expr.Expr.pos)
+               (Value.show fun_val)
+               (Pos.show_source fun_expr.Expr.pos))
       end
     | Expr.LetVal(ident,val_expr,body_expr) ->
       let val_val = eval_expr eva val_expr in
@@ -44,7 +49,12 @@ let rec eval_expr eva expr =
           eval_expr eva_body body_expr
         end
         | _ ->
-          failwith "function required"
+          failwith
+            (sprintf
+               "%s: RUNTIME ERROR: function required, but got: %s\n%s"
+               (Pos.show fun_expr.Expr.pos)
+               (Value.show fun_val)
+               (Pos.show_source fun_expr.Expr.pos))
       end
   end
 
@@ -63,7 +73,12 @@ let eval_top eva top =
           (fun_val, eva_body)
         end
         | _ ->
-          failwith "function required"
+          failwith
+            (sprintf
+               "%s: RUNTIME ERROR: function required, but got: %s\n%s"
+               (Pos.show fun_expr.Expr.pos)
+               (Value.show fun_val)
+               (Pos.show_source fun_expr.Expr.pos))
       end
     | Top.Expr(expr) ->
       (eval_expr eva expr, eva)
