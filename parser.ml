@@ -54,6 +54,14 @@ and parse_atom parser =
       lookahead parser;
       Expr.Con(Literal.Int(n))
     end
+    | Token.True -> begin
+      lookahead parser;
+      Expr.Con(Literal.Bool(true))
+    end
+    | Token.False -> begin
+      lookahead parser;
+      Expr.Con(Literal.Bool(false))
+    end
     | Token.Ident(str) -> begin
       lookahead parser;
       Expr.Var(Ident.intern str)

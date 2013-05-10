@@ -4,6 +4,8 @@ type t = {stream : char Stream.t}
 let reserved = Hashtbl.create 11
 let () = Hashtbl.add reserved "def" Token.Def
 let () = Hashtbl.add reserved "var" Token.Var
+let () = Hashtbl.add reserved "true" Token.True
+let () = Hashtbl.add reserved "false" Token.False
     
 let make_lexer strm = {stream=strm}
     

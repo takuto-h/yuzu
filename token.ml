@@ -1,8 +1,6 @@
 
 type t =
   | EOF
-  | Def
-  | Var
   | EQ
   | LBrace
   | RBrace
@@ -12,3 +10,7 @@ type t =
   | Hat
   | Int of int
   | Ident of string
+  | Def
+  | Var
+  | True
+  | False
