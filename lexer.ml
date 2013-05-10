@@ -81,3 +81,7 @@ and lex_token lexer c =
     | _ ->
       failwith "unknown character"
   end
+
+let of_string str =
+  let strm = Stream.of_string str in
+  make_lexer strm

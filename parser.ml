@@ -94,13 +94,25 @@ and parse_block parser =
     end
   end
     
+let parse_stmt parser =
+  let top = Top.Expr(parse_expr parser) in
+  begin match parser.token with
+    | Token.Semi ->
+      top
+    | Token.EOF ->
+      top
+    | _ ->
+      failwith "expected Semi"
+  end
+
 let parse parser = begin
   lookahead parser;
-  parse_expr parser
+  if parser.token = Token.EOF then
+    raise End_of_file
+  else
+    parse_stmt parser
 end
 
-let parse_string str =
-  let strm = Stream.of_string str in
-  let lexer = Lexer.make_lexer strm in
-  let parser = make_parser lexer in
-  parse parser
+let of_string str =
+  let lexer = Lexer.of_string str in
+  make_parser lexer
