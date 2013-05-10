@@ -6,7 +6,9 @@ let () = Hashtbl.add reserved "def" Token.Def
 let () = Hashtbl.add reserved "var" Token.Var
 let () = Hashtbl.add reserved "true" Token.True
 let () = Hashtbl.add reserved "false" Token.False
-    
+let () = Hashtbl.add reserved "if" Token.If
+let () = Hashtbl.add reserved "else" Token.Else
+
 let make_lexer strm = {stream=strm}
     
 let is_digit c =

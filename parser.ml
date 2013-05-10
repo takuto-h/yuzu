@@ -88,6 +88,10 @@ and parse_atom parser =
       let body_expr = parse_block parser in
       Expr.Abs(param_ident,body_expr)
     end
+    | Token.If -> begin
+      lookahead parser;
+      parse_if parser
+    end
     | _ ->
       failwith "expected atom"
   end
@@ -103,6 +107,29 @@ and parse_block parser =
     else begin
       lookahead parser;
       body_expr
+    end
+  end
+
+and parse_if parser =
+  if parser.token <> Token.LParen then
+    failwith "expected LBrace"
+  else begin
+    lookahead parser;
+    let cond_expr = parse_expr parser in
+    if parser.token <> Token.RParen then
+      failwith "expected RParen"
+    else begin
+      lookahead parser;
+      let then_expr = parse_block parser in
+      if parser.token <> Token.Else then
+        failwith "expected Else"
+      else begin
+        lookahead parser;
+        let else_expr = parse_block parser in
+        Expr.App(
+          Expr.App(Expr.App(Expr.Var(Ident.intern "if"),cond_expr),then_expr),else_expr
+        )
+      end
     end
   end
 

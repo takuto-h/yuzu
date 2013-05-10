@@ -14,3 +14,5 @@ type t =
   | Var
   | True
   | False
+  | If
+  | Else
