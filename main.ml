@@ -24,15 +24,18 @@ end
 
 let rec repl () = begin
   let infref = ref Inferrer.empty in
+  let evaref = ref Eva.empty in
   while true do
     let buf = Buffer.create 256 in
     let str = read buf in
     let parser = Parser.of_string str in
     begin try
       let top = Parser.parse parser in
-      let (scm, inf) = Inferrer.infer_top !infref top in begin
+      let (scm, inf) = Inferrer.infer_top !infref top in
+      let (value, eva) = Eva.eval_top !evaref top in begin
       infref := inf;
-      eprintf "%s\n" (Scheme.show scm)
+      evaref := eva;
+      eprintf "%s : %s\n" (Value.show value) (Scheme.show scm)
       end
     with
       | Failure(message) ->
