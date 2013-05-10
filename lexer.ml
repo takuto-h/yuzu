@@ -28,16 +28,16 @@ let is_whitespace c =
 let int_of_digit c =
   Char.code c - Char.code '0'
     
-let rec lex_int lexer num =
+let rec lex_int lexer pos num =
   begin match Source.peek lexer.source with
     | Some(c) when is_digit c -> begin
       Source.junk lexer.source;
-      lex_int lexer (num * 10 + int_of_digit c)
+      lex_int lexer pos (num * 10 + int_of_digit c)
     end
     | Some(_) ->
-      Some(Token.Int(num))
+      Some(Token.Int(num), pos)
     | None ->
-      Some(Token.Int(num))
+      Some(Token.Int(num), pos)
   end
 
 let ident_or_reserved str = begin
@@ -48,17 +48,17 @@ let ident_or_reserved str = begin
       Token.Ident(str)
 end
     
-let rec lex_ident lexer buf =
+let rec lex_ident lexer pos buf =
   begin match Source.peek lexer.source with
     | Some(c) when is_ident_part c -> begin
       Buffer.add_char buf c;
       Source.junk lexer.source;
-      lex_ident lexer buf
+      lex_ident lexer pos buf
     end
     | Some(_) ->
-      Some(ident_or_reserved(Buffer.contents buf))
+      Some(ident_or_reserved(Buffer.contents buf), pos)
     | None ->
-      Some(ident_or_reserved(Buffer.contents buf))
+      Some(ident_or_reserved(Buffer.contents buf), pos)
   end
     
 let rec next lexer =
@@ -71,42 +71,33 @@ let rec next lexer =
   end
 
 and lex_token lexer c =
+  let pos = Source.pos lexer.source in
+  Source.junk lexer.source;
   begin match c with
     | '=' ->
-      Source.junk lexer.source;
-      Some(Token.EQ)
+      Some(Token.EQ, pos)
     | '{' ->
-      Source.junk lexer.source;
-      Some(Token.LBrace)
+      Some(Token.LBrace, pos)
     | '}' ->
-      Source.junk lexer.source;
-      Some(Token.RBrace)
+      Some(Token.RBrace, pos)
     | '(' ->
-      Source.junk lexer.source;
-      Some(Token.LParen)
+      Some(Token.LParen, pos)
     | ')' ->
-      Source.junk lexer.source;
-      Some(Token.RParen)
+      Some(Token.RParen, pos)
     | ';' ->
-      Source.junk lexer.source;
-      Some(Token.Semi)
+      Some(Token.Semi, pos)
     | '^' ->
-      Source.junk lexer.source;
-      Some(Token.Hat)
+      Some(Token.Hat, pos)
     | _ when is_whitespace c ->
-      Source.junk lexer.source;
       next lexer
     | _ when is_digit c ->
-      Source.junk lexer.source;
-      lex_int lexer (int_of_digit c)
+      lex_int lexer pos (int_of_digit c)
     | _ when is_ident_start c ->
       let buf = Buffer.create 10 in begin
       Buffer.add_char buf c;
-      Source.junk lexer.source;
-      lex_ident lexer buf
+      lex_ident lexer pos buf
       end
     | _ ->
-      let pos = Source.pos lexer.source in
       failwith
         (sprintf
            "%s: error: unknown character: %c\n%s"

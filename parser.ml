@@ -1,20 +1,36 @@
 
-type t = {lexer:Lexer.t; mutable token:Token.t}
+open Printf
 
-let create lexer =
-  {lexer=lexer; token=Token.EOF}
+type t = {
+  lexer : Lexer.t;
+  mutable token : Token.t;
+  mutable pos : Pos.t;
+}
+
+let create lexer = {
+  lexer = lexer;
+  token = Token.EOF;
+  pos = Pos.dummy;
+}
 
 let lookahead parser =
   begin match Lexer.next parser.lexer with
-    | Some(token) ->
-      parser.token <- token
     | None ->
       parser.token <- Token.EOF
+    | Some(token, pos) -> begin
+      parser.token <- token;
+      parser.pos <- pos
+    end
   end
+
+let expected str_token parser =
+  sprintf
+    "%s: unexpected %s, expected %s\n%s"
+    (Pos.show parser.pos) (Token.show parser.token) str_token (Pos.show_source parser.pos)
 
 let parse_param parser =
   if parser.token <> Token.LParen then
-    failwith "expected LParen"
+    failwith (expected "'('" parser)
   else begin
     lookahead parser;
     begin match parser.token with
@@ -22,14 +38,14 @@ let parse_param parser =
         let param_ident = Ident.intern str in begin
           lookahead parser;
           if parser.token <> Token.RParen then
-            failwith "expected RParen"
+            failwith (expected "')'" parser)
           else begin
             lookahead parser;
             param_ident
           end
         end
       | _ ->
-        failwith "expected Ident"
+        failwith (expected "identifier" parser)
     end
   end
 
@@ -39,7 +55,7 @@ let rec parse_expr parser =
     lookahead parser;
     let arg = parse_expr parser in
     if parser.token <> Token.RParen then
-      failwith "expected RParen"
+      failwith (expected "')'" parser)
     else begin
       lookahead parser;
       expr_ref := Expr.App(!expr_ref,arg)
@@ -75,7 +91,7 @@ and parse_atom parser =
       else begin
         let expr = parse_expr parser in
         if parser.token <> Token.RParen then
-          failwith "expected RParen"
+          failwith (expected "')'" parser)
         else begin
           lookahead parser;
           expr
@@ -93,17 +109,17 @@ and parse_atom parser =
       parse_if parser
     end
     | _ ->
-      failwith "expected atom"
+      failwith (expected "expression" parser)
   end
 
 and parse_block parser =
   if parser.token <> Token.LBrace then
-    failwith "expected LBrace"
+    failwith (expected "'{'" parser)
   else begin
     lookahead parser;
     let body_expr = parse_expr parser in
     if parser.token <> Token.RBrace then
-      failwith "expected RBrace"
+      failwith (expected "'}'" parser)
     else begin
       lookahead parser;
       body_expr
@@ -112,17 +128,17 @@ and parse_block parser =
 
 and parse_if parser =
   if parser.token <> Token.LParen then
-    failwith "expected LBrace"
+    failwith (expected "'('" parser)
   else begin
     lookahead parser;
     let cond_expr = parse_expr parser in
     if parser.token <> Token.RParen then
-      failwith "expected RParen"
+      failwith (expected "')'" parser)
     else begin
       lookahead parser;
       let then_expr = parse_block parser in
       if parser.token <> Token.Else then
-        failwith "expected Else"
+        failwith (expected "'else'" parser)
       else begin
         lookahead parser;
         let else_expr = parse_block parser in
@@ -139,14 +155,14 @@ let parse_top_let_val parser =
       let ident = Ident.intern str in begin
         lookahead parser;
         if parser.token <> Token.EQ then
-          failwith "expected EQ"
+          failwith (expected "'='" parser)
         else begin
           lookahead parser;
           Top.LetVal(ident, parse_expr parser)
         end
       end
     | _ ->
-      failwith "expected Ident"
+      failwith (expected "identifier" parser)
   end
 
 let parse_top_let_fun parser =
@@ -159,7 +175,7 @@ let parse_top_let_fun parser =
       Top.LetFun(ident, Expr.Abs(param_ident, body_expr))
       end
     | _ ->
-      failwith "expected Ident"
+      failwith (expected "identifier" parser)
   end
 
 let parse_top parser =
@@ -184,7 +200,7 @@ let parse_stmt parser =
     | Token.EOF ->
       top
     | _ ->
-      failwith "expected Semi"
+      failwith (expected "';'" parser)
   end
 
 let parse parser = begin
