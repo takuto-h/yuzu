@@ -8,7 +8,7 @@ let mono t = {gen_num=0; body=t}
 let poly n t = {gen_num=n; body=t}
 
 let show {gen_num=n; body=t} =
-  let table = Hashtbl.create 11 in
+  let alist = ref [] in
   let type_var_strs = Array.init n (fun i -> sprintf "t%d" i) in
   let rec loop t =
     begin match t with
@@ -18,16 +18,16 @@ let show {gen_num=n; body=t} =
         begin match !tref with
           | Some(tt) ->
             loop tt
-          | None -> begin
-            try
-              Hashtbl.find table tref
+          | None ->
+            begin try
+              List.assq tref !alist
             with
               | Not_found ->
-                let str = sprintf "_t%d" (Hashtbl.length table) in begin
-                Hashtbl.add table tref str;
+                let str = sprintf "_t%d" (List.length !alist) in begin
+                alist := (tref,str)::!alist;
                 str
                 end
-          end
+            end
         end
       | Type.Gen(n) ->
         Array.get type_var_strs n

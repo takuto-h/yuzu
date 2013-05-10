@@ -12,7 +12,7 @@ let make_type_var let_level =
   Type.Var(let_level,ref None)
 
 let generalize let_level t =
-  let table = Hashtbl.create 11 in
+  let alist = ref [] in
   let rec gen t =
     begin match t with
       | Type.Con(_) ->
@@ -23,11 +23,11 @@ let generalize let_level t =
             gen tt
           | None when lv > let_level ->
             begin try
-              Hashtbl.find table tref
+              List.assq tref !alist
             with
               | Not_found ->
-                let tgen = Type.Gen(Hashtbl.length table) in begin
-                Hashtbl.add table tref tgen;
+                let tgen = Type.Gen(List.length !alist) in begin
+                alist := (tref,tgen)::!alist;
                 tgen
                 end
             end
@@ -40,7 +40,7 @@ let generalize let_level t =
         Type.App(gen t1,gen t2)
     end
   in
-  Scheme.poly (Hashtbl.length table) (gen t)
+  Scheme.poly (List.length !alist) (gen t)
 
 let instantiate let_level {Scheme.gen_num;Scheme.body} =
   let type_vars = Array.init gen_num (fun _ -> make_type_var let_level) in
