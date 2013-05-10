@@ -1,5 +1,5 @@
 
-type t = {stream : char Stream.t}
+type t = {stream : CharStream.t}
 
 let reserved = Hashtbl.create 11
 let () = Hashtbl.add reserved "def" Token.Def
@@ -27,9 +27,9 @@ let int_of_digit c =
   Char.code c - Char.code '0'
     
 let rec lex_int lexer num =
-  begin match Stream.peek lexer.stream with
+  begin match CharStream.peek lexer.stream with
     | Some(c) when is_digit c -> begin
-      Stream.junk lexer.stream;
+      CharStream.junk lexer.stream;
       lex_int lexer (num * 10 + int_of_digit c)
     end
     | Some(_) ->
@@ -47,10 +47,10 @@ let ident_or_reserved str = begin
 end
     
 let rec lex_ident lexer buf =
-  begin match Stream.peek lexer.stream with
+  begin match CharStream.peek lexer.stream with
     | Some(c) when is_ident_part c -> begin
       Buffer.add_char buf c;
-      Stream.junk lexer.stream;
+      CharStream.junk lexer.stream;
       lex_ident lexer buf
     end
     | Some(_) ->
@@ -60,11 +60,11 @@ let rec lex_ident lexer buf =
   end
     
 let rec next lexer =
-  begin match Stream.peek lexer.stream with
+  begin match CharStream.peek lexer.stream with
     | None ->
       None
     | Some(c) -> begin
-      Stream.junk lexer.stream;
+      CharStream.junk lexer.stream;
       lex_token lexer c
     end
   end
@@ -99,5 +99,5 @@ and lex_token lexer c =
   end
 
 let of_string str =
-  let strm = Stream.of_string str in
+  let strm = CharStream.of_string str in
   make_lexer strm

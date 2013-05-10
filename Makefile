@@ -1,6 +1,6 @@
 
 SOURCES =\
-  token.ml lexer.ml ident.ml type.ml literal.ml expr.ml top.ml parser.ml\
+  token.ml charStream.ml lexer.ml ident.ml type.ml literal.ml expr.ml top.ml parser.ml\
   scheme.ml inferrer.ml value.ml eva.ml main.ml
 
 EXEC = myml
