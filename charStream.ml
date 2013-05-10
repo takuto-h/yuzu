@@ -11,6 +11,9 @@ let of_string str = {
   stream = Stream.of_string str;
 }
 
+let pos strm =
+  Pos.make strm.line_num strm.offset
+
 let peek strm =
   Stream.peek strm.stream
 

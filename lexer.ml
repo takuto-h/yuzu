@@ -1,4 +1,6 @@
 
+open Printf
+
 type t = {stream : CharStream.t}
 
 let reserved = Hashtbl.create 11
@@ -95,7 +97,7 @@ and lex_token lexer c =
       lex_ident lexer buf
       end
     | _ ->
-      failwith "unknown character"
+      failwith (sprintf "lexer: unknown character: %c" c)
   end
 
 let of_string str =

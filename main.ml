@@ -1,6 +1,8 @@
 
 open Printf
 
+exception Break
+  
 let rec read buf = begin
   begin try
     while true do
@@ -10,14 +12,14 @@ let rec read buf = begin
       let len = String.length str in
       if len >= 2 && String.sub str (len-2) 2 = ";;" then begin
         Buffer.add_string buf (String.sub str 0 (len-2));
-        raise End_of_file
+        raise Break
       end
       else begin
         Buffer.add_string buf str
       end
     done
   with
-    | End_of_file -> ()
+    | Break -> ()
   end;
   Buffer.contents buf
 end
