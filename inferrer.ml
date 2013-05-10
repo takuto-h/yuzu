@@ -5,6 +5,8 @@ type t = {
   asp : (Ident.t * Scheme.t) list;
   let_level : int;
 }
+
+let empty = {asp=[];let_level=0}
     
 let make_type_var let_level =
   Type.Var(let_level,ref None)

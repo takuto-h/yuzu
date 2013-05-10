@@ -93,9 +93,35 @@ and parse_block parser =
       body_expr
     end
   end
+
+let parse_top_let_val parser =
+  begin match parser.token with
+    | Token.Ident(str) ->
+      let ident = Ident.intern str in begin
+        lookahead parser;
+        if parser.token <> Token.EQ then
+          failwith "expected EQ"
+        else begin
+          lookahead parser;
+          Top.LetVal(ident, parse_expr parser)
+        end
+      end
+    | _ ->
+      failwith "expected Ident"
+  end
+
+let parse_top parser =
+  begin match parser.token with
+    | Token.Var -> begin
+      lookahead parser;
+      parse_top_let_val parser
+    end
+    | _ ->
+      Top.Expr(parse_expr parser)
+  end
     
 let parse_stmt parser =
-  let top = Top.Expr(parse_expr parser) in
+  let top = parse_top parser in
   begin match parser.token with
     | Token.Semi ->
       top

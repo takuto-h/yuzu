@@ -1,6 +1,10 @@
 
 type t = {stream : char Stream.t}
 
+let reserved = Hashtbl.create 11
+let () = Hashtbl.add reserved "def" Token.Def
+let () = Hashtbl.add reserved "var" Token.Var
+    
 let make_lexer strm = {stream=strm}
     
 let is_digit c =
@@ -30,6 +34,14 @@ let rec lex_int lexer num =
       Some(Token.Int(num))
   end
 
+let ident_or_reserved str = begin
+  try
+    Hashtbl.find reserved str
+  with
+    | Not_found ->
+      Token.Ident(str)
+end
+    
 let rec lex_ident lexer buf =
   begin match Stream.peek lexer.stream with
     | Some(c) when is_ident_part c -> begin
@@ -38,9 +50,9 @@ let rec lex_ident lexer buf =
       lex_ident lexer buf
     end
     | Some(_) ->
-      Some(Token.Ident(Buffer.contents buf))
+      Some(ident_or_reserved(Buffer.contents buf))
     | None ->
-      Some(Token.Ident(Buffer.contents buf))
+      Some(ident_or_reserved(Buffer.contents buf))
   end
     
 let rec next lexer =
