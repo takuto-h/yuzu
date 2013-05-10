@@ -13,9 +13,9 @@ let create () = {
   eva = Eva.empty;
 }
 
-let load_absolute loader abs_path =
-  let in_channel = open_in abs_path in
-  let source = Source.create abs_path in_channel in
+let load loader fname =
+  let in_channel = open_in fname in
+  let source = Source.create fname in_channel in
   let lexer = Lexer.create source in
   let parser = Parser.create lexer in
   begin try
@@ -29,22 +29,17 @@ let load_absolute loader abs_path =
           loader.inf <- inf;
           loader.eva <- eva;
           begin match top with
-            | Top.LetVal(ident,_) -> begin
+            | Top.LetVal(ident,_) ->
               eprintf "val %s : %s = %s\n"
-                (Ident.show ident) (Scheme.show scm) (Value.show value);
-              flush stderr
-            end
-            | Top.LetFun(ident,_) -> begin
+                (Ident.show ident) (Scheme.show scm) (Value.show value)
+            | Top.LetFun(ident,_) ->
               eprintf "val %s : %s = %s\n"
-                (Ident.show ident) (Scheme.show scm) (Value.show value);
-              flush stderr
-            end
-            | Top.Expr(_) -> begin
-              eprintf "- : %s = %s\n" (Scheme.show scm) (Value.show value);
-              flush stderr
-            end
+                (Ident.show ident) (Scheme.show scm) (Value.show value)
+            | Top.Expr(_) ->
+              eprintf "- : %s = %s\n" (Scheme.show scm) (Value.show value)
+          end;
+          flush stderr
           end
-        end
       end
     done
   with
@@ -52,9 +47,9 @@ let load_absolute loader abs_path =
       close_in in_channel
     end
     | Failure(message) -> begin
-      eprintf "%s" message;
-      flush stderr;
       close_in in_channel;
+      eprintf "%s" message;
+      flush stderr
     end
     | exn -> begin
       close_in_noerr in_channel;
