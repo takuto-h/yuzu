@@ -82,7 +82,7 @@ let rec infer_expr inf expr =
       let fun_type = infer_expr inf fun_expr in
       let arg_type = infer_expr inf arg_expr in
       let ret_type = make_type_var inf.let_level in begin
-      Type.unify fun_type ((arg_type @-> ret_type) expr.Expr.pos);
+      Type.unify expr.Expr.pos fun_type ((arg_type @-> ret_type) expr.Expr.pos);
       ret_type
       end
     | Expr.LetVal(ident,val_expr,body_expr) ->
@@ -95,14 +95,14 @@ let rec infer_expr inf expr =
       let inf_fun = {inf with let_level=let_level+1} in
       let inf_fun = {inf_fun with asp=(ident,Scheme.mono fun_type_var)::inf.asp} in
       let fun_type = infer_expr inf_fun fun_expr in begin
-      Type.unify fun_type_var fun_type;
+      Type.unify expr.Expr.pos fun_type_var fun_type;
       let inf_body = {inf with asp=(ident,generalize let_level fun_type)::inf.asp} in
       infer_expr inf_body body_expr
       end
   end
 
 let infer_top inf top =
-  begin match top with
+  begin match top.Top.raw with
     | Top.LetVal(ident,val_expr) ->
       let val_scm = Scheme.mono (infer_expr inf val_expr) in
       let inf_body = {inf with asp=(ident,val_scm)::inf.asp} in
@@ -113,7 +113,7 @@ let infer_top inf top =
       let inf_fun = {inf with let_level=let_level+1} in
       let inf_fun = {inf_fun with asp=(ident,Scheme.mono fun_type_var)::inf.asp} in
       let fun_type = infer_expr inf_fun fun_expr in begin
-      Type.unify fun_type_var fun_type;
+      Type.unify top.Top.pos fun_type_var fun_type;
       let fun_scm = generalize let_level fun_type in
       let inf_body = {inf with asp=(ident,fun_scm)::inf.asp} in
       (fun_scm, inf_body)

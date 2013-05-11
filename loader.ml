@@ -28,7 +28,7 @@ let load loader fname =
           let (value, eva) = Eva.eval_top loader.eva top in begin
           loader.inf <- inf;
           loader.eva <- eva;
-          begin match top with
+          begin match top.Top.raw with
             | Top.LetVal(ident,_) ->
               eprintf "val %s : %s = %s\n"
                 (Ident.show ident) (Scheme.show scm) (Value.show value)

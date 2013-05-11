@@ -34,6 +34,14 @@ let rec show alist_ref array t =
     | App(t1,t2) ->
       sprintf "%s(%s)" (show alist_ref array t1) (show alist_ref array t2)
   end
+
+let show_origin t str_t =
+  begin match t with
+    | Con(pos,_) -> sprintf "%s: %s\n%s" (Pos.show pos) str_t (Pos.show_source pos)
+    | Var(_,_) -> ""
+    | Gen(_) -> ""
+    | App(_,_) -> ""
+  end
       
 let rec occurs t1ref t2 =
   begin match t2 with
@@ -52,7 +60,7 @@ let rec occurs t1ref t2 =
       occurs t1ref t21 || occurs t1ref t22
   end
 
-let rec unify t1 t2 =
+let rec unify pos t1 t2 =
   begin match (t1,t2) with
     | (Con(_,id1),Con(_,id2)) when id1 = id2 ->
       ()
@@ -61,9 +69,9 @@ let rec unify t1 t2 =
     | (Var(t1lv,t1ref),Var(t2lv,t2ref)) ->
       begin match (!t1ref,!t2ref) with
         | (Some(t10),_) ->
-          unify t10 t2
+          unify pos t10 t2
         | (_,Some(t20)) ->
-          unify t1 t20
+          unify pos t1 t20
         | (None,None) when t1lv > t2lv ->
           t1ref := Some(t2)
         | (None,None) when t1lv < t2lv ->
@@ -74,7 +82,7 @@ let rec unify t1 t2 =
     | (Var(_,t1ref),_) ->
       begin match !t1ref with
         | Some(t10) ->
-          unify t10 t2
+          unify pos t10 t2
         | None when occurs t1ref t2 ->
           failwith
             "occurs error\n"
@@ -84,7 +92,7 @@ let rec unify t1 t2 =
     | (_,Var(_,t2ref)) ->
       begin match !t2ref with
         | Some(t20) ->
-          unify t20 t1
+          unify pos t20 t1
         | None when occurs t2ref t1 ->
           failwith
             "occurs error\n"
@@ -92,15 +100,19 @@ let rec unify t1 t2 =
           t2ref := Some(t1)
       end
     | (App(t11,t12),App(t21,t22)) -> begin
-      unify t11 t21;
-      unify t12 t22
+      unify pos t11 t21;
+      unify pos t12 t22
     end
     | (_,_) ->
-      failwith "unification failed\n"
-(*        (sprintf
+      let alist_ref = ref [] in
+      let array = Array.make 0 "" in
+      let str_t1 = show alist_ref array t1 in
+      let str_t2 = show alist_ref array t2 in
+      failwith
+        (sprintf
            "%s: error: unification failed: %s and %s\n%s%s%s"
-           (Pos.show pos) (show_types t1 t2) (Pos.show_source pos)
-           (show_origin t1) (show_origin t2))*)
+           (Pos.show pos) str_t1 str_t2 (Pos.show_source pos)
+           (show_origin t1 str_t1) (show_origin t2 str_t2))
   end
       
 module Open = struct

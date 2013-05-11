@@ -59,7 +59,7 @@ let rec eval_expr eva expr =
   end
 
 let eval_top eva top =
-  begin match top with
+  begin match top.Top.raw with
     | Top.LetVal(ident,val_expr) ->
       let val_val = eval_expr eva val_expr in
       let eva_body = {eva with env=(ident,val_val)::eva.env} in

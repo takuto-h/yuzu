@@ -189,15 +189,17 @@ let parse_top_let_fun parser =
 let parse_top parser =
   begin match parser.token with
     | Token.Var -> begin
+      let pos = parser.pos in
       lookahead parser;
-      parse_top_let_val parser
+      Top.at pos (parse_top_let_val parser)
     end
     | Token.Def -> begin
+      let pos = parser.pos in
       lookahead parser;
-      parse_top_let_fun parser
+      Top.at pos (parse_top_let_fun parser)
     end
     | _ ->
-      Top.Expr(parse_expr parser)
+      Top.at parser.pos (Top.Expr(parse_expr parser))
   end
     
 let parse_stmt parser =
