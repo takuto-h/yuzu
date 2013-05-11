@@ -8,6 +8,33 @@ type t =
   | Gen of int
   | App of t * t
 
+let rec show alist_ref array t =
+  begin match t with
+    | Con(_,ident) ->
+      Ident.show ident
+    | Var(_,tref) ->
+      begin match !tref with
+        | Some(tt) ->
+          show alist_ref array tt
+        | None ->
+          begin try
+            List.assq tref !alist_ref
+          with
+            | Not_found ->
+              let str = sprintf "_t%d" (List.length !alist_ref) in begin
+              alist_ref := (tref,str)::!alist_ref;
+              str
+              end
+          end
+      end
+    | Gen(n) ->
+      Array.get array n
+    | App(App(Con(_,{Ident.name="->"}),t1),t2) ->
+      sprintf "(%s -> %s)" (show alist_ref array t1) (show alist_ref array t2)
+    | App(t1,t2) ->
+      sprintf "%s(%s)" (show alist_ref array t1) (show alist_ref array t2)
+  end
+      
 let rec occurs t1ref t2 =
   begin match t2 with
     | Con(_,_) ->
