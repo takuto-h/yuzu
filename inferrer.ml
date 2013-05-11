@@ -48,9 +48,15 @@ let instantiate let_level {Scheme.gen_num;Scheme.body} =
   let rec inst t =
     begin match t with
       | Type.Con(_,_) -> t
-      | Type.Var(_,_) -> t
-      | Type.Gen(n) -> Array.get type_vars n
-      | Type.App(t1,t2) -> Type.App(inst t1,inst t2)
+      | Type.Var(_,tref) ->
+        begin match !tref with
+          | None -> t
+          | Some(tt) -> inst tt
+        end
+      | Type.Gen(n) ->
+        Array.get type_vars n
+      | Type.App(t1,t2) ->
+        Type.App(inst t1,inst t2)
     end
   in
   inst body
