@@ -109,7 +109,7 @@ let rec unify pos t1 t2 =
     | (_,Var(_,t2ref)) ->
       begin match !t2ref with
         | Some(t20) ->
-          unify pos t20 t1
+          unify pos t1 t20
         | None when occurs t2ref t1 ->
           failwith (unif_failed pos t1 t2)
         | None ->
