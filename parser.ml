@@ -30,7 +30,7 @@ let expected str_token parser =
     (Pos.show parser.pos) (Token.show parser.token) str_token (Pos.show_source parser.pos)
 
 let parse_param parser =
-  if parser.token <> Token.LParen then
+  if parser.token <> Token.Just('(') then
     failwith (expected "'('" parser)
   else begin
     lookahead parser;
@@ -38,7 +38,7 @@ let parse_param parser =
       | Token.Ident(str) ->
         let param_ident = Ident.intern str in begin
           lookahead parser;
-          if parser.token <> Token.RParen then
+          if parser.token <> Token.Just(')') then
             failwith (expected "')'" parser)
           else begin
             lookahead parser;
@@ -52,11 +52,11 @@ let parse_param parser =
 
 let rec parse_expr parser =
   let expr_ref = ref (parse_atom parser) in begin
-  while parser.token = Token.LParen do
+  while parser.token = Token.Just('(') do
     let pos = parser.pos in
     lookahead parser;
     let arg = parse_expr parser in
-    if parser.token <> Token.RParen then
+    if parser.token <> Token.Just(')') then
       failwith (expected "')'" parser)
     else begin
       lookahead parser;
@@ -85,15 +85,15 @@ and parse_atom parser =
       lookahead parser;
       Expr.at pos (Expr.Var(Ident.intern str))
     end
-    | Token.LParen -> begin
+    | Token.Just('(') -> begin
       lookahead parser;
-      if parser.token = Token.RParen then begin
+      if parser.token = Token.Just(')') then begin
         lookahead parser;
         Expr.at pos (Expr.Con(Literal.Unit))
       end
       else begin
         let expr = parse_expr parser in
-        if parser.token <> Token.RParen then
+        if parser.token <> Token.Just(')') then
           failwith (expected "')'" parser)
         else begin
           lookahead parser;
@@ -101,7 +101,7 @@ and parse_atom parser =
         end
       end
     end
-    | Token.Hat -> begin
+    | Token.Just('^') -> begin
       lookahead parser;
       let param_ident = parse_param parser in
       let body_expr = parse_block parser in
@@ -116,12 +116,12 @@ and parse_atom parser =
   end
 
 and parse_block parser =
-  if parser.token <> Token.LBrace then
+  if parser.token <> Token.Just('{') then
     failwith (expected "'{'" parser)
   else begin
     lookahead parser;
     let body_expr = parse_expr parser in
-    if parser.token <> Token.RBrace then
+    if parser.token <> Token.Just('}') then
       failwith (expected "'}'" parser)
     else begin
       lookahead parser;
@@ -131,12 +131,12 @@ and parse_block parser =
 
 and parse_if parser pos_if =
   let pos_cond = parser.pos in
-  if parser.token <> Token.LParen then
+  if parser.token <> Token.Just('(') then
     failwith (expected "'('" parser)
   else begin
     lookahead parser;
     let cond_expr = parse_expr parser in
-    if parser.token <> Token.RParen then
+    if parser.token <> Token.Just(')') then
       failwith (expected "')'" parser)
     else begin
       lookahead parser;
@@ -162,7 +162,7 @@ let parse_top_let_val parser =
     | Token.Ident(str) ->
       let ident = Ident.intern str in begin
         lookahead parser;
-        if parser.token <> Token.EQ then
+        if parser.token <> Token.Just('=') then
           failwith (expected "'='" parser)
         else begin
           lookahead parser;
@@ -206,7 +206,7 @@ let parse_top parser =
 let parse_stmt parser =
   let top = parse_top parser in
   begin match parser.token with
-    | Token.Semi ->
+    | Token.Just(';') ->
       top
     | _ ->
       failwith (expected "';'" parser)
@@ -249,7 +249,7 @@ let parse_val_decl parser =
   begin match parser.token with
     | Token.Ident(str) -> begin
       lookahead parser;
-      if parser.token <> Token.Colon then
+      if parser.token <> Token.Just(':') then
         failwith (expected "':'" parser)
       else begin
         lookahead parser;
@@ -274,7 +274,7 @@ let parse_decl_expr parser =
 let parse_decl_stmt parser =
   let decl = parse_decl_expr parser in
   begin match parser.token with
-    | Token.Semi ->
+    | Token.Just(';') ->
       decl
     | _ ->
       failwith (expected ";" parser)

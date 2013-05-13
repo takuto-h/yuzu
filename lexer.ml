@@ -74,22 +74,8 @@ and lex_token lexer c =
   let pos = Source.pos lexer.source in
   Source.junk lexer.source;
   begin match c with
-    | '=' ->
-      Some(Token.EQ, pos)
-    | '{' ->
-      Some(Token.LBrace, pos)
-    | '}' ->
-      Some(Token.RBrace, pos)
-    | '(' ->
-      Some(Token.LParen, pos)
-    | ')' ->
-      Some(Token.RParen, pos)
-    | ';' ->
-      Some(Token.Semi, pos)
-    | ':' ->
-      Some(Token.Colon, pos)
-    | '^' ->
-      Some(Token.Hat, pos)
+    | '=' | '{' | '}' | '(' | ')' | ';' | ':' | '^' ->
+      Some(Token.Just(c), pos)
     | '-' ->
       begin match Source.peek lexer.source with
         | Some('>') -> begin
@@ -97,9 +83,9 @@ and lex_token lexer c =
           Some(Token.RArrow, pos)
         end
         | Some(_) ->
-          Some(Token.Minus, pos)
+          Some(Token.Just('-'), pos)
         | None ->
-          Some(Token.Minus, pos)
+          Some(Token.Just('-'), pos)
       end
     | _ when is_whitespace c ->
       next lexer
