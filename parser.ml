@@ -1,5 +1,6 @@
 
 open Printf
+open Type.Open
 
 type t = {
   lexer : Lexer.t;
@@ -207,8 +208,6 @@ let parse_stmt parser =
   begin match parser.token with
     | Token.Semi ->
       top
-    | Token.EOF ->
-      top
     | _ ->
       failwith (expected "';'" parser)
   end
@@ -219,4 +218,72 @@ let parse parser = begin
     None
   else
     Some(parse_stmt parser)
+end
+
+let parse_simple_type parser =
+  begin match parser.token with
+    | Token.Ident(str) ->
+      let pos = parser.pos in begin
+      lookahead parser;
+      Type.Con(pos,Ident.intern(str))
+      end
+    | _ ->
+      failwith (expected "identifier" parser)
+  end
+  
+let rec parse_complex_type parser =
+  let lhs = parse_simple_type parser in
+  if parser.token <> Token.RArrow then
+    lhs
+  else
+    let pos = parser.pos in begin
+    lookahead parser;
+    let rhs = parse_complex_type parser in
+    (lhs @-> rhs) pos
+    end
+  
+let parse_scheme parser =
+  Scheme.mono (parse_complex_type parser)
+  
+let parse_val_decl parser =
+  begin match parser.token with
+    | Token.Ident(str) -> begin
+      lookahead parser;
+      if parser.token <> Token.Colon then
+        failwith (expected "':'" parser)
+      else begin
+        lookahead parser;
+        let scm = parse_scheme parser in
+        Decl.Decl(Ident.intern(str),scm)
+      end
+    end
+    | _ ->
+      failwith (expected "identifier" parser)
+  end
+  
+let parse_decl_expr parser =
+  begin match parser.token with
+    | Token.Def -> begin
+      lookahead parser;
+      parse_val_decl parser
+    end
+    | _ ->
+      failwith (expected "'def'" parser)
+  end
+  
+let parse_decl_stmt parser =
+  let decl = parse_decl_expr parser in
+  begin match parser.token with
+    | Token.Semi ->
+      decl
+    | _ ->
+      failwith (expected ";" parser)
+  end
+  
+let parse_decl parser = begin
+  lookahead parser;
+  if parser.token = Token.EOF then
+    None
+  else
+    Some(parse_decl_stmt parser)
 end

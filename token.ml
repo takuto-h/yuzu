@@ -7,7 +7,10 @@ type t =
   | LParen
   | RParen
   | Semi
+  | Colon
   | Hat
+  | Minus
+  | RArrow
   | Int of int
   | Ident of string
   | Def
@@ -26,7 +29,10 @@ let show token =
     | LParen -> "'('"
     | RParen -> "')'"
     | Semi -> "';'"
+    | Colon -> "':'"
     | Hat -> "'^'"
+    | Minus -> "'-'"
+    | RArrow -> "'->'"
     | Int(_) -> "integer"
     | Ident(_) -> "identifier"
     | Def -> "'def'"

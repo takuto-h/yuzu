@@ -86,8 +86,21 @@ and lex_token lexer c =
       Some(Token.RParen, pos)
     | ';' ->
       Some(Token.Semi, pos)
+    | ':' ->
+      Some(Token.Colon, pos)
     | '^' ->
       Some(Token.Hat, pos)
+    | '-' ->
+      begin match Source.peek lexer.source with
+        | Some('>') -> begin
+          Source.junk lexer.source;
+          Some(Token.RArrow, pos)
+        end
+        | Some(_) ->
+          Some(Token.Minus, pos)
+        | None ->
+          Some(Token.Minus, pos)
+      end
     | _ when is_whitespace c ->
       next lexer
     | _ when is_digit c ->
