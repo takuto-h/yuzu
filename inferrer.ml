@@ -91,6 +91,31 @@ let invalid_def pos ident fun_type_var fun_type t1 t2 =
     (Pos.show_source pos)
     (Type.show_origin str_t1 t1) (Type.show_origin str_t2 t2)
 
+let required pos req got t2 =
+  let alist_ref = ref [] in
+  let array = Array.make 0 "" in
+  let str_req = Type.show alist_ref array req in
+  let str_got = Type.show alist_ref array got in
+  let str_t2 = Type.show alist_ref array t2 in
+  sprintf
+    "%s: error: %s required, but got %s\n%s%s"
+    (Pos.show pos) str_req str_got (Pos.show_source pos)
+    (Type.show_origin str_t2 t2)
+
+let invalid_if_expr pos then_type else_type t1 t2 =
+  let alist_ref = ref [] in
+  let array = Array.make 0 "" in
+  let str_then_type = Type.show alist_ref array then_type in
+  let str_else_type = Type.show alist_ref array else_type in
+  let str_t1 = Type.show alist_ref array t1 in
+  let str_t2 = Type.show alist_ref array t2 in
+  sprintf
+    "%s: error: invalid if expression\n%s%s%s%s%s"
+    (Pos.show pos)
+    (sprintf "type of then clause: %s\n" str_then_type)
+    (sprintf "type of else clause: %s\n" str_else_type)
+    (Pos.show_source pos) (Type.show_origin str_t1 t1) (Type.show_origin str_t2 t2)
+    
 let rec infer_expr inf expr =
   begin match expr.Expr.raw with
     | Expr.Con(lit) ->
@@ -144,6 +169,25 @@ let rec infer_expr inf expr =
       end;
       let inf_body = {inf with asp=(ident,generalize let_level fun_type)::inf.asp} in
       infer_expr inf_body body_expr
+      end
+    | Expr.If(cond_expr,then_expr,else_expr) ->
+      let cond_type = infer_expr inf cond_expr in
+      let then_type = infer_expr inf then_expr in
+      let else_type = infer_expr inf else_expr in
+      let bool_type = Type.Con(Pos.dummy,Ident.intern("Bool")) in begin
+      begin try
+        Type.unify bool_type cond_type
+      with
+        | Type.Unification_failed(_,t2) ->
+          failwith (required cond_expr.Expr.pos bool_type cond_type t2)
+      end;
+      begin try
+        Type.unify then_type else_type
+      with
+        | Type.Unification_failed(t1,t2) ->
+          failwith (invalid_if_expr expr.Expr.pos then_type else_type t1 t2)
+      end;
+      then_type
       end
   end
 

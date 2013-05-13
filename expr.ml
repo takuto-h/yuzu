@@ -7,6 +7,7 @@ and raw =
   | App of t * t
   | LetVal of Ident.t * t * t
   | LetFun of Ident.t * t * t
+  | If of t * t * t
 
 let at pos raw = {pos=pos; raw=raw}
   

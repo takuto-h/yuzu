@@ -129,8 +129,7 @@ and parse_block parser =
     end
   end
 
-and parse_if parser pos_if =
-  let pos_cond = parser.pos in
+and parse_if parser pos =
   if parser.token <> Token.Just('(') then
     failwith (expected "'('" parser)
   else begin
@@ -140,19 +139,13 @@ and parse_if parser pos_if =
       failwith (expected "')'" parser)
     else begin
       lookahead parser;
-      let pos_then = parser.pos in
       let then_expr = parse_block parser in
       if parser.token <> Token.Else then
         failwith (expected "'else'" parser)
       else begin
         lookahead parser;
-        let pos_else = parser.pos in
         let else_expr = parse_block parser in
-        let fun_expr = Expr.at pos_if (Expr.Var(Ident.intern "if")) in
-        let app_cond_expr = Expr.at pos_cond (Expr.App(fun_expr, cond_expr)) in
-        let app_then_expr = Expr.at pos_then (Expr.App(app_cond_expr, then_expr)) in
-        let app_else_expr = Expr.at pos_else (Expr.App(app_then_expr, else_expr)) in
-        app_else_expr
+        Expr.at pos (Expr.If(cond_expr,then_expr,else_expr))
       end
     end
   end

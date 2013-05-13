@@ -56,6 +56,21 @@ let rec eval_expr eva expr =
                (Value.show fun_val)
                (Pos.show_source fun_expr.Expr.pos))
       end
+    | Expr.If(cond_expr,then_expr,else_expr) ->
+      let cond_val = eval_expr eva cond_expr in
+      begin match cond_val with
+        | Value.Con(Literal.Bool(true)) ->
+          eval_expr eva then_expr
+        | Value.Con(Literal.Bool(false)) ->
+          eval_expr eva else_expr
+        | _ ->
+          failwith
+            (sprintf
+               "%s: RUNTIME ERROR: boolean required, but got: %s\n%s"
+               (Pos.show cond_expr.Expr.pos)
+               (Value.show cond_val)
+               (Pos.show_source cond_expr.Expr.pos))
+      end
   end
 
 let eval_top eva top =
