@@ -8,6 +8,8 @@ type t =
   | Gen of int
   | App of t * t
 
+exception Unification_failed of t * t
+
 let rec show alist_ref array t =
   begin match t with
     | Con(_,ident) ->
@@ -67,18 +69,7 @@ let rec occurs t1ref t2 =
       occurs t1ref t21 || occurs t1ref t22
   end
 
-let unif_failed pos t1 t2 =
-  let alist_ref = ref [] in
-  let array = Array.make 0 "" in
-  let str_t1 = show alist_ref array t1 in
-  let str_t2 = show alist_ref array t2 in
-  failwith
-    (sprintf
-       "%s: error: unification failed: %s and %s\n%s%s%s"
-       (Pos.show pos) str_t1 str_t2 (Pos.show_source pos)
-       (show_origin str_t1 t1) (show_origin str_t2 t2))
-
-let rec unify pos t1 t2 =
+let rec unify t1 t2 =
   begin match (t1,t2) with
     | (Con(_,id1),Con(_,id2)) when id1 = id2 ->
       ()
@@ -87,9 +78,9 @@ let rec unify pos t1 t2 =
     | (Var(t1lv,t1ref),Var(t2lv,t2ref)) ->
       begin match (!t1ref,!t2ref) with
         | (Some(t10),_) ->
-          unify pos t10 t2
+          unify t10 t2
         | (_,Some(t20)) ->
-          unify pos t1 t20
+          unify t1 t20
         | (None,None) when t1lv > t2lv ->
           t1ref := Some(t2)
         | (None,None) when t1lv < t2lv ->
@@ -100,27 +91,27 @@ let rec unify pos t1 t2 =
     | (Var(_,t1ref),_) ->
       begin match !t1ref with
         | Some(t10) ->
-          unify pos t10 t2
+          unify t10 t2
         | None when occurs t1ref t2 ->
-          failwith (unif_failed pos t1 t2)
+          raise (Unification_failed(t1,t2))
         | None ->
           t1ref := Some(t2)
       end
     | (_,Var(_,t2ref)) ->
       begin match !t2ref with
         | Some(t20) ->
-          unify pos t1 t20
+          unify t1 t20
         | None when occurs t2ref t1 ->
-          failwith (unif_failed pos t1 t2)
+          raise (Unification_failed(t1,t2))
         | None ->
           t2ref := Some(t1)
       end
     | (App(t11,t12),App(t21,t22)) -> begin
-      unify pos t11 t21;
-      unify pos t12 t22
+      unify t11 t21;
+      unify t12 t22
     end
     | (_,_) ->
-      failwith (unif_failed pos t1 t2)
+      raise (Unification_failed(t1,t2))
   end
       
 module Open = struct

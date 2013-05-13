@@ -61,6 +61,36 @@ let instantiate let_level {Scheme.gen_num;Scheme.body} =
   in
   inst body
 
+let invalid_app pos fun_type arg_type t1 t2 =
+  let alist_ref = ref [] in
+  let array = Array.make 0 "" in
+  let str_t1 = Type.show alist_ref array t1 in
+  let str_t2 = Type.show alist_ref array t2 in
+  let str_fun_type = Type.show alist_ref array fun_type in
+  let str_arg_type = Type.show alist_ref array arg_type in
+  sprintf
+    "%s: error: invalid application\n%s%s%s%s%s"
+    (Pos.show pos)
+    (sprintf "function type: %s\n" str_fun_type)
+    (sprintf "argument type: %s\n" str_arg_type)
+    (Pos.show_source pos)
+    (Type.show_origin str_t1 t1) (Type.show_origin str_t2 t2)
+
+let invalid_def pos ident fun_type_var fun_type t1 t2 =
+  let alist_ref = ref [] in
+  let array = Array.make 0 "" in
+  let str_t1 = Type.show alist_ref array t1 in
+  let str_t2 = Type.show alist_ref array t2 in
+  let str_fun_type_var = Type.show alist_ref array fun_type_var in
+  let str_fun_type = Type.show alist_ref array fun_type in
+  sprintf
+    "%s: error: invalid definition: %s\n%s%s%s%s%s"
+    (Pos.show pos) (Ident.show ident)
+    (sprintf "variable type: %s\n" str_fun_type_var)
+    (sprintf "expression type: %s\n" str_fun_type)
+    (Pos.show_source pos)
+    (Type.show_origin str_t1 t1) (Type.show_origin str_t2 t2)
+
 let rec infer_expr inf expr =
   begin match expr.Expr.raw with
     | Expr.Con(lit) ->
@@ -88,7 +118,12 @@ let rec infer_expr inf expr =
       let fun_type = infer_expr inf fun_expr in
       let arg_type = infer_expr inf arg_expr in
       let ret_type = make_type_var inf.let_level in begin
-      Type.unify expr.Expr.pos fun_type ((arg_type @-> ret_type) expr.Expr.pos);
+      begin try
+        Type.unify fun_type ((arg_type @-> ret_type) expr.Expr.pos);
+        with
+        | Type.Unification_failed(t1,t2) ->
+          failwith (invalid_app expr.Expr.pos fun_type arg_type t1 t2)
+      end;
       ret_type
       end
     | Expr.LetVal(ident,val_expr,body_expr) ->
@@ -101,7 +136,12 @@ let rec infer_expr inf expr =
       let inf_fun = {inf with let_level=let_level+1} in
       let inf_fun = {inf_fun with asp=(ident,Scheme.mono fun_type_var)::inf.asp} in
       let fun_type = infer_expr inf_fun fun_expr in begin
-      Type.unify expr.Expr.pos fun_type_var fun_type;
+      begin try
+        Type.unify fun_type_var fun_type
+      with
+        | Type.Unification_failed(t1,t2) ->
+          failwith (invalid_def expr.Expr.pos ident fun_type_var fun_type t1 t2)
+      end;
       let inf_body = {inf with asp=(ident,generalize let_level fun_type)::inf.asp} in
       infer_expr inf_body body_expr
       end
@@ -119,7 +159,12 @@ let infer_top inf top =
       let inf_fun = {inf with let_level=let_level+1} in
       let inf_fun = {inf_fun with asp=(ident,Scheme.mono fun_type_var)::inf.asp} in
       let fun_type = infer_expr inf_fun fun_expr in begin
-      Type.unify top.Top.pos fun_type_var fun_type;
+      begin try
+        Type.unify fun_type_var fun_type
+      with
+        | Type.Unification_failed(t1,t2) ->
+          failwith (invalid_def top.Top.pos ident fun_type_var fun_type t1 t2)
+      end;
       let fun_scm = generalize let_level fun_type in
       let inf_body = {inf with asp=(ident,fun_scm)::inf.asp} in
       (fun_scm, inf_body)
