@@ -1,3 +1,3 @@
 
 type t =
-  | Decl of Ident.t * Scheme.t
+  | Val of Ident.t * Scheme.t

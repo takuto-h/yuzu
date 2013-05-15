@@ -67,11 +67,12 @@ let load_decls loader fname =
       begin match Parser.parse_decl parser with
         | None ->
           raise Break
-        | Some(decl) -> begin
+        | Some(decl) ->
+          let (scm, inf) = Inferrer.declare loader.inf decl in begin
+          loader.inf <- inf;
           begin match decl with
-            | Decl.Decl(ident,scm) ->
-              eprintf "def %s : %s\n"
-                (Ident.show ident) (Scheme.show scm)
+            | Decl.Val(ident,_) ->
+              eprintf "def %s : %s\n" (Ident.show ident) (Scheme.show scm)
           end;
           flush stderr
         end

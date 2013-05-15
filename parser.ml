@@ -247,7 +247,7 @@ let parse_val_decl parser =
       else begin
         lookahead parser;
         let scm = parse_scheme parser in
-        Decl.Decl(Ident.intern(str),scm)
+        Decl.Val(Ident.intern(str),scm)
       end
     end
     | _ ->

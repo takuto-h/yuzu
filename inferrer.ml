@@ -216,3 +216,10 @@ let infer_top inf top =
     | Top.Expr(expr) ->
       (generalize inf.let_level (infer_expr inf expr), inf)
   end
+
+let declare inf decl =
+  begin match decl with
+    | Decl.Val(ident,scm) ->
+      let inf_body = {inf with asp=(ident,scm)::inf.asp} in
+      (scm, inf_body)
+  end
