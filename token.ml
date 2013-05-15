@@ -10,6 +10,7 @@ type t =
   | If
   | Else
   | RArrow
+  | EQ
   | Int of int
   | Ident of string
   | Just of char
@@ -24,6 +25,7 @@ let show token =
     | If -> "'if'"
     | Else -> "'else'"
     | RArrow -> "'->'"
+    | EQ -> "'=='"
     | Int(_) -> "integer"
     | Ident(_) -> "identifier"
     | Just(c) -> sprintf "'%c'" c
