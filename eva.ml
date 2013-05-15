@@ -8,7 +8,7 @@ let default_env = [
     Value.Subr begin fun arg2 ->
       begin match (arg1,arg2) with
         | (Value.Con(Literal.Int(n1)),Value.Con(Literal.Int(n2))) ->
-          Value.Con(Literal.Int(n1 + n2))
+          Value.Con(Literal.Bool(n1 = n2))
         | _ ->
           assert false
       end

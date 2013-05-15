@@ -219,6 +219,8 @@ let parse_stmt parser =
   begin match parser.token with
     | Token.Just(';') ->
       top
+    | Token.EOF ->
+      top
     | _ ->
       failwith (expected "';'" parser)
   end
@@ -286,6 +288,8 @@ let parse_decl_stmt parser =
   let decl = parse_decl_expr parser in
   begin match parser.token with
     | Token.Just(';') ->
+      decl
+    | Token.EOF ->
       decl
     | _ ->
       failwith (expected ";" parser)
