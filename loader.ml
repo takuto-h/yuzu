@@ -10,7 +10,7 @@ type t = {
 
 let create () = {
   inf = Inferrer.empty;
-  eva = Eva.empty;
+  eva = Eva.default;
 }
 
 let load loader fname =

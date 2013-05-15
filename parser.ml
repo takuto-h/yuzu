@@ -16,8 +16,9 @@ let create lexer = {
 
 let lookahead parser =
   begin match Lexer.next parser.lexer with
-    | None ->
+    | None -> begin
       parser.token <- Token.EOF
+    end
     | Some(token, pos) -> begin
       parser.token <- token;
       parser.pos <- pos

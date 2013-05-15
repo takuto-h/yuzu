@@ -3,7 +3,20 @@ open Printf
 
 type t = {env:Value.env; dummy:unit}
 
-let empty = {env=[]; dummy=()}
+let default_env = [
+  Ident.intern("=="), Value.Subr begin fun arg1 ->
+    Value.Subr begin fun arg2 ->
+      begin match (arg1,arg2) with
+        | (Value.Con(Literal.Int(n1)),Value.Con(Literal.Int(n2))) ->
+          Value.Con(Literal.Int(n1 + n2))
+        | _ ->
+          assert false
+      end
+    end
+  end
+]
+  
+let default = {env=default_env; dummy=()}
     
 let rec eval_expr eva expr =
   begin match expr.Expr.raw with
@@ -28,6 +41,8 @@ let rec eval_expr eva expr =
         | Value.Closure(envref,para_ident,body_expr) ->
           let eva_body = {eva with env=(para_ident,arg_val)::!envref} in
           eval_expr eva_body body_expr
+        | Value.Subr(subr) ->
+          subr arg_val
         | _ ->
           failwith
             (sprintf
