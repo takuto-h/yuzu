@@ -1,7 +1,10 @@
 
 open Printf
 
-type t = {source : Source.t}
+type t = {
+  source : Source.t;
+  mutable parens : Token.t list;
+}
 
 let reserved = Hashtbl.create 11
 let () = Hashtbl.add reserved "def" Token.Def
@@ -11,7 +14,10 @@ let () = Hashtbl.add reserved "false" Token.False
 let () = Hashtbl.add reserved "if" Token.If
 let () = Hashtbl.add reserved "else" Token.Else
 
-let create src = {source=src}
+let create src = {
+  source = src;
+  parens = [];
+}
     
 let is_digit c =
   String.contains "0123456789" c

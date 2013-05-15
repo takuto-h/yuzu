@@ -175,12 +175,16 @@ and parse_block parser =
   else begin
     lookahead parser;
     let body_expr = parse_expr parser in
-    if parser.token <> Token.Just('}') then
-      failwith (expected "'}'" parser)
-    else begin
-      lookahead parser;
-      body_expr
-    end
+    (if parser.token = Token.Just(';') then
+        lookahead parser
+     else
+        ());
+    (if parser.token <> Token.Just('}') then
+        failwith (expected "'}'" parser)
+     else begin
+       lookahead parser;
+       body_expr
+     end)
   end
 
 and parse_if parser pos =

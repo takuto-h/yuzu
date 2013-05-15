@@ -4,10 +4,10 @@ def const(x){^(y){ x }};
 
 def fac(n){
   if(n == 0){
-    1
+    1;
   } else {
-    n * fac(n - 1)
-  }
+    n * fac(n - 1);
+  };
 };
 
-fac(10);
+var fac10 = fac(10);
