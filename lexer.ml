@@ -27,7 +27,22 @@ let is_whitespace c =
 
 let int_of_digit c =
   Char.code c - Char.code '0'
-    
+
+let is_special_ident str =
+  if String.length str = 0 then
+    true
+  else if not (is_ident_start (String.get str 0)) then
+    true
+  else
+    let rec loop i =
+      if i = String.length str then
+        false
+      else if is_ident_part (String.get str i) then
+        loop (i + 1)
+      else
+        true
+    in loop 1
+
 let rec lex_int lexer pos num =
   begin match Source.peek lexer.source with
     | Some(c) when is_digit c -> begin
@@ -60,6 +75,25 @@ let rec lex_ident lexer pos buf =
     | None ->
       Some(ident_or_reserved(Buffer.contents buf), pos)
   end
+
+let rec lex_special_ident lexer pos buf =
+  begin match Source.peek lexer.source with
+    | Some('|') -> begin
+      Source.junk lexer.source;
+      Some(Token.Ident(Buffer.contents buf), pos)
+    end
+    | Some(c) -> begin
+      Source.junk lexer.source;
+      Buffer.add_char buf c;
+      lex_special_ident lexer pos buf
+    end
+    | None ->
+      let pos_eof = Source.pos lexer.source in
+      failwith
+        (sprintf
+           "%s: error: EOF inside an identifier\n%s"
+           (Pos.show pos_eof) (Pos.show_source pos_eof))
+  end
     
 let rec next lexer =
   begin match Source.peek lexer.source with
@@ -86,6 +120,17 @@ and lex_token lexer c =
           Some(Token.Just('-'), pos)
         | None ->
           Some(Token.Just('-'), pos)
+      end
+    | '$' ->
+      begin match Source.peek lexer.source with
+        | Some('|') -> begin
+          Source.junk lexer.source;
+          lex_special_ident lexer pos (Buffer.create 10)
+        end
+        | Some(_) ->
+          Some(Token.Just('$'), pos)
+        | None ->
+          Some(Token.Just('$'), pos)
       end
     | _ when is_whitespace c ->
       next lexer

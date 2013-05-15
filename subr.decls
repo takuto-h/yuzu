@@ -1,5 +1,4 @@
 
-def add_i : Int -> Int -> Int;
-def sub_i : Int -> Int -> Int;
-def add_f : Float -> Float -> Float;
-def sub_f : Float -> Float -> Float;
+def $|+| : Int -> Int -> Int;
+def $|-| : Int -> Int -> Int;
+def $|*| : Int -> Int -> Int;
