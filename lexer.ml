@@ -108,7 +108,7 @@ and lex_token lexer c =
   let pos = Source.pos lexer.source in
   Source.junk lexer.source;
   begin match c with
-    | '{' | '}' | '(' | ')' | ';' | ':' | '^' ->
+    | '{' | '}' | '(' | ')' | ';' | ':' | '^' | '*' ->
       Some(Token.Just(c), pos)
     | '-' ->
       begin match Source.peek lexer.source with

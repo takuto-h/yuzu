@@ -4,6 +4,36 @@ open Printf
 type t = {env:Value.env; dummy:unit}
 
 let default_env = [
+  Ident.intern("+"), Value.Subr begin fun arg1 ->
+    Value.Subr begin fun arg2 ->
+      begin match (arg1,arg2) with
+        | (Value.Con(Literal.Int(n1)),Value.Con(Literal.Int(n2))) ->
+          Value.Con(Literal.Int(n1 + n2))
+        | _ ->
+          assert false
+      end
+    end
+  end;
+  Ident.intern("-"), Value.Subr begin fun arg1 ->
+    Value.Subr begin fun arg2 ->
+      begin match (arg1,arg2) with
+        | (Value.Con(Literal.Int(n1)),Value.Con(Literal.Int(n2))) ->
+          Value.Con(Literal.Int(n1 - n2))
+        | _ ->
+          assert false
+      end
+    end
+  end;
+  Ident.intern("*"), Value.Subr begin fun arg1 ->
+    Value.Subr begin fun arg2 ->
+      begin match (arg1,arg2) with
+        | (Value.Con(Literal.Int(n1)),Value.Con(Literal.Int(n2))) ->
+          Value.Con(Literal.Int(n1 * n2))
+        | _ ->
+          assert false
+      end
+    end
+  end;
   Ident.intern("=="), Value.Subr begin fun arg1 ->
     Value.Subr begin fun arg2 ->
       begin match (arg1,arg2) with

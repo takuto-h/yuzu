@@ -52,7 +52,60 @@ let parse_param parser =
   end
 
 let rec parse_expr parser =
-  let expr_ref = ref (parse_eq_expr parser) in begin
+  parse_eq_expr parser
+
+and parse_eq_expr parser =
+  let lhs = parse_add_expr parser in
+  begin match parser.token with
+    | Token.EQ ->
+      let pos = parser.pos in begin
+      lookahead parser;
+      let rhs = parse_add_expr parser in
+      let op = Expr.at pos (Expr.Var(Ident.intern("=="))) in
+      Expr.at pos (Expr.App(Expr.at pos (Expr.App(op,lhs)),rhs))
+      end
+    | _ ->
+      lhs
+  end
+
+and parse_add_expr parser =
+  let lhs_ref = ref (parse_mul_expr parser) in begin
+  while parser.token = Token.Just('+') || parser.token = Token.Just('-') do
+    begin match parser.token with
+      | Token.Just(c) ->
+        let pos = parser.pos in begin
+        lookahead parser;
+        let rhs = parse_mul_expr parser in
+        let op = Expr.at pos (Expr.Var(Ident.intern(sprintf "%c" c))) in
+        lhs_ref := Expr.at pos (Expr.App(Expr.at pos (Expr.App(op,!lhs_ref)),rhs))
+        end
+      | _ ->
+        assert false
+    end
+  done;
+  !lhs_ref
+  end
+
+and parse_mul_expr parser =
+  let lhs_ref = ref (parse_prim_expr parser) in begin
+  while parser.token = Token.Just('*') do
+    begin match parser.token with
+      | Token.Just(c) ->
+        let pos = parser.pos in begin
+        lookahead parser;
+        let rhs = parse_prim_expr parser in
+        let op = Expr.at pos (Expr.Var(Ident.intern(sprintf "%c" c))) in
+        lhs_ref := Expr.at pos (Expr.App(Expr.at pos (Expr.App(op,!lhs_ref)),rhs))
+        end
+      | _ ->
+        assert false
+    end
+  done;
+  !lhs_ref
+  end
+
+and parse_prim_expr parser =
+  let expr_ref = ref (parse_atom parser) in begin
   while parser.token = Token.Just('(') do
     let pos = parser.pos in
     lookahead parser;
@@ -66,24 +119,7 @@ let rec parse_expr parser =
   done;
   !expr_ref
   end
-
-and parse_eq_expr parser =
-  let lhs = parse_add_expr parser in
-  begin match parser.token with
-    | Token.EQ -> begin
-      let pos = parser.pos in
-      lookahead parser;
-      let rhs = parse_add_expr parser in
-      let op = Expr.at pos (Expr.Var(Ident.intern("=="))) in
-      Expr.at pos (Expr.App(Expr.at pos (Expr.App(op,lhs)),rhs))
-    end
-    | _ ->
-      lhs
-  end
-
-and parse_add_expr parser =
-  parse_atom parser
-
+  
 and parse_atom parser =
   let pos = parser.pos in
   begin match parser.token with
