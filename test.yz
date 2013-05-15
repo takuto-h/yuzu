@@ -1,3 +1,7 @@
 def id(x){x};
 
+1 == 2;
+4 == 2;
+true == false;
+
 def const(x){^(y){ x }};
