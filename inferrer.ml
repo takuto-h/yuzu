@@ -39,6 +39,8 @@ let generalize let_level t =
         assert false
       | Type.App(t1,t2) ->
         Type.App(gen t1,gen t2)
+      | Type.Tuple(pos,lst) ->
+        Type.Tuple(pos,List.map gen lst)
     end
   in
   Scheme.poly (List.length !alist) (gen t)
@@ -57,6 +59,8 @@ let instantiate let_level {Scheme.gen_num;Scheme.body} =
         Array.get type_vars n
       | Type.App(t1,t2) ->
         Type.App(inst t1,inst t2)
+      | Type.Tuple(pos,lst) ->
+        Type.Tuple(pos,List.map inst lst)
     end
   in
   inst body
@@ -189,6 +193,8 @@ let rec infer_expr inf expr =
       end;
       then_type
       end
+    | Expr.Tuple(lst) ->
+      Type.Tuple(expr.Expr.pos, List.map (infer_expr inf) lst)
   end
 
 let infer_top inf top =

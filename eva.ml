@@ -116,6 +116,8 @@ let rec eval_expr eva expr =
                (Value.show cond_val)
                (Pos.show_source cond_expr.Expr.pos))
       end
+    | Expr.Tuple(lst) ->
+      Value.Tuple(List.map (eval_expr eva) lst)
   end
 
 let eval_top eva top =

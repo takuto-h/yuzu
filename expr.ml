@@ -8,6 +8,7 @@ and raw =
   | LetVal of Ident.t * t * t
   | LetFun of Ident.t * t * t
   | If of t * t * t
+  | Tuple of t list
 
 let at pos raw = {pos=pos; raw=raw}
   

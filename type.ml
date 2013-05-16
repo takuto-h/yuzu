@@ -7,6 +7,7 @@ type t =
   | Var of int * (t option) ref
   | Gen of int
   | App of t * t
+  | Tuple of Pos.t * t list
 
 exception Unification_failed of t * t
 
@@ -32,14 +33,25 @@ let rec show alist_ref array t =
     | Gen(n) ->
       Array.get array n
     | App(App(Con(_,{Ident.name="->"}),t1),t2) ->
-      sprintf "(%s -> %s)" (show alist_ref array t1) (show alist_ref array t2)
+      let str_lhs = show alist_ref array t1 in
+      let str_rhs = show alist_ref array t2 in
+      sprintf "(%s -> %s)" str_lhs str_rhs
     | App(t1,t2) ->
-      sprintf "%s(%s)" (show alist_ref array t1) (show alist_ref array t2)
+      let str_fun = show alist_ref array t1 in
+      let str_arg = show alist_ref array t2 in
+      sprintf "%s(%s)"  str_fun str_arg
+    | Tuple(_,(x::xs)) ->
+      let str_x = show alist_ref array x in
+      sprintf "(%s)"
+        (List.fold_left
+           (fun acc elem -> sprintf "%s, %s" acc (show alist_ref array elem)) str_x xs)
+    | Tuple(_,[]) ->
+      assert false
   end
 
 let rec show_origin str_t t =
   begin match t with
-    | Con(pos,_) ->
+    | Con(pos,_) | Tuple(pos,_) ->
       sprintf "%s: %s\n%s" (Pos.show pos) str_t (Pos.show_source pos)
     | Var(_,tref) ->
       begin match !tref with
@@ -67,6 +79,8 @@ let rec occurs t1ref t2 =
       assert false
     | App(t21,t22) ->
       occurs t1ref t21 || occurs t1ref t22
+    | Tuple(_,lst) ->
+      List.exists (occurs t1ref) lst
   end
 
 let rec unify t1 t2 =
@@ -110,6 +124,8 @@ let rec unify t1 t2 =
       unify t11 t21;
       unify t12 t22
     end
+    | (Tuple(_,lst1),Tuple(_,lst2)) when List.length lst1 = List.length lst2 ->
+      List.iter2 unify lst1 lst2
     | (_,_) ->
       raise (Unification_failed(t1,t2))
   end

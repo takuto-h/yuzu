@@ -141,19 +141,7 @@ and parse_atom parser =
     end
     | Token.Just('(') -> begin
       lookahead parser;
-      if parser.token = Token.Just(')') then begin
-        lookahead parser;
-        Expr.at pos (Expr.Con(Literal.Unit))
-      end
-      else begin
-        let expr = parse_expr parser in
-        if parser.token <> Token.Just(')') then
-          failwith (expected "')'" parser)
-        else begin
-          lookahead parser;
-          expr
-        end
-      end
+      parse_parens parser pos
     end
     | Token.Just('^') -> begin
       lookahead parser;
@@ -167,6 +155,41 @@ and parse_atom parser =
     end
     | _ ->
       failwith (expected "expression" parser)
+  end
+
+and parse_parens parser pos =
+  if parser.token = Token.Just(')') then begin
+    lookahead parser;
+    Expr.at pos (Expr.Con(Literal.Unit))
+  end
+  else
+    let expr = parse_expr parser in
+    begin match parser.token with
+      | Token.Just(')') -> begin
+        lookahead parser;
+        expr
+      end
+      | Token.Just(',') -> begin
+        lookahead parser;
+        parse_tuple parser pos [expr]
+      end
+      | _ ->
+        failwith (expected "',' or ')'" parser)
+    end
+
+and parse_tuple parser pos lst =
+  let expr = parse_expr parser in
+  begin match parser.token with
+    | Token.Just(')') -> begin
+      lookahead parser;
+      Expr.at pos (Expr.Tuple(List.rev (expr::lst)))
+    end
+    | Token.Just(',') -> begin
+      lookahead parser;
+      parse_tuple parser pos (expr::lst)
+    end
+    | _ ->
+      failwith (expected "',' or ')'" parser)
   end
 
 and parse_indented_block parser = begin
