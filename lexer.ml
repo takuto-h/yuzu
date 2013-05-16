@@ -128,7 +128,7 @@ let lex_visible_token lexer c =
   let pos = Source.pos lexer.source in
   Source.junk lexer.source;
   begin match c with
-    | ';' | ':' | '^' | '*' ->
+    | ';' | ':' | '^' | '*' | ',' ->
       (Token.Just(c), pos)
     | '{' | '(' -> begin
       Stack.push c lexer.parens;
