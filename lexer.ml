@@ -3,7 +3,7 @@ open Printf
 
 type t = {
   source : Source.t;
-  mutable parens : char list;
+  parens : char Stack.t;
   offside_lines : int Stack.t;
   mutable is_bol : bool; (* beginning of line *)
   mutable is_bob : bool; (* beginning of indented block *)
@@ -21,7 +21,7 @@ let () = Hashtbl.add reserved "else" Token.Else
 let create src =
   let lexer = {
     source = src;
-    parens = [];
+    parens = Stack.create ();
     offside_lines = Stack.create ();
     is_bol = false;
     is_bob = false;
@@ -114,16 +114,14 @@ let rec lex_special_ident lexer pos buf =
   end
 
 let lex_close_paren lexer pos open_paren close_paren =
-  begin match lexer.parens with
-    | (p::parens) when p = open_paren -> begin
-      lexer.parens <- parens;
-      (Token.Just(close_paren), pos)
-    end
-    | (_::_) | [] ->
-      failwith
-        (sprintf
-           "%s: error: unmatched parentheses: '%c'\n%s"
-           (Pos.show pos) close_paren (Pos.show_source pos))
+  if Stack.is_empty lexer.parens || Stack.top lexer.parens <> open_paren then
+    failwith
+      (sprintf
+         "%s: error: unmatched parentheses: '%c'\n%s"
+         (Pos.show pos) close_paren (Pos.show_source pos))
+  else begin
+    ignore (Stack.pop lexer.parens);
+    (Token.Just(close_paren), pos)
   end
 
 let lex_visible_token lexer c =
@@ -133,7 +131,7 @@ let lex_visible_token lexer c =
     | ';' | ':' | '^' | '*' ->
       (Token.Just(c), pos)
     | '{' | '(' -> begin
-      lexer.parens <- c::lexer.parens;
+      Stack.push c lexer.parens;
       (Token.Just(c), pos)
     end
     | '}' ->
