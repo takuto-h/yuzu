@@ -25,7 +25,7 @@ let lookahead parser =
     end
   end
 
-let expected str_token parser =
+let expected parser str_token =
   sprintf
     "%s: error: unexpected %s, expected %s\n%s"
     (Pos.show parser.pos) (Token.show parser.token) str_token (Pos.show_source parser.pos)
@@ -38,7 +38,7 @@ let skip parser token =
 
 let parse_param parser =
   if parser.token <> Token.Just('(') then
-    failwith (expected "'('" parser)
+    failwith (expected parser "'('")
   else begin
     lookahead parser;
     begin match parser.token with
@@ -46,14 +46,14 @@ let parse_param parser =
         let param_ident = Ident.intern str in begin
           lookahead parser;
           if parser.token <> Token.Just(')') then
-            failwith (expected "')'" parser)
+            failwith (expected parser "')'")
           else begin
             lookahead parser;
             param_ident
           end
         end
       | _ ->
-        failwith (expected "identifier" parser)
+        failwith (expected parser "identifier")
     end
   end
 
@@ -117,7 +117,7 @@ and parse_prim_expr parser =
     lookahead parser;
     let arg = parse_expr parser in
     if parser.token <> Token.Just(')') then
-      failwith (expected "')'" parser)
+      failwith (expected parser "')'")
     else begin
       lookahead parser;
       expr_ref := Expr.at pos (Expr.App(!expr_ref,arg))
@@ -160,7 +160,7 @@ and parse_atom parser =
       parse_if parser pos
     end
     | _ ->
-      failwith (expected "expression" parser)
+      failwith (expected parser "expression")
   end
 
 and parse_parens parser pos =
@@ -180,7 +180,7 @@ and parse_parens parser pos =
         parse_tuple parser pos [expr]
       end
       | _ ->
-        failwith (expected "',' or ')'" parser)
+        failwith (expected parser "',' or ')'")
     end
 
 and parse_tuple parser pos lst =
@@ -195,7 +195,7 @@ and parse_tuple parser pos lst =
       parse_tuple parser pos (expr::lst)
     end
     | _ ->
-      failwith (expected "',' or ')'" parser)
+      failwith (expected parser "',' or ')'")
   end
 
 and parse_indented_block parser = begin
@@ -205,7 +205,7 @@ and parse_indented_block parser = begin
   (skip parser (Token.Just(';')));
   (skip parser (Token.Newline));
   (if parser.token <> Token.Undent then
-      failwith (expected "undent" parser)
+      failwith (expected parser "undent")
    else begin
      lookahead parser;
      body_expr
@@ -218,7 +218,7 @@ and parse_braced_block parser = begin
   (skip parser (Token.Just(';')));
   (skip parser (Token.Newline));
   (if parser.token <> Token.Just('}') then
-      failwith (expected "'}'" parser)
+      failwith (expected parser "'}'")
    else begin
      lookahead parser;
      body_expr
@@ -231,7 +231,7 @@ and parse_let_val parser pos =
       let ident = Ident.intern str in begin
         lookahead parser;
         if parser.token <> Token.Just('=') then
-          failwith (expected "'='" parser)
+          failwith (expected parser "'='")
         else begin
           lookahead parser;
           let val_expr = parse_expr parser in begin
@@ -243,7 +243,7 @@ and parse_let_val parser pos =
         end
       end
     | _ ->
-      failwith (expected "identifier" parser)
+      failwith (expected parser "identifier")
   end
 
 and parse_block_elem parser =
@@ -263,17 +263,17 @@ and parse_block parser =
     | Token.Just('{') ->
       parse_braced_block parser
     | _ ->
-      failwith (expected "':' or '{'" parser)
+      failwith (expected parser "':' or '{'")
   end
 
 and parse_if parser pos =
   if parser.token <> Token.Just('(') then
-    failwith (expected "'('" parser)
+    failwith (expected parser "'('")
   else begin
     lookahead parser;
     let cond_expr = parse_expr parser in
     if parser.token <> Token.Just(')') then
-      failwith (expected "')'" parser)
+      failwith (expected parser "')'")
     else begin
       lookahead parser;
       let then_expr = parse_block parser in
@@ -282,7 +282,7 @@ and parse_if parser pos =
        else
           ());
       (if parser.token <> Token.Else then
-          failwith (expected "'else'" parser)
+          failwith (expected parser "'else'")
        else begin
          lookahead parser;
          let else_expr = parse_block parser in
@@ -297,14 +297,14 @@ let parse_top_let_val parser =
       let ident = Ident.intern str in begin
         lookahead parser;
         if parser.token <> Token.Just('=') then
-          failwith (expected "'='" parser)
+          failwith (expected parser "'='")
         else begin
           lookahead parser;
           Top.LetVal(ident, parse_expr parser)
         end
       end
     | _ ->
-      failwith (expected "identifier" parser)
+      failwith (expected parser "identifier")
   end
 
 let parse_top_let_fun parser =
@@ -318,7 +318,7 @@ let parse_top_let_fun parser =
       Top.LetFun(ident, Expr.at pos_abs (Expr.Abs(param_ident, body_expr)))
       end
     | _ ->
-      failwith (expected "identifier" parser)
+      failwith (expected parser "identifier")
   end
 
 let parse_top parser =
@@ -343,7 +343,7 @@ let parse_stmt parser =
     | Token.Just(';') | Token.Newline | Token.EOF ->
       top
     | _ ->
-      failwith (expected "';'" parser)
+      failwith (expected parser "';'")
   end
 
 let parse parser = begin
@@ -366,7 +366,7 @@ let parse_simple_type parser =
       Type.Con(pos,Ident.intern(str))
       end
     | _ ->
-      failwith (expected "identifier" parser)
+      failwith (expected parser "identifier")
   end
   
 let rec parse_complex_type parser =
@@ -388,7 +388,7 @@ let parse_val_decl parser =
     | Token.Ident(str) -> begin
       lookahead parser;
       if parser.token <> Token.Just(':') then
-        failwith (expected "':'" parser)
+        failwith (expected parser "':'")
       else begin
         lookahead parser;
         let scm = parse_scheme parser in
@@ -396,7 +396,7 @@ let parse_val_decl parser =
       end
     end
     | _ ->
-      failwith (expected "identifier" parser)
+      failwith (expected parser "identifier")
   end
   
 let parse_decl_expr parser =
@@ -406,7 +406,7 @@ let parse_decl_expr parser =
       parse_val_decl parser
     end
     | _ ->
-      failwith (expected "'def'" parser)
+      failwith (expected parser "'def'")
   end
   
 let parse_decl_stmt parser =
@@ -415,7 +415,7 @@ let parse_decl_stmt parser =
     | Token.Just(';') | Token.Newline | Token.EOF ->
       decl
     | _ ->
-      failwith (expected "';'" parser)
+      failwith (expected parser "';'")
   end
   
 let parse_decl parser = begin
