@@ -30,6 +30,12 @@ let expected str_token parser =
     "%s: error: unexpected %s, expected %s\n%s"
     (Pos.show parser.pos) (Token.show parser.token) str_token (Pos.show_source parser.pos)
 
+let skip parser token =
+  if parser.token = token then
+    lookahead parser
+  else
+    ()
+
 let parse_param parser =
   if parser.token <> Token.Just('(') then
     failwith (expected "'('" parser)
@@ -196,14 +202,8 @@ and parse_indented_block parser = begin
   Lexer.indent parser.lexer;
   lookahead parser;
   let body_expr = parse_block_elem parser in
-  (if parser.token = Token.Just(';') then
-      lookahead parser
-   else
-      ());
-  (if parser.token = Token.Newline then
-      lookahead parser
-   else
-      ());
+  (skip parser (Token.Just(';')));
+  (skip parser (Token.Newline));
   (if parser.token <> Token.Undent then
       failwith (expected "undent" parser)
    else begin
@@ -215,14 +215,8 @@ end
 and parse_braced_block parser = begin
   lookahead parser;
   let body_expr = parse_block_elem parser in
-  (if parser.token = Token.Just(';') then
-      lookahead parser
-   else
-      ());
-  (if parser.token = Token.Newline then
-      lookahead parser
-   else
-      ());
+  (skip parser (Token.Just(';')));
+  (skip parser (Token.Newline));
   (if parser.token <> Token.Just('}') then
       failwith (expected "'}'" parser)
    else begin
@@ -241,14 +235,8 @@ and parse_let_val parser pos =
         else begin
           lookahead parser;
           let val_expr = parse_expr parser in begin
-          (if parser.token = Token.Just(';') then
-              lookahead parser
-           else
-              ());
-          (if parser.token = Token.Newline then
-              lookahead parser
-           else
-              ());
+          (skip parser (Token.Just(';')));
+          (skip parser (Token.Newline));
           let body_expr = parse_block_elem parser in
           Expr.at pos (Expr.LetVal(ident, val_expr, body_expr))
           end
