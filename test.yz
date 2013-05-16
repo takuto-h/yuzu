@@ -2,18 +2,22 @@ def id(x): x
 
 def const(x):^(y): x
 
-def fac(n):
+def fac_a(n):
   if(n == 0):
     1
   else:
-    n * fac(n - 1)
+    n * fac_a(n - 1)
 
-var fac10 = fac(10)
+var fac_a10 = fac_a(10)
 
-def fac(n):
-  if(n == 0):
+def fac_b(n):
+  var cond = (n == 0)
+  var pred_n = (n - 1)
+  if(cond):
     1
   else:
-    n * fac(n - 1)
+    n * fac_b(pred_n)
+
+var fac_b10 = fac_b(10)
 
 (1,2)

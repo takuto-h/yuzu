@@ -195,7 +195,7 @@ and parse_tuple parser pos lst =
 and parse_indented_block parser = begin
   Lexer.indent parser.lexer;
   lookahead parser;
-  let body_expr = parse_expr parser in
+  let body_expr = parse_block_elem parser in
   (if parser.token = Token.Just(';') then
       lookahead parser
    else
@@ -214,7 +214,7 @@ end
 
 and parse_braced_block parser = begin
   lookahead parser;
-  let body_expr = parse_expr parser in
+  let body_expr = parse_block_elem parser in
   (if parser.token = Token.Just(';') then
       lookahead parser
    else
@@ -230,7 +230,44 @@ and parse_braced_block parser = begin
      body_expr
    end)
 end
-    
+
+and parse_let_val parser pos =
+  begin match parser.token with
+    | Token.Ident(str) ->
+      let ident = Ident.intern str in begin
+        lookahead parser;
+        if parser.token <> Token.Just('=') then
+          failwith (expected "'='" parser)
+        else begin
+          lookahead parser;
+          let val_expr = parse_expr parser in begin
+          (if parser.token = Token.Just(';') then
+              lookahead parser
+           else
+              ());
+          (if parser.token = Token.Newline then
+              lookahead parser
+           else
+              ());
+          let body_expr = parse_block_elem parser in
+          Expr.at pos (Expr.LetVal(ident, val_expr, body_expr))
+          end
+        end
+      end
+    | _ ->
+      failwith (expected "identifier" parser)
+  end
+
+and parse_block_elem parser =
+  begin match parser.token with
+    | Token.Var ->
+      let pos = parser.pos in
+      lookahead parser;
+      parse_let_val parser pos
+    | _ ->
+      parse_expr parser
+  end
+
 and parse_block parser =
   begin match parser.token with
     | Token.Just(':') ->
