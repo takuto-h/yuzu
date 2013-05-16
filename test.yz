@@ -1,13 +1,17 @@
-def id(x){x};
+def id(x): x
 
-def const(x){^(y){ x }};
+def const(x):^(y): x
 
-def fac(n){
-  if(n == 0){
-    1;
-  } else {
-    n * fac(n - 1);
-  };
-};
+def fac(n):
+  if(n == 0):
+    1
+  else:
+    n * fac(n - 1)
 
-var fac10 = fac(10);
+var fac10 = fac(10)
+
+def fac(n):
+  if(n == 0):
+    1
+  else:
+    n * fac(n - 1)

@@ -4,6 +4,10 @@ open Printf
 type t = {
   source : Source.t;
   mutable parens : char list;
+  offside_lines : int Stack.t;
+  mutable is_bol : bool; (* beginning of line *)
+  mutable is_bob : bool; (* beginning of indented block *)
+  mutable prev_pos : Pos.t;
 }
 
 let reserved = Hashtbl.create 11
@@ -14,11 +18,23 @@ let () = Hashtbl.add reserved "false" Token.False
 let () = Hashtbl.add reserved "if" Token.If
 let () = Hashtbl.add reserved "else" Token.Else
 
-let create src = {
-  source = src;
-  parens = [];
-}
-    
+let create src =
+  let lexer = {
+    source = src;
+    parens = [];
+    offside_lines = Stack.create ();
+    is_bol = false;
+    is_bob = false;
+    prev_pos = Pos.dummy;
+  }
+  in begin
+    Stack.push 0 lexer.offside_lines;
+    lexer
+  end
+
+let indent lexer =
+  lexer.is_bob <- true
+
 let is_digit c =
   String.contains "0123456789" c
   
@@ -56,7 +72,7 @@ let rec lex_int lexer pos num =
       lex_int lexer pos (num * 10 + int_of_digit c)
     end
     | Some(_) | None ->
-      Some(Token.Int(num), pos)
+      (Token.Int(num), pos)
   end
 
 let ident_or_reserved str = begin
@@ -75,14 +91,14 @@ let rec lex_ident lexer pos buf =
       lex_ident lexer pos buf
     end
     | Some(_) | None ->
-      Some(ident_or_reserved(Buffer.contents buf), pos)
+      (ident_or_reserved(Buffer.contents buf), pos)
   end
 
 let rec lex_special_ident lexer pos buf =
   begin match Source.peek lexer.source with
     | Some('|') -> begin
       Source.junk lexer.source;
-      Some(Token.Ident(Buffer.contents buf), pos)
+      (Token.Ident(Buffer.contents buf), pos)
     end
     | Some(c) -> begin
       Source.junk lexer.source;
@@ -101,7 +117,7 @@ let lex_close_paren lexer pos open_paren close_paren =
   begin match lexer.parens with
     | (p::parens) when p = open_paren -> begin
       lexer.parens <- parens;
-      Some(Token.Just(close_paren), pos)
+      (Token.Just(close_paren), pos)
     end
     | (_::_) | [] ->
       failwith
@@ -109,25 +125,16 @@ let lex_close_paren lexer pos open_paren close_paren =
            "%s: error: unmatched parentheses: '%c'\n%s"
            (Pos.show pos) close_paren (Pos.show_source pos))
   end
-    
-let rec next lexer =
-  begin match Source.peek lexer.source with
-    | None ->
-      None
-    | Some(c) -> begin
-      lex_token lexer c
-    end
-  end
 
-and lex_token lexer c =
+let lex_visible_token lexer c =
   let pos = Source.pos lexer.source in
   Source.junk lexer.source;
   begin match c with
     | ';' | ':' | '^' | '*' ->
-      Some(Token.Just(c), pos)
+      (Token.Just(c), pos)
     | '{' | '(' -> begin
       lexer.parens <- c::lexer.parens;
-      Some(Token.Just(c), pos)
+      (Token.Just(c), pos)
     end
     | '}' ->
       lex_close_paren lexer pos '{' c
@@ -137,19 +144,19 @@ and lex_token lexer c =
       begin match Source.peek lexer.source with
         | Some('>') -> begin
           Source.junk lexer.source;
-          Some(Token.RArrow, pos)
+          (Token.RArrow, pos)
         end
         | Some(_) | None ->
-          Some(Token.Just('-'), pos)
+          (Token.Just('-'), pos)
       end
     | '=' ->
       begin match Source.peek lexer.source with
         | Some('=') -> begin
           Source.junk lexer.source;
-          Some(Token.EQ, pos)
+          (Token.EQ, pos)
         end
         | Some(_) | None ->
-          Some(Token.Just('='), pos)
+          (Token.Just('='), pos)
       end
     | '$' ->
       begin match Source.peek lexer.source with
@@ -158,10 +165,8 @@ and lex_token lexer c =
           lex_special_ident lexer pos (Buffer.create 10)
         end
         | Some(_) | None ->
-          Some(Token.Just('$'), pos)
+          (Token.Just('$'), pos)
       end
-    | _ when is_whitespace c ->
-      next lexer
     | _ when is_digit c ->
       lex_int lexer pos (int_of_digit c)
     | _ when is_ident_start c ->
@@ -174,4 +179,50 @@ and lex_token lexer c =
         (sprintf
            "%s: error: unknown character: '%c'\n%s"
            (Pos.show pos) c (Pos.show_source pos))
+  end
+
+let lex_token lexer c =
+  let pos = Source.pos lexer.source in
+  let offset = pos.Pos.cnum - pos.Pos.bol in
+  if lexer.is_bob then begin
+    lexer.is_bob <- false;
+    lexer.is_bol <- false;
+    Stack.push offset lexer.offside_lines;
+    lex_visible_token lexer c
+  end
+  else if lexer.is_bol then
+    let offside_line = Stack.top lexer.offside_lines in
+    if offset < offside_line then begin
+      ignore (Stack.pop lexer.offside_lines);
+      (Token.Undent, pos)
+    end
+    else if offset = offside_line then begin
+      lexer.is_bol <- false;
+      (Token.Newline, pos)
+    end
+    else begin
+      lexer.is_bol <- false;
+      lex_visible_token lexer c
+    end
+  else
+    lex_visible_token lexer c
+    
+let rec next lexer =
+  begin match Source.peek lexer.source with
+    | None when Stack.length lexer.offside_lines = 1 ->
+      None
+    | None ->
+      ignore (Stack.pop lexer.offside_lines);
+      Some(Token.Undent, lexer.prev_pos)
+    | Some('\n') ->
+      lexer.is_bol <- true;
+      Source.junk lexer.source;
+      next lexer
+    | Some(c) when is_whitespace c ->
+      Source.junk lexer.source;
+      next lexer
+    | Some(c) ->
+      let (token, pos) = lex_token lexer c in
+      lexer.prev_pos <- pos;
+      Some(token, pos)
   end

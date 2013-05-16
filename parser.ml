@@ -169,22 +169,53 @@ and parse_atom parser =
       failwith (expected "expression" parser)
   end
 
+and parse_indented_block parser = begin
+  Lexer.indent parser.lexer;
+  lookahead parser;
+  let body_expr = parse_expr parser in
+  (if parser.token = Token.Just(';') then
+      lookahead parser
+   else
+      ());
+  (if parser.token = Token.Newline then
+      lookahead parser
+   else
+      ());
+  (if parser.token <> Token.Undent then
+      failwith (expected "undent" parser)
+   else begin
+     lookahead parser;
+     body_expr
+   end)
+end
+
+and parse_braced_block parser = begin
+  lookahead parser;
+  let body_expr = parse_expr parser in
+  (if parser.token = Token.Just(';') then
+      lookahead parser
+   else
+      ());
+  (if parser.token = Token.Newline then
+      lookahead parser
+   else
+      ());
+  (if parser.token <> Token.Just('}') then
+      failwith (expected "'}'" parser)
+   else begin
+     lookahead parser;
+     body_expr
+   end)
+end
+    
 and parse_block parser =
-  if parser.token <> Token.Just('{') then
-    failwith (expected "'{'" parser)
-  else begin
-    lookahead parser;
-    let body_expr = parse_expr parser in
-    (if parser.token = Token.Just(';') then
-        lookahead parser
-     else
-        ());
-    (if parser.token <> Token.Just('}') then
-        failwith (expected "'}'" parser)
-     else begin
-       lookahead parser;
-       body_expr
-     end)
+  begin match parser.token with
+    | Token.Just(':') ->
+      parse_indented_block parser
+    | Token.Just('{') ->
+      parse_braced_block parser
+    | _ ->
+      failwith (expected "':' or '{'" parser)
   end
 
 and parse_if parser pos =
@@ -198,13 +229,17 @@ and parse_if parser pos =
     else begin
       lookahead parser;
       let then_expr = parse_block parser in
-      if parser.token <> Token.Else then
-        failwith (expected "'else'" parser)
-      else begin
-        lookahead parser;
-        let else_expr = parse_block parser in
-        Expr.at pos (Expr.If(cond_expr,then_expr,else_expr))
-      end
+      (if parser.token = Token.Newline then
+          lookahead parser
+       else
+          ());
+      (if parser.token <> Token.Else then
+          failwith (expected "'else'" parser)
+       else begin
+         lookahead parser;
+         let else_expr = parse_block parser in
+         Expr.at pos (Expr.If(cond_expr,then_expr,else_expr))
+       end)
     end
   end
 
@@ -257,9 +292,7 @@ let parse_top parser =
 let parse_stmt parser =
   let top = parse_top parser in
   begin match parser.token with
-    | Token.Just(';') ->
-      top
-    | Token.EOF ->
+    | Token.Just(';') | Token.Newline | Token.EOF ->
       top
     | _ ->
       failwith (expected "';'" parser)
@@ -267,10 +300,14 @@ let parse_stmt parser =
 
 let parse parser = begin
   lookahead parser;
-  if parser.token = Token.EOF then
-    None
-  else
-    Some(parse_stmt parser)
+  (if parser.token = Token.Newline then
+      lookahead parser
+   else
+      ());
+  (if parser.token = Token.EOF then
+      None
+   else
+      Some(parse_stmt parser))
 end
 
 let parse_simple_type parser =
@@ -327,18 +364,20 @@ let parse_decl_expr parser =
 let parse_decl_stmt parser =
   let decl = parse_decl_expr parser in
   begin match parser.token with
-    | Token.Just(';') ->
-      decl
-    | Token.EOF ->
+    | Token.Just(';') | Token.Newline | Token.EOF ->
       decl
     | _ ->
-      failwith (expected ";" parser)
+      failwith (expected "';'" parser)
   end
   
 let parse_decl parser = begin
   lookahead parser;
-  if parser.token = Token.EOF then
-    None
-  else
-    Some(parse_decl_stmt parser)
+  (if parser.token = Token.Newline then
+      lookahead parser
+   else
+      ());
+  (if parser.token = Token.EOF then
+      None
+   else
+      Some(parse_decl_stmt parser))
 end

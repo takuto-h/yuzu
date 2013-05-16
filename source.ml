@@ -19,7 +19,7 @@ let create fname chan = {
 
 let pos src =
   Pos.make src.fname src.lnum src.cnum src.bol
-
+    
 let peek src =
   Stream.peek src.strm
 

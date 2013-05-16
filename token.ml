@@ -9,6 +9,8 @@ type t =
   | False
   | If
   | Else
+  | Newline
+  | Undent
   | RArrow
   | EQ
   | Int of int
@@ -24,6 +26,8 @@ let show token =
     | False -> "'false'"
     | If -> "'if'"
     | Else -> "'else'"
+    | Newline -> "newline"
+    | Undent -> "undent"
     | RArrow -> "'->'"
     | EQ -> "'=='"
     | Int(_) -> "integer"
