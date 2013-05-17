@@ -183,7 +183,7 @@ let rec infer_expr inf expr =
         Type.unify bool_type cond_type
       with
         | Type.Unification_failed(_,t2) ->
-          failwith (required cond_expr.Expr.pos bool_type cond_type t2)
+          failwith (required expr.Expr.pos bool_type cond_type t2)
       end;
       begin try
         Type.unify then_type else_type
