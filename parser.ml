@@ -246,12 +246,36 @@ and parse_let_val parser pos =
       failwith (expected parser "identifier")
   end
 
+and parse_let_fun parser pos =
+  begin match parser.token with
+    | Token.Ident(str) ->
+      let pos_abs = parser.pos in
+      let ident = Ident.intern str in begin
+      lookahead parser;
+      let param_ident = parse_param parser in
+      let val_expr = parse_block parser in
+      (skip parser (Token.Just(';')));
+      (skip parser (Token.Newline));
+      let body_expr = parse_block_elem parser in
+      let fun_expr = Expr.at pos_abs (Expr.Abs(param_ident, val_expr)) in
+      Expr.at pos (Expr.LetFun(ident, fun_expr, body_expr))
+      end
+    | _ ->
+      failwith (expected parser "identifier")
+  end
+
 and parse_block_elem parser =
   begin match parser.token with
     | Token.Var ->
-      let pos = parser.pos in
+      let pos = parser.pos in begin
       lookahead parser;
       parse_let_val parser pos
+      end
+    | Token.Def ->
+      let pos = parser.pos in begin
+      lookahead parser;
+      parse_let_fun parser pos
+      end
     | _ ->
       parse_expr parser
   end

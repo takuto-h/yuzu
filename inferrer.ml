@@ -178,7 +178,7 @@ let rec infer_expr inf expr =
       let cond_type = infer_expr inf cond_expr in
       let then_type = infer_expr inf then_expr in
       let else_type = infer_expr inf else_expr in
-      let bool_type = Type.Con(Pos.dummy,Ident.intern("Bool")) in begin
+      let bool_type = Type.Con(expr.Expr.pos,Ident.intern("Bool")) in begin
       begin try
         Type.unify bool_type cond_type
       with
