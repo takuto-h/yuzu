@@ -301,10 +301,7 @@ and parse_if parser pos =
     else begin
       lookahead parser;
       let then_expr = parse_block parser in
-      (if parser.token = Token.Newline then
-          lookahead parser
-       else
-          ());
+      (skip parser Token.Newline);
       (if parser.token <> Token.Else then
           failwith (expected parser "'else'")
        else begin
@@ -372,10 +369,7 @@ let parse_stmt parser =
 
 let parse parser = begin
   lookahead parser;
-  (if parser.token = Token.Newline then
-      lookahead parser
-   else
-      ());
+  (skip parser Token.Newline);
   (if parser.token = Token.EOF then
       None
    else
@@ -444,10 +438,7 @@ let parse_decl_stmt parser =
   
 let parse_decl parser = begin
   lookahead parser;
-  (if parser.token = Token.Newline then
-      lookahead parser
-   else
-      ());
+  (skip parser Token.Newline);
   (if parser.token = Token.EOF then
       None
    else
