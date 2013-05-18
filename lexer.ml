@@ -33,7 +33,14 @@ let create src =
   end
 
 let indent lexer =
-  lexer.is_bob <- true
+  if Stack.is_empty lexer.parens then
+    lexer.is_bob <- true
+  else
+    let pos = Source.pos lexer.source in
+    failwith
+      (sprintf
+         "%s: error: layout inside parentheses\n%s"
+         (Pos.show pos) (Pos.show_source pos))
 
 let is_digit c =
   String.contains "0123456789" c
@@ -212,7 +219,7 @@ let rec next lexer =
     | None ->
       ignore (Stack.pop lexer.offside_lines);
       Some(Token.Undent, lexer.prev_pos)
-    | Some('\n') ->
+    | Some('\n') when Stack.is_empty lexer.parens ->
       lexer.is_bol <- true;
       Source.junk lexer.source;
       next lexer
