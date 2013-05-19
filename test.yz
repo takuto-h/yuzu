@@ -1,6 +1,6 @@
 def id(x): x
 
-def const(x):^(y): x
+def const(x, y): x
 
 def fac_a(n):
   if(n == 0):

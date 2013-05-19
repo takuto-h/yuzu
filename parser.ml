@@ -36,25 +36,44 @@ let skip parser token =
   else
     ()
 
-let parse_param parser =
+let rec make_abs pos params expr =
+  begin match params with
+    | [] ->
+      assert false
+    | (x::[]) ->
+      Expr.at pos (Expr.Abs(x, expr))
+    | (x::xs) ->
+      Expr.at pos (Expr.Abs(x, make_abs pos xs expr))
+  end
+      
+let rec parse_param_list parser params =
+  begin match parser.token with
+    | Token.Ident(str) -> begin
+      let param_ident = Ident.intern str in
+      lookahead parser;
+      begin match parser.token with
+        | Token.Just(')') -> begin
+          lookahead parser;
+          List.rev (param_ident::params)
+        end
+        | Token.Just(',') -> begin
+          lookahead parser;
+          parse_param_list parser (param_ident::params)
+        end
+        | _ ->
+          failwith (expected parser "',' or ')'")
+      end
+    end
+    | _ ->
+      failwith (expected parser "identifier")
+  end
+
+let parse_params parser =
   if parser.token <> Token.Just('(') then
     failwith (expected parser "'('")
   else begin
     lookahead parser;
-    begin match parser.token with
-      | Token.Ident(str) ->
-        let param_ident = Ident.intern str in begin
-          lookahead parser;
-          if parser.token <> Token.Just(')') then
-            failwith (expected parser "')'")
-          else begin
-            lookahead parser;
-            param_ident
-          end
-        end
-      | _ ->
-        failwith (expected parser "identifier")
-    end
+    parse_param_list parser []
   end
 
 let rec parse_expr parser =
@@ -151,9 +170,9 @@ and parse_atom parser =
     end
     | Token.Just('^') -> begin
       lookahead parser;
-      let param_ident = parse_param parser in
+      let params = parse_params parser in
       let body_expr = parse_block parser in
-      Expr.at pos (Expr.Abs(param_ident,body_expr))
+      make_abs pos params body_expr
     end
     | Token.If -> begin
       lookahead parser;
@@ -258,7 +277,7 @@ and parse_let_fun parser pos =
       let pos_abs = parser.pos in
       let ident = Ident.intern str in begin
       lookahead parser;
-      let param_ident = parse_param parser in
+      let params = parse_params parser in
       let val_expr = parse_block parser in
       begin match parser.token with
         | Token.Just(';') ->
@@ -273,7 +292,7 @@ and parse_let_fun parser pos =
       (skip parser (Token.Just(';')));
       (skip parser (Token.Newline));
       let body_expr = parse_block_elem parser in
-      let fun_expr = Expr.at pos_abs (Expr.Abs(param_ident, val_expr)) in
+      let fun_expr = make_abs pos_abs params val_expr in
       Expr.at pos (Expr.LetFun(ident, fun_expr, body_expr))
       end
     | _ ->
@@ -350,9 +369,9 @@ let parse_top_let_fun parser =
       let pos_abs = parser.pos in
       let ident = Ident.intern str in begin
       lookahead parser;
-      let param_ident = parse_param parser in
+      let params = parse_params parser in
       let body_expr = parse_block parser in
-      Top.LetFun(ident, Expr.at pos_abs (Expr.Abs(param_ident, body_expr)))
+      Top.LetFun(ident, make_abs pos_abs params body_expr)
       end
     | _ ->
       failwith (expected parser "identifier")
