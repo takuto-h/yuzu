@@ -241,7 +241,6 @@ and parse_tuple parser pos lst =
   Expr.at pos (Expr.Tuple(expr_list))
 
 and parse_indented_block parser = begin
-  Lexer.indent parser.lexer;
   lookahead parser;
   let body_expr = parse_block_elem parser in
   skip parser (Token.Just(';'));
@@ -337,6 +336,7 @@ and parse_block_elem parser =
 and parse_block parser =
   begin match parser.token with
     | Token.Just(':') ->
+      Lexer.indent parser.lexer;
       parse_indented_block parser
     | Token.Just('{') ->
       parse_braced_block parser
@@ -396,6 +396,43 @@ let parse_top_let_fun parser =
       failwith (expected parser "identifier")
   end
 
+(*let rec parse_braced_block parser lst =
+  lookahead parser;
+  if parser.token = Token.Just('}') then begin
+    lookahead parser;
+    List.rev lst
+  end
+  else
+    let ctor_decl = parse_ctor_decl parser in
+    begin match parser.token with
+      | Token.Just('}') -> begin
+        lookahead parser;
+        List.rev (ctor_decl::lst)
+      end
+      | Token.Just(';') -> begin
+        parse_braced_block parser (ctor_decl::lst)
+      end
+      | _ ->
+        failwith (expected parser "';' or '}'")
+    end
+
+let parse_top_type_def parser pos =
+  begin match parser.token with
+    | Token.Ident(str) ->
+      let ident = Ident.intern str in
+      lookahead parser;
+      begin match parser.token with
+        | Token.Just(':') ->
+          Top.at pos (Top.Type(ident, parse_indented_type_def parser ident))
+        | Token.Just('{') ->
+          Top.at pos (Top.Type(ident, parse_braced_type_def parser ident))
+        | _ ->          
+          failwith (expected parser "':' or '{'")
+      end
+    | _ ->
+      failwith (expected parser "identifier")
+  end
+*)
 let parse_top parser =
   begin match parser.token with
     | Token.Var -> begin
@@ -408,6 +445,11 @@ let parse_top parser =
       lookahead parser;
       Top.at pos (parse_top_let_fun parser)
     end
+    (*| Token.Type -> begin
+      let pos = parser.pos in
+      lookahead parser;
+      Top.at pos (parse_top_type_def parser)
+    end*)
     | _ ->
       Top.at parser.pos (Top.Expr(parse_expr parser))
   end
