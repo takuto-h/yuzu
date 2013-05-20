@@ -195,6 +195,16 @@ let rec infer_expr inf expr =
       end
     | Expr.Tuple(lst) ->
       Type.Tuple(expr.Expr.pos, List.map (infer_expr inf) lst)
+    | Expr.LetTuple(ident_list, val_expr, body_expr) ->
+      let val_type = infer_expr inf val_expr in
+      let type_var_list = List.map (fun _ -> make_type_var inf.let_level) ident_list in
+      let tuple_type = Type.Tuple(expr.Expr.pos, type_var_list) in
+      Type.unify tuple_type val_type;
+      let ident_type_asp = List.map2 begin fun k v ->
+        (k,Scheme.mono v)
+      end ident_list type_var_list in
+      let inf_body = {inf with asp=List.append ident_type_asp inf.asp} in
+      infer_expr inf_body body_expr
   end
 
 let infer_top inf top =

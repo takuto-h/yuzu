@@ -30,3 +30,17 @@ def const2(x):
 
 const2(false)
 const2(123)
+
+def fst(tuple):
+  var (x,_) = tuple
+  x
+
+def snd(tuple):
+  var (_,y) = tuple
+  y
+
+fst((true,3))
+snd((false,5))
+
+def tsnoc(x,y):
+  y

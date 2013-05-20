@@ -36,6 +36,20 @@ let skip parser token =
   else
     ()
 
+let require_semi parser =
+  begin match parser.token with
+    | Token.Just(';') -> begin
+      lookahead parser;
+      skip parser Token.Newline
+    end
+    | Token.Newline -> begin
+      lookahead parser;
+      skip parser (Token.Just(';'))
+    end
+    | _ ->
+      failwith (expected parser "';'")
+  end
+      
 let rec make_abs pos params expr =
   begin match params with
     | [] ->
@@ -261,23 +275,30 @@ and parse_let_val parser pos =
         else begin
           lookahead parser;
           let val_expr = parse_expr parser in begin
-          begin match parser.token with
-            | Token.Just(';') ->
-              lookahead parser;
-              skip parser Token.Newline
-            | Token.Newline ->
-              lookahead parser;
-              skip parser (Token.Just(';'))
-            | _ ->
-              failwith (expected parser "';'")
-          end;
+          require_semi parser;
           let body_expr = parse_block_elem parser in
           Expr.at pos (Expr.LetVal(ident, val_expr, body_expr))
           end
         end
       end
+    | Token.Just('(') ->
+      lookahead parser;
+      parse_let_tuple parser pos;
     | _ ->
       failwith (expected parser "identifier")
+  end
+
+and parse_let_tuple parser pos =
+  let ident_list = parse_ident_list parser [] in
+  if parser.token <> Token.Just('=') then
+    failwith (expected parser "'='")
+  else begin
+    lookahead parser;
+    let val_expr = parse_expr parser in begin
+    require_semi parser;
+    let body_expr = parse_block_elem parser in
+    Expr.at pos (Expr.LetTuple(ident_list, val_expr, body_expr))
+    end
   end
 
 and parse_let_fun parser pos =
@@ -288,18 +309,7 @@ and parse_let_fun parser pos =
       lookahead parser;
       let params = parse_params parser in
       let val_expr = parse_block parser in
-      begin match parser.token with
-        | Token.Just(';') ->
-          lookahead parser;
-          skip parser Token.Newline
-        | Token.Newline ->
-          lookahead parser;
-          skip parser (Token.Just(';'))
-        | _ ->
-          failwith (expected parser "';'")
-      end;
-      (skip parser (Token.Just(';')));
-      (skip parser (Token.Newline));
+      require_semi parser;
       let body_expr = parse_block_elem parser in
       let fun_expr = make_abs pos_abs params val_expr in
       Expr.at pos (Expr.LetFun(ident, fun_expr, body_expr))

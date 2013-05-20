@@ -112,12 +112,27 @@ let rec eval_expr eva expr =
           failwith
             (sprintf
                "%s: RUNTIME ERROR: boolean required, but got: %s\n%s"
-               (Pos.show cond_expr.Expr.pos)
+               (Pos.show expr.Expr.pos)
                (Value.show cond_val)
-               (Pos.show_source cond_expr.Expr.pos))
+               (Pos.show_source expr.Expr.pos))
       end
     | Expr.Tuple(lst) ->
       Value.Tuple(List.map (eval_expr eva) lst)
+    | Expr.LetTuple(ident_list, val_expr, body_expr) ->
+      let val_val = eval_expr eva val_expr in
+      begin match val_val with
+        | Value.Tuple(val_list) ->
+          let ident_val_env = List.map2 (fun k v -> (k,v)) ident_list val_list in
+          let eva_body = {eva with env=List.append ident_val_env eva.env} in
+          eval_expr eva_body body_expr
+        | _ ->
+          failwith
+            (sprintf
+               "%s: RUNTIME ERROR: tuple required, but got: %s\n%s"
+               (Pos.show expr.Expr.pos)
+               (Value.show val_val)
+               (Pos.show_source expr.Expr.pos))
+      end
   end
 
 let eval_top eva top =
