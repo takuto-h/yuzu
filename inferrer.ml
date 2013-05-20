@@ -38,7 +38,9 @@ let generalize let_level t =
       | Type.Gen(_) ->
         assert false
       | Type.App(t1,t2) ->
-        Type.App(gen t1,gen t2)
+        let t11 = gen t1 in
+        let t22 = gen t2 in
+        Type.App(t11,t22)
       | Type.Tuple(pos,lst) ->
         Type.Tuple(pos,List.map gen lst)
     end
