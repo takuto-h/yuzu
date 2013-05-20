@@ -202,20 +202,24 @@ and parse_parens parser pos =
         failwith (expected parser "',' or ')'")
     end
 
-and parse_tuple parser pos lst =
+and parse_expr_list parser lst =
   let expr = parse_expr parser in
   begin match parser.token with
     | Token.Just(')') -> begin
       lookahead parser;
-      Expr.at pos (Expr.Tuple(List.rev (expr::lst)))
+      List.rev (expr::lst)
     end
     | Token.Just(',') -> begin
       lookahead parser;
-      parse_tuple parser pos (expr::lst)
+      parse_expr_list parser (expr::lst)
     end
     | _ ->
       failwith (expected parser "',' or ')'")
   end
+
+and parse_tuple parser pos lst =
+  let expr_list = parse_expr_list parser lst in
+  Expr.at pos (Expr.Tuple(expr_list))
 
 and parse_indented_block parser = begin
   Lexer.indent parser.lexer;
