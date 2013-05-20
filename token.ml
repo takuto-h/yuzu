@@ -9,6 +9,7 @@ type t =
   | False
   | If
   | Else
+  | Type
   | Newline
   | Undent
   | RArrow
@@ -26,6 +27,7 @@ let show token =
     | False -> "'false'"
     | If -> "'if'"
     | Else -> "'else'"
+    | Type -> "'type'"
     | Newline -> "newline"
     | Undent -> "undent"
     | RArrow -> "'->'"

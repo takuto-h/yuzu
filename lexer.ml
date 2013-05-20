@@ -17,6 +17,7 @@ let () = Hashtbl.add reserved "true" Token.True
 let () = Hashtbl.add reserved "false" Token.False
 let () = Hashtbl.add reserved "if" Token.If
 let () = Hashtbl.add reserved "else" Token.Else
+let () = Hashtbl.add reserved "type" Token.Type
 
 let create src =
   let lexer = {
