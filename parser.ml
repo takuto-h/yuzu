@@ -45,7 +45,17 @@ let rec make_abs pos params expr =
     | (x::xs) ->
       Expr.at pos (Expr.Abs(x, make_abs pos xs expr))
   end
-      
+
+let rec make_app pos fun_expr arg_exprs =
+  begin match arg_exprs with
+    | [] ->
+      assert false
+    | (x::[]) ->
+      Expr.at pos (Expr.App(fun_expr,x))
+    | (x::xs) ->
+      make_app pos (Expr.at pos (Expr.App(fun_expr,x))) xs
+  end
+
 let rec parse_param_list parser params =
   begin match parser.token with
     | Token.Ident(str) -> begin
@@ -134,13 +144,8 @@ and parse_prim_expr parser =
   while parser.token = Token.Just('(') do
     let pos = parser.pos in
     lookahead parser;
-    let arg = parse_expr parser in
-    if parser.token <> Token.Just(')') then
-      failwith (expected parser "')'")
-    else begin
-      lookahead parser;
-      expr_ref := Expr.at pos (Expr.App(!expr_ref,arg))
-    end
+    let args = parse_expr_list parser [] in
+    expr_ref := make_app pos !expr_ref args
   done;
   !expr_ref
   end

@@ -21,3 +21,12 @@ def fac_b(n):
 var fac_b10 = fac_b(10)
 
 (1,2)
+
+const(1,true)
+const(false,4)
+
+def const2(x):
+  const(2, x)
+
+const2(false)
+const2(123)
