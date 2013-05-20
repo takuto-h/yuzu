@@ -56,19 +56,19 @@ let rec make_app pos fun_expr arg_exprs =
       make_app pos (Expr.at pos (Expr.App(fun_expr,x))) xs
   end
 
-let rec parse_param_list parser params =
+let rec parse_ident_list parser lst =
   begin match parser.token with
     | Token.Ident(str) -> begin
-      let param_ident = Ident.intern str in
+      let ident = Ident.intern str in
       lookahead parser;
       begin match parser.token with
         | Token.Just(')') -> begin
           lookahead parser;
-          List.rev (param_ident::params)
+          List.rev (ident::lst)
         end
         | Token.Just(',') -> begin
           lookahead parser;
-          parse_param_list parser (param_ident::params)
+          parse_ident_list parser (ident::lst)
         end
         | _ ->
           failwith (expected parser "',' or ')'")
@@ -83,7 +83,7 @@ let parse_params parser =
     failwith (expected parser "'('")
   else begin
     lookahead parser;
-    parse_param_list parser []
+    parse_ident_list parser []
   end
 
 let rec parse_expr parser =
