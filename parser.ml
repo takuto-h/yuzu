@@ -69,7 +69,7 @@ let rec make_app pos fun_expr arg_exprs =
   end
 
 let make_ctor_decl pos ret_type ident arg_types =
-  let ctor_type = List.fold_right begin fun acc elem ->
+  let ctor_type = List.fold_right begin fun elem acc ->
     (elem @-> acc) pos
   end arg_types ret_type in
   (ident, Scheme.mono ctor_type)
@@ -626,3 +626,32 @@ let parse_decl parser = begin
    else
       Some(parse_decl_stmt parser))
 end
+
+
+let rec parse_all parser lst =
+  begin match parse parser with
+    | None ->
+      List.rev lst
+    | Some(top) ->
+      parse_all parser (top::lst)
+  end
+
+let parse_file fname =
+  let in_channel = open_in fname in
+  let source = Source.create fname in_channel in
+  let lexer = Lexer.create source in
+  let parser = create lexer in
+  begin try
+    parse_all parser []
+  with
+    | Failure(message) -> begin
+      close_in in_channel;
+      eprintf "%s" message;
+      flush stderr;
+      []
+    end
+    | exn -> begin
+      close_in_noerr in_channel;
+      raise exn
+    end
+  end
