@@ -68,12 +68,6 @@ let rec make_app pos fun_expr arg_exprs =
       make_app pos (Expr.at pos (Expr.App(fun_expr,x))) xs
   end
 
-let make_ctor_decl pos ret_type ident arg_types =
-  let ctor_type = List.fold_right begin fun elem acc ->
-    (elem @-> acc) pos
-  end arg_types ret_type in
-  (ident, Scheme.mono ctor_type)
-
 let rec parse_ident_list parser lst =
   begin match parser.token with
     | Token.Ident(str) -> begin
@@ -459,7 +453,6 @@ let parse_ctor_arg_types parser =
   end
 
 let parse_ctor_decl parser ret_type =
-  let pos = parser.pos in
   if parser.token <> Token.Def then
     failwith (expected parser "'def'")
   else begin
@@ -469,7 +462,7 @@ let parse_ctor_decl parser ret_type =
         let ident = Ident.intern str in begin
         lookahead parser;
         let arg_types = parse_ctor_arg_types parser in
-        make_ctor_decl pos ret_type ident arg_types
+        (ident, arg_types)
         end
       | _ ->
         failwith (expected parser "identifier")
@@ -524,16 +517,17 @@ let rec parse_braced_type_def parser ret_type lst =
 let parse_top_type_def parser pos =
   begin match parser.token with
     | Token.Ident(str) ->
-      let ret_type = Type.Con(pos, Ident.intern str) in
+      let ident = Ident.intern str in
+      let ret_type = Type.Con(pos, ident) in
       lookahead parser;
       begin match parser.token with
         | Token.Just(':') ->
           Lexer.indent parser.lexer;
           lookahead parser;
-          Top.Type(parse_indented_type_def parser ret_type [])
+          Top.Type(ident, ret_type, parse_indented_type_def parser ret_type [])
         | Token.Just('{') ->
           lookahead parser;
-          Top.Type(parse_braced_type_def parser ret_type [])
+          Top.Type(ident, ret_type, parse_braced_type_def parser ret_type [])
         | _ ->          
           failwith (expected parser "':' or '{'")
       end
@@ -626,7 +620,6 @@ let parse_decl parser = begin
    else
       Some(parse_decl_stmt parser))
 end
-
 
 let rec parse_all parser lst =
   begin match parse parser with
