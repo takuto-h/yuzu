@@ -209,6 +209,22 @@ let rec infer_expr inf expr =
       infer_expr inf_body body_expr
   end
 
+let make_ctor_asp pos ret_type ctor_decls =
+  List.map begin fun (ident,arg_types) ->
+    let t = List.fold_right begin fun elem acc ->
+      (elem @-> acc) pos (* ********************************* *)
+    end arg_types ret_type in
+    (ident, Scheme.mono t)
+  end ctor_decls 
+    
+let rec make_case_type pos type_var ret_type ctor_decls =
+  List.fold_right begin fun (_,arg_types) acc ->
+    let t = List.fold_right begin fun elem acc ->
+      (elem @-> acc) pos (* ********************************* *)
+    end arg_types type_var in
+    (t @-> acc) pos
+  end ctor_decls ((ret_type @-> type_var) pos)
+    
 let infer_top inf top =
   begin match top.Top.raw with
     | Top.LetVal(ident,val_expr) ->
@@ -233,6 +249,16 @@ let infer_top inf top =
       end
     | Top.Expr(expr) ->
       (generalize inf.let_level (infer_expr inf expr), inf)
+    | Top.Type(ident, ret_type, ctor_decls) ->
+      let let_level = inf.let_level in
+      let type_var = make_type_var let_level in
+      let ident_case = Ident.intern (sprintf "case%s" ident.Ident.name) in
+      let case_type = make_case_type top.Top.pos type_var ret_type ctor_decls in
+      let case_scm = generalize let_level case_type in
+      let ctor_asp = make_ctor_asp top.Top.pos ret_type ctor_decls in
+      let inf = {inf with asp=(ident_case,case_scm)::inf.asp} in
+      let inf = {inf with asp=List.append ctor_asp inf.asp} in
+      (Scheme.mono (Type.Con(top.Top.pos, Ident.intern "()")), inf)
   end
 
 let declare inf decl =

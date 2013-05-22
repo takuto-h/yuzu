@@ -37,6 +37,8 @@ let load loader fname =
                 (Ident.show ident) (Scheme.show scm) (Value.show value)
             | Top.Expr(_) ->
               eprintf "- : %s = %s\n" (Scheme.show scm) (Value.show value)
+            | Top.Type(_) ->
+              ()
           end;
           flush stderr
           end

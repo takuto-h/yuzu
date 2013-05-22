@@ -159,4 +159,6 @@ let eval_top eva top =
       end
     | Top.Expr(expr) ->
       (eval_expr eva expr, eva)
+    | Top.Type(_) ->
+      (Value.Con(Literal.Unit), eva)
   end
