@@ -479,7 +479,6 @@ let parse_ctor_decl parser ret_type =
   end
     
 let rec parse_braced_type_def parser ret_type lst =
-  lookahead parser;
   if parser.token = Token.Just('}') then begin
     lookahead parser;
     List.rev lst
@@ -492,6 +491,7 @@ let rec parse_braced_type_def parser ret_type lst =
         List.rev (ctor_decl::lst)
       end
       | Token.Just(';') -> begin
+        lookahead parser;
         parse_braced_type_def parser ret_type (ctor_decl::lst)
       end
       | _ ->
@@ -505,6 +505,7 @@ let parse_top_type_def parser pos =
       lookahead parser;
       begin match parser.token with
         | Token.Just('{') ->
+          lookahead parser;
           Top.Type(parse_braced_type_def parser ret_type [])
         | _ ->          
           failwith (expected parser "':' or '{'")
