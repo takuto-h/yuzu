@@ -453,6 +453,7 @@ let parse_ctor_arg_types parser =
   end
 
 let parse_ctor_decl parser ret_type =
+  let pos = parser.pos in
   if parser.token <> Token.Def then
     failwith (expected parser "'def'")
   else begin
@@ -462,7 +463,7 @@ let parse_ctor_decl parser ret_type =
         let ident = Ident.intern str in begin
         lookahead parser;
         let arg_types = parse_ctor_arg_types parser in
-        (ident, arg_types)
+        (pos, ident, arg_types)
         end
       | _ ->
         failwith (expected parser "identifier")
