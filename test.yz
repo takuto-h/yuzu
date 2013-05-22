@@ -47,7 +47,6 @@ def tsnoc(x,y):
 
 ()
   
-type IntList{
-  def Nil(());
-  def Cons(Int, IntList);
-}
+type IntList:
+  def Nil(())
+  def Cons(Int, IntList)

@@ -478,6 +478,32 @@ let parse_ctor_decl parser ret_type =
     end
   end
     
+let rec parse_indented_type_def parser ret_type lst =
+  if parser.token = Token.Undent then begin
+    lookahead parser;
+    List.rev lst
+  end
+  else
+    let ctor_decl = parse_ctor_decl parser ret_type in
+    begin match parser.token with
+      | Token.Undent -> begin
+        lookahead parser;
+        List.rev (ctor_decl::lst)
+      end
+      | Token.Just(';') -> begin
+        lookahead parser;
+        skip parser Token.Newline;
+        parse_indented_type_def parser ret_type (ctor_decl::lst)
+      end
+      | Token.Newline -> begin
+        lookahead parser;
+        skip parser (Token.Just(';'));
+        parse_indented_type_def parser ret_type (ctor_decl::lst)
+      end
+      | _ ->
+        failwith (expected parser "';' or undent")
+    end
+    
 let rec parse_braced_type_def parser ret_type lst =
   if parser.token = Token.Just('}') then begin
     lookahead parser;
@@ -504,6 +530,10 @@ let parse_top_type_def parser pos =
       let ret_type = Type.Con(pos, Ident.intern str) in
       lookahead parser;
       begin match parser.token with
+        | Token.Just(':') ->
+          Lexer.indent parser.lexer;
+          lookahead parser;
+          Top.Type(parse_indented_type_def parser ret_type [])
         | Token.Just('{') ->
           lookahead parser;
           Top.Type(parse_braced_type_def parser ret_type [])
