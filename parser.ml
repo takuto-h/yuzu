@@ -70,6 +70,12 @@ let rec make_app pos fun_expr arg_exprs =
       make_app pos (Expr.at pos (Expr.App(fun_expr,x))) xs
   end
 
+let make_ctor_decl pos ret_type ident arg_types =
+  let ctor_type = List.fold_right begin fun acc elem ->
+    (elem @-> acc) pos
+  end arg_types ret_type in
+  (ident, Scheme.mono ctor_type)
+
 let rec parse_ident_list parser lst =
   begin match parser.token with
     | Token.Ident(str) -> begin
@@ -396,82 +402,6 @@ let parse_top_let_fun parser =
       failwith (expected parser "identifier")
   end
 
-(*let rec parse_braced_block parser lst =
-  lookahead parser;
-  if parser.token = Token.Just('}') then begin
-    lookahead parser;
-    List.rev lst
-  end
-  else
-    let ctor_decl = parse_ctor_decl parser in
-    begin match parser.token with
-      | Token.Just('}') -> begin
-        lookahead parser;
-        List.rev (ctor_decl::lst)
-      end
-      | Token.Just(';') -> begin
-        parse_braced_block parser (ctor_decl::lst)
-      end
-      | _ ->
-        failwith (expected parser "';' or '}'")
-    end
-
-let parse_top_type_def parser pos =
-  begin match parser.token with
-    | Token.Ident(str) ->
-      let ident = Ident.intern str in
-      lookahead parser;
-      begin match parser.token with
-        | Token.Just(':') ->
-          Top.at pos (Top.Type(ident, parse_indented_type_def parser ident))
-        | Token.Just('{') ->
-          Top.at pos (Top.Type(ident, parse_braced_type_def parser ident))
-        | _ ->          
-          failwith (expected parser "':' or '{'")
-      end
-    | _ ->
-      failwith (expected parser "identifier")
-  end
-*)
-let parse_top parser =
-  begin match parser.token with
-    | Token.Var -> begin
-      let pos = parser.pos in
-      lookahead parser;
-      Top.at pos (parse_top_let_val parser)
-    end
-    | Token.Def -> begin
-      let pos = parser.pos in
-      lookahead parser;
-      Top.at pos (parse_top_let_fun parser)
-    end
-    (*| Token.Type -> begin
-      let pos = parser.pos in
-      lookahead parser;
-      Top.at pos (parse_top_type_def parser)
-    end*)
-    | _ ->
-      Top.at parser.pos (Top.Expr(parse_expr parser))
-  end
-    
-let parse_stmt parser =
-  let top = parse_top parser in
-  begin match parser.token with
-    | Token.Just(';') | Token.Newline | Token.EOF ->
-      top
-    | _ ->
-      failwith (expected parser "';'")
-  end
-
-let parse parser = begin
-  lookahead parser;
-  (skip parser Token.Newline);
-  (if parser.token = Token.EOF then
-      None
-   else
-      Some(parse_stmt parser))
-end
-
 let parse_simple_type parser =
   begin match parser.token with
     | Token.Ident(str) ->
@@ -494,6 +424,119 @@ let rec parse_complex_type parser =
     (lhs @-> rhs) pos
     end
   
+let rec parse_type_list parser lst =
+  let t = parse_complex_type parser in
+  begin match parser.token with
+    | Token.Just(')') ->
+      lookahead parser;
+      List.rev (t::lst)
+    | Token.Just(',') ->
+      lookahead parser;
+      parse_type_list parser (t::lst)
+    | _ ->
+      failwith (expected parser "',' or ')'")
+  end
+    
+let parse_ctor_arg_types parser =
+  if parser.token <> Token.Just('(') then
+    failwith (expected parser "'('")
+  else begin
+    lookahead parser;
+    parse_type_list parser [];
+  end
+
+let parse_ctor_decl parser ret_type =
+  let pos = parser.pos in
+  if parser.token <> Token.Def then
+    failwith (expected parser "'def'")
+  else begin
+    lookahead parser;
+    begin match parser.token with
+      | Token.Ident(str) ->
+        let ident = Ident.intern str in begin
+        lookahead parser;
+        let arg_types = parse_ctor_arg_types parser in
+        make_ctor_decl pos ret_type ident arg_types
+        end
+      | _ ->
+        failwith (expected parser "identifier")
+    end
+  end
+    
+let rec parse_braced_type_def parser ret_type lst =
+  lookahead parser;
+  if parser.token = Token.Just('}') then begin
+    lookahead parser;
+    List.rev lst
+  end
+  else
+    let ctor_decl = parse_ctor_decl parser ret_type in
+    begin match parser.token with
+      | Token.Just('}') -> begin
+        lookahead parser;
+        List.rev (ctor_decl::lst)
+      end
+      | Token.Just(';') -> begin
+        parse_braced_type_def parser ret_type (ctor_decl::lst)
+      end
+      | _ ->
+        failwith (expected parser "';' or '}'")
+    end
+
+let parse_top_type_def parser pos =
+  begin match parser.token with
+    | Token.Ident(str) ->
+      let ret_type = Type.Con(pos, Ident.intern str) in
+      lookahead parser;
+      begin match parser.token with
+        | Token.Just('{') ->
+          Top.Type(parse_braced_type_def parser ret_type [])
+        | _ ->          
+          failwith (expected parser "':' or '{'")
+      end
+    | _ ->
+      failwith (expected parser "identifier")
+  end
+
+let parse_top parser =
+  begin match parser.token with
+    | Token.Var -> begin
+      let pos = parser.pos in
+      lookahead parser;
+      Top.at pos (parse_top_let_val parser)
+    end
+    | Token.Def -> begin
+      let pos = parser.pos in
+      lookahead parser;
+      Top.at pos (parse_top_let_fun parser)
+    end
+    | Token.Type -> begin
+      let pos = parser.pos in
+      lookahead parser;
+      Top.at pos (parse_top_type_def parser pos)
+    end
+    | _ ->
+      Top.at parser.pos (Top.Expr(parse_expr parser))
+  end
+    
+let parse_stmt parser =
+  let top = parse_top parser in
+  begin match parser.token with
+    | Token.Just(';') | Token.Newline | Token.EOF ->
+      top
+    | _ ->
+      failwith (expected parser "';'")
+  end
+
+let parse parser = begin
+  lookahead parser;
+  (skip parser Token.Newline);
+  (if parser.token = Token.EOF then
+      None
+   else
+      Some(parse_stmt parser))
+end
+
 let parse_scheme parser =
   Scheme.mono (parse_complex_type parser)
   
