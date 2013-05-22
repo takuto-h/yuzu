@@ -42,10 +42,8 @@ let require_semi parser =
       lookahead parser;
       skip parser Token.Newline
     end
-    | Token.Newline -> begin
-      lookahead parser;
-      skip parser (Token.Just(';'))
-    end
+    | Token.Newline ->
+      lookahead parser
     | _ ->
       failwith (expected parser "';'")
   end
@@ -497,7 +495,6 @@ let rec parse_indented_type_def parser ret_type lst =
       end
       | Token.Newline -> begin
         lookahead parser;
-        skip parser (Token.Just(';'));
         parse_indented_type_def parser ret_type (ctor_decl::lst)
       end
       | _ ->
