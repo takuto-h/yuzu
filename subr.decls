@@ -1,5 +1,5 @@
 
-def $|+| : Int -> Int -> Int;
-def $|-| : Int -> Int -> Int;
-def $|*| : Int -> Int -> Int;
-def $|==| : Int -> Int -> Bool;
+def $|+| : Int -> Int -> Int
+def $|-| : Int -> Int -> Int
+def $|*| : Int -> Int -> Int
+def $|==| : Int -> Int -> Bool

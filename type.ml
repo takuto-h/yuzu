@@ -13,6 +13,8 @@ exception Unification_failed of t * t
 
 let rec show alist_ref array t =
   begin match t with
+    | Con(_,{Ident.name="()"}) ->
+      "()"
     | Con(_,ident) ->
       Ident.show ident
     | Var(_,tref) ->

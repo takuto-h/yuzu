@@ -44,8 +44,10 @@ snd((false,5))
 
 def tsnoc(x,y):
   y
+
+()
   
 type IntList{
-  def Nil(Unit);
+  def Nil(());
   def Cons(Int, IntList);
 }

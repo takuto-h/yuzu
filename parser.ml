@@ -402,18 +402,33 @@ let parse_top_let_fun parser =
       failwith (expected parser "identifier")
   end
 
-let parse_simple_type parser =
+let rec parse_simple_type parser =
+  let pos = parser.pos in
   begin match parser.token with
-    | Token.Ident(str) ->
-      let pos = parser.pos in begin
+    | Token.Ident(str) -> begin
       lookahead parser;
       Type.Con(pos,Ident.intern(str))
+    end
+    | Token.Just('(') -> begin
+      lookahead parser;
+      if parser.token <> Token.Just(')') then
+        let t = parse_complex_type parser in
+        if parser.token <> Token.Just(')') then
+          failwith (expected parser "')'")
+        else begin
+          lookahead parser;
+          t
+        end
+      else begin
+        lookahead parser;
+        Type.Con(pos,Ident.intern("()"))
       end
+    end
     | _ ->
-      failwith (expected parser "identifier")
+      failwith (expected parser "type")
   end
   
-let rec parse_complex_type parser =
+and parse_complex_type parser =
   let lhs = parse_simple_type parser in
   if parser.token <> Token.RArrow then
     lhs
