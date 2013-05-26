@@ -1,5 +1,5 @@
 
-SOURCES =
+SOURCES = pos.ml source.ml
 
 EXEC = myml
 
