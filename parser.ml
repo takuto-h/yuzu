@@ -4,25 +4,28 @@ open Printf
 type t = {
   lexer : Lexer.t;
   mutable token : Token.t;
+  mutable pos : Pos.t;
 }
 
 let create lexer = {
   lexer = lexer;
   token = Token.EOF;
+  pos = Pos.dummy;
 }
 
 let expected parser str_token =
-  let pos = Lexer.pos parser.lexer in
   sprintf
     "%s: error: unexpected %s, expected %s\n"
-    (Pos.show pos) (Token.show parser.token) str_token
+    (Pos.show parser.pos) (Token.show parser.token) str_token
   
 let lookahead parser =
   match Lexer.next parser.lexer with
-    | None ->
-      parser.token <- Token.EOF
-    | Some(token) ->
-      parser.token <- token
+    | (None, pos) ->
+      parser.token <- Token.EOF;
+      parser.pos <- pos
+    | (Some(token), pos) ->
+      parser.token <- token;
+      parser.pos <- pos
 
 let parse_atomic_expr parser =
   match parser.token with
