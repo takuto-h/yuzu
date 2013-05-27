@@ -39,7 +39,7 @@ let translate_file fname_in fname_out =
     with
       | Failure(message) ->
         close_out chan_out;
-        prerr_string message;
+        eprintf "%s" message;
         flush stderr;
         raise Break
       | Break ->
