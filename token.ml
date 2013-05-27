@@ -3,10 +3,10 @@ open Printf
 
 type t =
   | EOF
-  | Semi
+  | Just of char
   | Int of int
 
 let show = function
   | EOF -> "EOF"
-  | Semi -> "';'"
+  | Just(c) -> sprintf "'%c'" c
   | Int(_) -> "integer"

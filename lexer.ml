@@ -31,8 +31,8 @@ let rec lex_int lexer pos n =
       Token.Int(n)
 
 let lex_token lexer pos = function
-  | ';' ->
-    Token.Semi
+  | ';'as c ->
+    Token.Just(c)
   | c when is_digit c ->
     lex_int lexer pos (int_of_digit c)
   | c ->
