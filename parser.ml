@@ -36,8 +36,11 @@ let parse_atomic_expr parser =
 let parse_expr parser =
   parse_atomic_expr parser
 
+let parse_top parser =
+  Top.Expr(parse_expr parser)
+
 let parse_stmt parser =
-  let expr = parse_expr parser in
+  let expr = parse_top parser in
   match parser.token with
     | Token.EOF
     | Token.Just(';') ->

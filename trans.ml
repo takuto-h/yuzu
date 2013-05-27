@@ -9,10 +9,14 @@ let create () = {
   dummy = ();
 }
 
-let translate trans = function
+let translate_expr trans = function
   | Expr.Con(Literal.Int(n)) ->
-    string_of_int n
+    sprintf "%d" n
 
+let translate_top trans = function
+  | Top.Expr(expr) ->
+    sprintf "let _ = %s\n" (translate_expr trans expr)
+      
 exception Break
       
 let translate_file fname_in fname_out =
@@ -28,9 +32,9 @@ let translate_file fname_in fname_out =
         match Parser.parse parser with
           | None ->
             raise Break
-          | Some(expr) ->
-            let result = translate trans expr in
-            fprintf chan_out "%s\n" result
+          | Some(top) ->
+            let result = translate_top trans top in
+            fprintf chan_out "%s" result
       done
     with
       | Failure(message) ->

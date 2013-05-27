@@ -1,5 +1,5 @@
 
-SOURCES = pos.ml source.ml token.ml lexer.ml literal.ml expr.ml parser.ml trans.ml
+SOURCES = pos.ml source.ml token.ml lexer.ml literal.ml expr.ml top.ml parser.ml trans.ml
 
 EXEC = myml
 
