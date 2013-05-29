@@ -40,11 +40,10 @@ let translate_top trans = function
   | Top.Expr(expr) ->
     let str_expr = translate_expr trans expr in
     sprintf "let _ = %s\n" str_expr
-  | Top.LetFun(fun_ident,param_ident,body_expr) ->
-    let str_fun = translate_ident fun_ident in
-    let str_param = translate_ident param_ident in
-    let str_body = translate_expr trans body_expr in
-    sprintf "let rec %s %s = %s\n" str_fun str_param str_body
+  | Top.LetFun(ident,expr) ->
+    let str_ident = translate_ident ident in
+    let str_expr = translate_expr trans expr in
+    sprintf "let rec %s = %s\n" str_ident str_expr
 
 exception Break
       
@@ -63,7 +62,7 @@ let translate_file fname_in fname_out =
             raise Break
           | Some(top) ->
             let result = translate_top trans top in
-            fprintf chan_out "%s" result
+            fprintf chan_out "%s\n" result
       done
     with
       | Failure(message) ->
@@ -84,3 +83,6 @@ let translate_file fname_in fname_out =
     | exn ->
       close_in_noerr chan_in;
       raise exn
+
+let test () =
+  translate_file "test.yz" "test.out"
