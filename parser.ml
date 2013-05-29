@@ -37,9 +37,36 @@ let rec make_abs params body_expr =
   let mk_abs param expr = Expr.Abs(param, expr) in
   List.fold_right mk_abs params body_expr
 
+let rec make_app fun_expr arg_exprs =
+  let mk_app e1 e2 = Expr.App(e1, e2) in
+  List.fold_left mk_app fun_expr arg_exprs
+    
 let rec parse_expr parser =
-  parse_atomic_expr parser
+  parse_prim_expr parser
 
+and parse_prim_expr parser =
+  let expr_ref = ref (parse_atomic_expr parser) in
+  while parser.token = Token.Just('(') do
+    lookahead parser;
+    let args = parse_expr_list parser [] in
+    expr_ref := make_app !expr_ref args
+  done;
+  !expr_ref
+
+and parse_expr_list parser lst =
+  let expr = parse_expr parser in
+  match parser.token with
+    | Token.Just(')') -> begin
+      lookahead parser;
+      List.rev (expr::lst)
+    end
+    | Token.Just(',') -> begin
+      lookahead parser;
+      parse_expr_list parser (expr::lst)
+    end
+    | _ ->
+      failwith (expected parser "')' or ','")
+    
 and parse_atomic_expr parser =
   match parser.token with
     | Token.Int(n) -> begin

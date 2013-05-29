@@ -52,7 +52,7 @@ let rec lex_ident lexer buf =
       ident_or_reserved (Buffer.contents buf)
 
 let lex_token lexer = function
-  | ( ';' | '^' | '(' | ')' | '{' | '}') as c ->
+  | ( ';' | ',' | '^' | '(' | ')' | '{' | '}') as c ->
     Token.Just(c)
   | c when is_digit c ->
     lex_int lexer (int_of_digit c)
