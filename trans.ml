@@ -9,9 +9,22 @@ let create () = {
   dummy = ();
 }
 
-let translate_expr trans = function
+let translate_ident {Ident.name} =
+  name
+
+let rec translate_expr trans = function
   | Expr.Con(Literal.Int(n)) ->
     sprintf "%d" n
+  | Expr.Var(ident) ->
+    translate_ident ident
+  | Expr.Abs(param_ident,body_expr) ->
+    let str_param = translate_ident param_ident in
+    let str_body = translate_expr trans body_expr in
+    sprintf "(fun %s -> %s)" str_param str_body
+  | Expr.App(fun_expr,arg_expr) ->
+    let str_fun = translate_expr trans fun_expr in
+    let str_arg = translate_expr trans arg_expr in
+    sprintf "(%s %s)" str_fun str_arg
 
 let translate_top trans = function
   | Top.Expr(expr) ->
