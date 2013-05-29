@@ -7,6 +7,5 @@ def const(x,y){
   x;
 };
 
-123;
-
-456;
+ignore(123);
+ignore(456);

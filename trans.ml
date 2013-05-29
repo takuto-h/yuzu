@@ -39,7 +39,7 @@ let rec translate_expr trans = function
 let translate_top trans = function
   | Top.Expr(expr) ->
     let str_expr = translate_expr trans expr in
-    sprintf "let _ = %s\n" str_expr
+    sprintf "let () = %s\n" str_expr
   | Top.LetFun(ident,expr) ->
     let str_ident = translate_ident ident in
     let str_expr = translate_expr trans expr in
