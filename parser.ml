@@ -21,9 +21,11 @@ let expected parser str_token =
 let lookahead parser =
   match Lexer.next parser.lexer with
     | (None, pos) ->
+      (* printf "%s: EOF\n" (Pos.show pos); *)
       parser.token <- Token.EOF;
       parser.pos <- pos
     | (Some(token), pos) ->
+      (* printf "%s: %s\n" (Pos.show pos) (Token.show token); *)
       parser.token <- token;
       parser.pos <- pos
 
@@ -116,10 +118,24 @@ and parse_ident_list parser lst =
 
 and parse_block parser =
   match parser.token with
+    | Token.Just(':') ->
+      Lexer.indent parser.lexer;
+      parse_indented_block parser
     | Token.Just('{') ->
       parse_braced_block parser
     | _ ->
-      failwith (expected parser "'{'")
+      failwith (expected parser "':' or '{'")
+
+and parse_indented_block parser =
+  lookahead parser;
+  let expr = parse_block_elem parser in
+  skip parser (Token.Just(';'));
+  if parser.token <> Token.Undent then
+    failwith (expected parser "undent")
+  else begin
+    lookahead parser;
+    expr
+  end
 
 and parse_braced_block parser =
   lookahead parser;
@@ -157,13 +173,14 @@ let parse_top parser =
 let parse_stmt parser =
   let expr = parse_top parser in
   match parser.token with
-    | Token.EOF | Token.Just(';') ->
+    | Token.EOF | Token.Newline | Token.Just(';') ->
       expr
     | _ ->
-      failwith (expected parser "';'")
+      failwith (expected parser "newline or ';'")
         
 let parse parser =
   lookahead parser;
+  skip parser Token.Newline;
   match parser.token with
     | Token.EOF ->
       None

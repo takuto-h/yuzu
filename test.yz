@@ -1,11 +1,9 @@
 
-def id(x){
-  x;
-};
+def id(x):
+  x
 
-def const(x,y){
-  x;
-};
+def const(x,y):
+  x
 
-ignore(123);
-ignore(456);
+ignore(123)
+ignore(456)

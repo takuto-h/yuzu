@@ -3,14 +3,18 @@ open Printf
 
 type t =
   | EOF
-  | Just of char
+  | Def
+  | Newline
+  | Undent
   | Int of int
   | Ident of string
-  | Def
+  | Just of char
 
 let show = function
   | EOF -> "EOF"
-  | Just(c) -> sprintf "'%c'" c
+  | Def -> "'def'"
+  | Newline -> "newline"
+  | Undent -> "undent"
   | Int(_) -> "integer"
   | Ident(_) -> "identifier"
-  | Def -> "'def'"
+  | Just(c) -> sprintf "'%c'" c
