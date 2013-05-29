@@ -38,8 +38,14 @@ let rec translate_expr trans = function
 
 let translate_top trans = function
   | Top.Expr(expr) ->
-    sprintf "let _ = %s\n" (translate_expr trans expr)
-      
+    let str_expr = translate_expr trans expr in
+    sprintf "let _ = %s\n" str_expr
+  | Top.LetFun(fun_ident,param_ident,body_expr) ->
+    let str_fun = translate_ident fun_ident in
+    let str_param = translate_ident param_ident in
+    let str_body = translate_expr trans body_expr in
+    sprintf "let rec %s %s = %s\n" str_fun str_param str_body
+
 exception Break
       
 let translate_file fname_in fname_out =
