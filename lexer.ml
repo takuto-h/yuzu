@@ -11,6 +11,7 @@ type t = {
 
 let reserved = Hashtbl.create 11
 let () = Hashtbl.add reserved "def" Token.Def
+let () = Hashtbl.add reserved "var" Token.Var
 
 let create source =
   let lexer = {
@@ -80,7 +81,7 @@ let lex_close_paren lexer pos open_paren close_paren =
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
-    | ':' | ';' | ',' | '^' ->
+    | ':' | ';' | ',' | '^' | '=' ->
       Token.Just(c)
     | '(' | '{' ->
       Stack.push c lexer.parens;

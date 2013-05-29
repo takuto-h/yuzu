@@ -161,12 +161,31 @@ let parse_top_let_fun parser =
       Top.LetFun(fun_ident, make_abs params body_expr)
     | _ ->
       failwith (expected parser "identifier")
-  
+
+let parse_top_let_val parser =
+  match parser.token with
+    | Token.Ident(str) ->
+      let ident = Ident.intern str in
+      lookahead parser;
+      if parser.token <> Token.Just('=') then
+        failwith (expected parser "'='")
+      else begin
+        lookahead parser;
+        Top.LetVal(ident, parse_expr parser)
+      end
+    | _ ->
+      failwith (expected parser "identifier")
+
 let parse_top parser =
   match parser.token with
-    | Token.Def ->
+    | Token.Def -> begin
       lookahead parser;
       parse_top_let_fun parser
+    end
+    | Token.Var -> begin
+      lookahead parser;
+      parse_top_let_val parser
+    end
     | _ ->
       Top.Expr(parse_expr parser)
 

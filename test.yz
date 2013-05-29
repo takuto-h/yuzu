@@ -1,9 +1,20 @@
 
+ignore(123)
+ignore(456)
+
 def id(x):
   x
 
 def const(x,y):
   x
 
-ignore(123)
-ignore(456)
+var n123 = id(123)
+var n456 = const(456, 123)
+
+def const777(x):
+  const(777, x)
+
+var a = const777(123)
+var a = const777(456)
+var a = const777(id)
+var a = const777(const777)

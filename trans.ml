@@ -44,6 +44,10 @@ let translate_top trans = function
     let str_ident = translate_ident ident in
     let str_expr = translate_expr trans expr in
     sprintf "let rec %s = %s\n" str_ident str_expr
+  | Top.LetVal(ident,expr) ->
+    let str_ident = translate_ident ident in
+    let str_expr = translate_expr trans expr in
+    sprintf "let %s = %s\n" str_ident str_expr
 
 exception Break
       
