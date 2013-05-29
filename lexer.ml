@@ -12,6 +12,8 @@ type t = {
 let reserved = Hashtbl.create 11
 let () = Hashtbl.add reserved "def" Token.Def
 let () = Hashtbl.add reserved "var" Token.Var
+let () = Hashtbl.add reserved "if" Token.If
+let () = Hashtbl.add reserved "else" Token.Else
 
 let create source =
   let lexer = {
@@ -46,6 +48,21 @@ let is_whitespace c =
 let int_of_digit c =
   Char.code c - Char.code '0'
 
+let is_special_ident str =
+  if String.length str = 0 then
+    true
+  else if not (is_ident_start (String.get str 0)) then
+    true
+  else
+    let rec loop i =
+      if i = String.length str then
+        false
+      else if is_ident_part (String.get str i) then
+        loop (i + 1)
+      else
+        true
+    in loop 1
+
 let ident_or_reserved str =
   try
     Hashtbl.find reserved str
@@ -70,6 +87,21 @@ let rec lex_ident lexer buf =
     | Some(_) | None ->
       ident_or_reserved (Buffer.contents buf)
 
+let rec lex_special_ident lexer buf =
+  match Source.peek lexer.source with
+    | Some('|') -> begin
+      Source.junk lexer.source;
+      Token.Ident(Buffer.contents buf)
+    end
+    | Some(c) -> begin
+      Source.junk lexer.source;
+      Buffer.add_char buf c;
+      lex_special_ident lexer buf
+    end
+    | None ->
+      let pos_eof = Source.pos lexer.source in
+      failwith (sprintf "%s: error: EOF inside a special identifier\n" (Pos.show pos_eof))
+        
 let lex_close_paren lexer pos open_paren close_paren =
   if Stack.is_empty lexer.parens || Stack.top lexer.parens <> open_paren then
     failwith (sprintf "%s: error: unmatched parentheses: '%c'\n" (Pos.show pos) close_paren)
@@ -90,6 +122,14 @@ let lex_visible_token lexer pos c =
       lex_close_paren lexer pos '(' ')'
     | '}' ->
       lex_close_paren lexer pos '{' '}'
+    | '$' ->
+      begin match Source.peek lexer.source with
+        | Some('|') ->
+          Source.junk lexer.source;
+          lex_special_ident lexer (Buffer.create 10)
+        | Some(_) | None ->
+          Token.Just('$')
+      end
     | _ when is_digit c ->
       lex_int lexer (int_of_digit c)
     | _ when is_ident_start c ->

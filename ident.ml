@@ -1,4 +1,6 @@
 
+open Printf
+
 type t = {
   name : string;
 }
@@ -8,4 +10,7 @@ let intern str = {
 }
 
 let show {name} =
-  name
+  if Lexer.is_special_ident name then
+    sprintf "$|%s|" name
+  else
+    name

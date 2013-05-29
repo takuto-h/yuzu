@@ -5,6 +5,8 @@ type t =
   | EOF
   | Def
   | Var
+  | If
+  | Else
   | Newline
   | Undent
   | Int of int
@@ -15,6 +17,8 @@ let show = function
   | EOF -> "EOF"
   | Def -> "'def'"
   | Var -> "'var'"
+  | If -> "'if'"
+  | Else -> "'else'"
   | Newline -> "newline"
   | Undent -> "undent"
   | Int(_) -> "integer"

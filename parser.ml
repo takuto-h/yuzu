@@ -85,6 +85,10 @@ and parse_atomic_expr parser =
       let body_expr = parse_block parser in
       make_abs params body_expr
     end
+    | Token.If -> begin
+      lookahead parser;
+      parse_if_expr parser
+    end
     | _ ->
       failwith (expected parser "expression")
 
@@ -151,6 +155,28 @@ and parse_braced_block parser =
 and parse_block_elem parser =
   parse_expr parser
 
+and parse_if_expr parser =
+  if parser.token <> Token.Just('(') then
+    failwith (expected parser "'('")
+  else begin
+    lookahead parser;
+    let cond_expr = parse_expr parser in
+    if parser.token <> Token.Just(')') then
+      failwith (expected parser "')'")
+    else begin
+      lookahead parser;
+      let then_expr = parse_block parser in
+      skip parser Token.Newline;
+      if parser.token <> Token.Else then
+        failwith (expected parser "'else'")
+      else begin
+        lookahead parser;
+        let else_expr = parse_block parser in
+        Expr.If(cond_expr,then_expr,else_expr)
+      end
+    end
+  end
+  
 let parse_top_let_fun parser =
   match parser.token with
     | Token.Ident(str) ->

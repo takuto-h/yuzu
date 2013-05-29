@@ -18,7 +18,10 @@ let indent {basic_offset;indent_level} str =
   sprintf "%s%s" (String.make offset ' ') str
   
 let translate_ident {Ident.name} =
-  name
+  if Lexer.is_special_ident name then
+    sprintf "( %s )" name
+  else
+    name
 
 let rec translate_expr trans = function
   | Expr.Con(Literal.Int(n)) ->
@@ -35,6 +38,18 @@ let rec translate_expr trans = function
     let str_fun = translate_expr trans fun_expr in
     let str_arg = translate_expr trans arg_expr in
     sprintf "(%s %s)" str_fun str_arg
+  | Expr.If(cond_expr,then_expr,else_expr) ->
+    let str_cond = translate_expr trans cond_expr in
+    let trans_then_else = {trans with indent_level=trans.indent_level+1} in
+    let str_then = translate_expr trans_then_else then_expr in
+    let str_else = translate_expr trans_then_else else_expr in
+    sprintf
+      "begin if %s then\n%s\n%s\n%s\n%s"
+      str_cond
+      (indent trans_then_else str_then)
+      (indent trans "else")
+      (indent trans_then_else str_else)
+      (indent trans "end")
 
 let translate_top trans = function
   | Top.Expr(expr) ->

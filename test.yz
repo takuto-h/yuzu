@@ -18,3 +18,12 @@ var a = const777(123)
 var a = const777(456)
 var a = const777(id)
 var a = const777(const777)
+
+def fac(n):
+  if($|=|(n, 0)):
+    1
+  else:
+    $|*|(n, fac($|-|(n, 1)))
+
+var fac5 = fac(5)
+var fac10 = fac(10)
