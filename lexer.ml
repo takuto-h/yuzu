@@ -39,8 +39,7 @@ let rec lex_int lexer n =
     | Some(c) when is_digit c ->
       Source.junk lexer.src;
       lex_int lexer (n * 10 + int_of_digit c)
-    | Some(_)
-    | None ->
+    | Some(_) | None ->
       Token.Int(n)
 
 let rec lex_ident lexer buf =
@@ -49,12 +48,11 @@ let rec lex_ident lexer buf =
       Buffer.add_char buf c;
       Source.junk lexer.src;
       lex_ident lexer buf
-    | Some(_)
-    | None ->
+    | Some(_) | None ->
       ident_or_reserved (Buffer.contents buf)
 
 let lex_token lexer = function
-  | ';'as c ->
+  | ( ';' | '^' | '(' | ')' | '{' | '}') as c ->
     Token.Just(c)
   | c when is_digit c ->
     lex_int lexer (int_of_digit c)

@@ -45,8 +45,7 @@ let parse_top parser =
 let parse_stmt parser =
   let expr = parse_top parser in
   match parser.token with
-    | Token.EOF
-    | Token.Just(';') ->
+    | Token.EOF | Token.Just(';') ->
       expr
     | _ ->
       failwith (expected parser "';'")
