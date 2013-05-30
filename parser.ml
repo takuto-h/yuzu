@@ -44,6 +44,39 @@ let rec make_app fun_expr arg_exprs =
   List.fold_left mk_app fun_expr arg_exprs
     
 let rec parse_expr parser =
+  parse_add_expr parser
+
+and parse_add_expr parser =
+  let lhs_ref = ref (parse_mul_expr parser) in
+  while parser.token = Token.Just('+') || parser.token = Token.Just('-') do
+    match parser.token with
+      | Token.Just(c) -> begin
+        lookahead parser;
+        let op = Expr.Var(Ident.intern(sprintf "%c" c)) in
+        let rhs = parse_mul_expr parser in
+        lhs_ref := Expr.App(Expr.App(op,!lhs_ref),rhs)
+      end
+      | _ ->
+        assert false
+  done;
+  !lhs_ref
+
+and parse_mul_expr parser =
+  let lhs_ref = ref (parse_unary_expr parser) in
+  while parser.token = Token.Just('*') do
+    match parser.token with
+      | Token.Just(c) -> begin
+        lookahead parser;
+        let op = Expr.Var(Ident.intern(sprintf "%c" c)) in
+        let rhs = parse_unary_expr parser in
+        lhs_ref := Expr.App(Expr.App(op,!lhs_ref),rhs)
+      end
+      | _ ->
+        assert false
+  done;
+  !lhs_ref
+
+and parse_unary_expr parser =
   parse_prim_expr parser
 
 and parse_prim_expr parser =

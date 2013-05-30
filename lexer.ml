@@ -113,7 +113,7 @@ let lex_close_paren lexer pos open_paren close_paren =
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
-    | ':' | ';' | ',' | '^' | '=' ->
+    | ':' | ';' | ',' | '^' | '=' | '+' | '-' | '*' ->
       Token.Just(c)
     | '(' | '{' ->
       Stack.push c lexer.parens;
