@@ -125,7 +125,7 @@ let rec lex_op lexer buf =
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
-    | ':' | ';' | ',' | '^' | '=' | '*' ->
+    | ':' | ';' | ',' | '^' ->
       Token.Just(c)
     | '(' | '{' ->
       Stack.push c lexer.parens;
@@ -134,10 +134,20 @@ let lex_visible_token lexer pos c =
       lex_close_paren lexer pos '(' ')'
     | '}' ->
       lex_close_paren lexer pos '{' '}'
+    | '=' | '<' | '>' -> begin
+      let buf = Buffer.create 10 in
+      Buffer.add_char buf c;
+      Token.CmpOp(lex_op lexer buf)
+    end
     | '+' | '-' -> begin
       let buf = Buffer.create 10 in
       Buffer.add_char buf c;
       Token.AddOp(lex_op lexer buf)
+    end
+    | '*' -> begin
+      let buf = Buffer.create 10 in
+      Buffer.add_char buf c;
+      Token.MulOp(lex_op lexer buf)
     end
     | '$' ->
       begin match Source.peek lexer.source with

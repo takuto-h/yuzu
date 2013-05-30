@@ -11,8 +11,10 @@ type t =
   | Undent
   | Int of int
   | Ident of string
-  | AddOp of string
   | Just of char
+  | CmpOp of string
+  | AddOp of string
+  | MulOp of string
 
 let show = function
   | EOF -> "EOF"
@@ -24,5 +26,5 @@ let show = function
   | Undent -> "undent"
   | Int(_) -> "integer"
   | Ident(_) -> "identifier"
-  | AddOp(s) -> sprintf "'%s'" s
   | Just(c) -> sprintf "'%c'" c
+  | CmpOp(s) | AddOp(s) | MulOp(s) -> sprintf "'%s'" s

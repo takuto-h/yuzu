@@ -49,9 +49,9 @@ let rec parse_expr parser =
 and parse_cmp_expr parser =
   let lhs = parse_add_expr parser in
   match parser.token with
-    | Token.Just('=') -> begin
+    | Token.CmpOp(str) -> begin
       lookahead parser;
-      let op = Expr.Var(Ident.intern("=")) in
+      let op = Expr.Var(Ident.intern(str)) in
       let rhs = parse_add_expr parser in
       Expr.App(Expr.App(op,lhs),rhs)
     end
@@ -73,19 +73,18 @@ and parse_add_expr parser =
   in loop lhs
 
 and parse_mul_expr parser =
-  let lhs_ref = ref (parse_unary_expr parser) in
-  while parser.token = Token.Just('*') do
+  let lhs = parse_unary_expr parser in
+  let rec loop lhs =
     match parser.token with
-      | Token.Just(c) -> begin
+      | Token.MulOp(str) -> begin
         lookahead parser;
-        let op = Expr.Var(Ident.intern(sprintf "%c" c)) in
+        let op = Expr.Var(Ident.intern(str)) in
         let rhs = parse_unary_expr parser in
-        lhs_ref := Expr.App(Expr.App(op,!lhs_ref),rhs)
+        loop (Expr.App(Expr.App(op,lhs),rhs))
       end
       | _ ->
-        assert false
-  done;
-  !lhs_ref
+        lhs
+  in loop lhs
 
 and parse_unary_expr parser =
   parse_prim_expr parser
@@ -237,7 +236,7 @@ let parse_top_let_val parser =
     | Token.Ident(str) ->
       let ident = Ident.intern str in
       lookahead parser;
-      if parser.token <> Token.Just('=') then
+      if parser.token <> Token.CmpOp("=") then
         failwith (expected parser "'='")
       else begin
         lookahead parser;
