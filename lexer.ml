@@ -45,6 +45,9 @@ let is_ident_part c =
 let is_whitespace c =
   String.contains " \t\r\n" c
 
+let is_op_part c =
+  String.contains "=<>|&+-*/%" c
+
 let int_of_digit c =
   Char.code c - Char.code '0'
 
@@ -110,10 +113,19 @@ let lex_close_paren lexer pos open_paren close_paren =
     Token.Just(close_paren)
   end
 
+let rec lex_op lexer buf =
+  match Source.peek lexer.source with
+    | Some(c) when is_op_part c ->
+      Buffer.add_char buf c;
+      Source.junk lexer.source;
+      lex_op lexer buf
+    | Some(_) | None ->
+      Buffer.contents buf
+
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
-    | ':' | ';' | ',' | '^' | '=' | '+' | '-' | '*' ->
+    | ':' | ';' | ',' | '^' | '=' | '*' ->
       Token.Just(c)
     | '(' | '{' ->
       Stack.push c lexer.parens;
@@ -122,6 +134,11 @@ let lex_visible_token lexer pos c =
       lex_close_paren lexer pos '(' ')'
     | '}' ->
       lex_close_paren lexer pos '{' '}'
+    | '+' | '-' -> begin
+      let buf = Buffer.create 10 in
+      Buffer.add_char buf c;
+      Token.AddOp(lex_op lexer buf)
+    end
     | '$' ->
       begin match Source.peek lexer.source with
         | Some('|') ->
