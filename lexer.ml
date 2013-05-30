@@ -9,12 +9,15 @@ type t = {
   mutable is_bob : bool; (* beginning of indented block *)
 }
 
-let reserved = Hashtbl.create 11
+let initial_table_size = 16
+let initial_buffer_size = 16
+
+let reserved = Hashtbl.create initial_table_size
 let () = Hashtbl.add reserved "def" Token.Def
 let () = Hashtbl.add reserved "var" Token.Var
 let () = Hashtbl.add reserved "if" Token.If
 let () = Hashtbl.add reserved "else" Token.Else
-
+  
 let create source =
   let lexer = {
     source = source;
@@ -135,32 +138,33 @@ let lex_visible_token lexer pos c =
     | '}' ->
       lex_close_paren lexer pos '{' '}'
     | '=' | '<' | '>' -> begin
-      let buf = Buffer.create 10 in
+      let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
       Token.CmpOp(lex_op lexer buf)
     end
     | '+' | '-' -> begin
-      let buf = Buffer.create 10 in
+      let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
       Token.AddOp(lex_op lexer buf)
     end
     | '*' -> begin
-      let buf = Buffer.create 10 in
+      let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
       Token.MulOp(lex_op lexer buf)
     end
     | '$' ->
       begin match Source.peek lexer.source with
         | Some('|') ->
+          let buf = Buffer.create initial_buffer_size in
           Source.junk lexer.source;
-          lex_special_ident lexer (Buffer.create 10)
+          lex_special_ident lexer buf
         | Some(_) | None ->
           Token.Just('$')
       end
     | _ when is_digit c ->
       lex_int lexer (int_of_digit c)
     | _ when is_ident_start c ->
-      let buf = Buffer.create 10 in
+      let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
       lex_ident lexer buf
     | _ ->

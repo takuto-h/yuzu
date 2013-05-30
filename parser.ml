@@ -90,13 +90,17 @@ and parse_unary_expr parser =
   parse_prim_expr parser
 
 and parse_prim_expr parser =
-  let expr_ref = ref (parse_atomic_expr parser) in
-  while parser.token = Token.Just('(') do
-    lookahead parser;
-    let args = parse_expr_list parser [] in
-    expr_ref := make_app !expr_ref args
-  done;
-  !expr_ref
+  let fun_expr = parse_atomic_expr parser in
+  let rec loop fun_expr =
+    match parser.token with
+      | Token.Just('(') -> begin
+        lookahead parser;
+        let arg_exprs = parse_expr_list parser [] in
+        loop (make_app fun_expr arg_exprs)
+      end
+      | _ ->
+        fun_expr
+  in loop fun_expr
 
 and parse_expr_list parser lst =
   let expr = parse_expr parser in
