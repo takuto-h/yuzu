@@ -44,7 +44,19 @@ let rec make_app fun_expr arg_exprs =
   List.fold_left mk_app fun_expr arg_exprs
     
 let rec parse_expr parser =
-  parse_add_expr parser
+  parse_comp_expr parser
+
+and parse_comp_expr parser =
+  let lhs = parse_add_expr parser in
+  match parser.token with
+    | Token.Just('=') -> begin
+      lookahead parser;
+      let op = Expr.Var(Ident.intern("=")) in
+      let rhs = parse_add_expr parser in
+      Expr.App(Expr.App(op,lhs),rhs)
+    end
+    | _ ->
+      lhs
 
 and parse_add_expr parser =
   let lhs_ref = ref (parse_mul_expr parser) in

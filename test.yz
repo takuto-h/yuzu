@@ -20,7 +20,7 @@ var a = const777(id)
 var a = const777(const777)
 
 def fac(n):
-  if($|=|(n, 0)):
+  if(n = 0):
     1
   else:
     n * fac(n - 1)
