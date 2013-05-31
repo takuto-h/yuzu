@@ -135,12 +135,12 @@ and parse_prim_expr parser =
   let fun_expr = parse_atomic_expr parser in
   let rec loop fun_expr =
     match parser.token with
-      | Token.Just('(') -> begin
+      | Token.Reserved("(") -> begin
         lookahead parser;
         let arg_exprs = parse_expr_list parser [] in
         loop (make_app fun_expr arg_exprs)
       end
-      | Token.Just('^') -> begin
+      | Token.Reserved("^") -> begin
         lookahead parser;
         let arg_expr = parse_abs parser in
         loop (Expr.App(fun_expr, arg_expr))
@@ -152,11 +152,11 @@ and parse_prim_expr parser =
 and parse_expr_list parser lst =
   let expr = parse_expr parser in
   match parser.token with
-    | Token.Just(')') -> begin
+    | Token.Reserved(")") -> begin
       lookahead parser;
       List.rev (expr::lst)
     end
-    | Token.Just(',') -> begin
+    | Token.Reserved(",") -> begin
       lookahead parser;
       parse_expr_list parser (expr::lst)
     end
@@ -183,15 +183,15 @@ and parse_atomic_expr parser =
       lookahead parser;
       Expr.Con(Literal.Char(str))
     end
-    | Token.Just('^') -> begin
+    | Token.Reserved("^") -> begin
       lookahead parser;
       parse_abs parser
     end
-    | Token.If -> begin
+    | Token.Reserved("if") -> begin
       lookahead parser;
       parse_if_expr parser
     end
-    | Token.Just('[') -> begin
+    | Token.Reserved("[") -> begin
       lookahead parser;
       parse_list parser
     end
@@ -205,7 +205,7 @@ and parse_abs parser =
 
 and parse_var parser buf =
   match parser.token with
-    | Token.Just('.') -> begin
+    | Token.Reserved(".") -> begin
       Buffer.add_char buf '.';
       lookahead parser;
       begin match parser.token with
@@ -222,7 +222,7 @@ and parse_var parser buf =
       Expr.Var(Ident.intern (Buffer.contents buf))
 
 and parse_params parser =
-  if parser.token <> Token.Just('(') then
+  if parser.token <> Token.Reserved("(") then
     failwith (expected parser "'('")
   else begin
     lookahead parser;
@@ -235,11 +235,11 @@ and parse_ident_list parser lst =
       lookahead parser;
       let ident = Ident.intern str in
       begin match parser.token with
-        | Token.Just(')') -> begin
+        | Token.Reserved(")") -> begin
           lookahead parser;
           List.rev (ident::lst)
         end
-        | Token.Just(',') -> begin
+        | Token.Reserved(",") -> begin
           lookahead parser;
           parse_ident_list parser (ident::lst)
         end
@@ -251,10 +251,10 @@ and parse_ident_list parser lst =
 
 and parse_block parser =
   match parser.token with
-    | Token.Just(':') ->
+    | Token.Reserved(":") ->
       Lexer.indent parser.lexer;
       parse_indented_block parser
-    | Token.Just('{') ->
+    | Token.Reserved("{") ->
       parse_braced_block parser
     | _ ->
       failwith (expected parser "':' or '{'")
@@ -262,7 +262,7 @@ and parse_block parser =
 and parse_indented_block parser =
   lookahead parser;
   let expr = parse_block_elem parser in
-  skip parser (Token.Just(';'));
+  skip parser (Token.Reserved(";"));
   if parser.token <> Token.Undent then
     failwith (expected parser "undent")
   else begin
@@ -273,8 +273,8 @@ and parse_indented_block parser =
 and parse_braced_block parser =
   lookahead parser;
   let expr = parse_block_elem parser in
-  skip parser (Token.Just(';'));
-  if parser.token <> Token.Just('}') then
+  skip parser (Token.Reserved(";"));
+  if parser.token <> Token.Reserved("}") then
     failwith (expected parser "'}'")
   else begin
     lookahead parser;
@@ -285,18 +285,18 @@ and parse_block_elem parser =
   parse_expr parser
 
 and parse_if_expr parser =
-  if parser.token <> Token.Just('(') then
+  if parser.token <> Token.Reserved("(") then
     failwith (expected parser "'('")
   else begin
     lookahead parser;
     let cond_expr = parse_expr parser in
-    if parser.token <> Token.Just(')') then
+    if parser.token <> Token.Reserved(")") then
       failwith (expected parser "')'")
     else begin
       lookahead parser;
       let then_expr = parse_block parser in
       skip parser Token.Newline;
-      if parser.token <> Token.Else then
+      if parser.token <> Token.Reserved("else") then
         failwith (expected parser "'else'")
       else begin
         lookahead parser;
@@ -307,7 +307,7 @@ and parse_if_expr parser =
   end
 
 and parse_list parser =
-  if parser.token <> Token.Just(']') then
+  if parser.token <> Token.Reserved("]") then
     failwith (expected parser "']'")
   else begin
     lookahead parser;
@@ -341,11 +341,11 @@ let parse_top_let_val parser =
 
 let parse_top parser =
   match parser.token with
-    | Token.Def -> begin
+    | Token.Reserved("def") -> begin
       lookahead parser;
       parse_top_let_fun parser
     end
-    | Token.Var -> begin
+    | Token.Reserved("var") -> begin
       lookahead parser;
       parse_top_let_val parser
     end
@@ -355,7 +355,7 @@ let parse_top parser =
 let parse_stmt parser =
   let expr = parse_top parser in
   match parser.token with
-    | Token.EOF | Token.Newline | Token.Just(';') ->
+    | Token.EOF | Token.Newline | Token.Reserved(";") ->
       expr
     | _ ->
       failwith (expected parser "newline or ';'")

@@ -3,17 +3,13 @@ open Printf
 
 type t =
   | EOF
-  | Def
-  | Var
-  | If
-  | Else
   | Newline
   | Undent
   | Int of int
   | Ident of string
   | String of string
   | Char of string
-  | Just of char
+  | Reserved of string
   | OrOp of string
   | AndOp of string
   | CmpOp of string
@@ -24,14 +20,6 @@ type t =
 let show = function
   | EOF ->
     "EOF"
-  | Def ->
-    "'def'"
-  | Var ->
-    "'var'"
-  | If ->
-    "'if'"
-  | Else ->
-    "'else'"
   | Newline ->
     "newline"
   | Undent ->
@@ -44,7 +32,5 @@ let show = function
     "string"
   | Char(_) ->
     "character"
-  | Just(c) ->
-    sprintf "'%c'" c
-  | OrOp(s) | AndOp(s) | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) ->
+  | Reserved(s) | OrOp(s) | AndOp(s) | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) ->
     sprintf "'%s'" s

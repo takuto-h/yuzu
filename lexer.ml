@@ -3,21 +3,21 @@ open Printf
 
 type t = {
   source : Source.t;
-  parens : char Stack.t;
+  parens : string Stack.t;
   offside_lines : int Stack.t;
   mutable is_bol : bool; (* beginning of line *)
   mutable is_bob : bool; (* beginning of indented block *)
 }
 
-let initial_table_size = 16
 let initial_buffer_size = 16
 
-let reserved = Hashtbl.create initial_table_size
-let () = Hashtbl.add reserved "def" Token.Def
-let () = Hashtbl.add reserved "var" Token.Var
-let () = Hashtbl.add reserved "if" Token.If
-let () = Hashtbl.add reserved "else" Token.Else
-  
+module StringSet = Set.Make(String)
+let reserved = StringSet.empty
+let reserved = StringSet.add "def" reserved
+let reserved = StringSet.add "var" reserved
+let reserved = StringSet.add "if" reserved
+let reserved = StringSet.add "else" reserved
+
 let create source =
   let lexer = {
     source = source;
@@ -72,11 +72,10 @@ let is_special_ident str =
     in loop 1
 
 let ident_or_reserved str =
-  try
-    Hashtbl.find reserved str
-  with
-    | Not_found ->
-      Token.Ident(str)
+  if StringSet.mem str reserved then
+    Token.Reserved(str)
+  else
+    Token.Ident(str)
 
 let rec lex_int lexer n =
   match Source.peek lexer.source with
@@ -112,10 +111,10 @@ let rec lex_special_ident lexer buf =
         
 let lex_close_paren lexer pos open_paren close_paren =
   if Stack.is_empty lexer.parens || Stack.top lexer.parens <> open_paren then
-    failwith (sprintf "%s: error: unmatched parentheses: '%c'\n" (Pos.show pos) close_paren)
+    failwith (sprintf "%s: error: unmatched parentheses: '%s'\n" (Pos.show pos) close_paren)
   else begin
     ignore (Stack.pop lexer.parens);
-    Token.Just(close_paren)
+    Token.Reserved(close_paren)
   end
 
 let rec lex_op lexer buf =
@@ -185,16 +184,16 @@ let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
     | ';' | ',' | '^' | '.' ->
-      Token.Just(c)
+      Token.Reserved(sprintf "%c" c)
     | '(' | '{' | '[' ->
-      Stack.push c lexer.parens;
-      Token.Just(c)
+      Stack.push (sprintf "%c" c) lexer.parens;
+      Token.Reserved(sprintf "%c" c)
     | ')' ->
-      lex_close_paren lexer pos '(' ')'
+      lex_close_paren lexer pos "(" ")"
     | '}' ->
-      lex_close_paren lexer pos '{' '}'
+      lex_close_paren lexer pos "{" "}"
     | ']' ->
-      lex_close_paren lexer pos '[' ']'
+      lex_close_paren lexer pos "[" "]"
     | '|' -> begin
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
@@ -226,7 +225,7 @@ let lex_visible_token lexer pos c =
           Source.junk lexer.source;
           Token.ConsOp("::")
         | Some(_) | None ->
-          Token.Just(':')
+          Token.Reserved(":")
       end
     | '$' ->
       begin match Source.peek lexer.source with
@@ -235,7 +234,7 @@ let lex_visible_token lexer pos c =
           Source.junk lexer.source;
           lex_special_ident lexer buf
         | Some(_) | None ->
-          Token.Just('$')
+          Token.Reserved("$")
       end
     | '"' -> begin
       let buf = Buffer.create initial_buffer_size in
