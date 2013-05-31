@@ -97,7 +97,7 @@ let rec lex_ident lexer buf =
 
 let rec lex_special_ident lexer buf =
   match Source.peek lexer.source with
-    | Some('|') -> begin
+    | Some(')') -> begin
       Source.junk lexer.source;
       Token.Ident(Buffer.contents buf)
     end
@@ -195,7 +195,7 @@ let lex_visible_token lexer pos c =
       lex_close_paren lexer pos '{' '}'
     | ']' ->
       lex_close_paren lexer pos '[' ']'
-    | '=' | '<' | '>' -> begin
+    | '=' | '<' | '>' | '|' -> begin
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
       Token.CmpOp(lex_op lexer buf)
@@ -220,7 +220,7 @@ let lex_visible_token lexer pos c =
       end
     | '$' ->
       begin match Source.peek lexer.source with
-        | Some('|') ->
+        | Some('(') ->
           let buf = Buffer.create initial_buffer_size in
           Source.junk lexer.source;
           lex_special_ident lexer buf

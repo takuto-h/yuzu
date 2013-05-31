@@ -30,13 +30,16 @@ var fac10 = fac(10)
 
 var foldr = List.fold_right
 
+def $(|>)(x, f):
+  f(x)
+
 def map(func, list):
-  List.fold_right(^(elem, acc){
+  [] |> List.fold_right(^(elem, acc){
     func(elem)::acc
-  }, list, [])
+  }, list)
 
 var list = 1::2::3::[]
-var doubled = map($|*|(2), list)
+var doubled = map($(*)(2), list)
 
 Printf.printf("1 + 1 = %d\n", 1 + 1)
 List.iter(Printf.printf("\"%d\"\n"), list)
