@@ -40,7 +40,7 @@ def map(func, list):
   list |> fold_right([])^(elem, acc):
     func(elem)::acc
 
-var list = 1::2::3::[]
+var list = [1; 2; 3]
 var doubled = list |> map($(*)(2))
 var tripled = list |> map^(x): x * 3
 

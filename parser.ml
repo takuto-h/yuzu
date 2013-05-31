@@ -322,12 +322,23 @@ and parse_if_expr parser =
   end
 
 and parse_list parser =
-  if parser.token <> Token.Reserved("]") then
-    failwith (expected parser "']'")
-  else begin
+  if parser.token = Token.Reserved("]") then begin
     lookahead parser;
     Expr.Var(Ident.intern("[]"))
   end
+  else
+    let is_terminal = function
+      | Token.Reserved("]") ->
+        true
+      | Token.Reserved(";") ->
+        false
+      | _ ->
+        failwith (expected parser "']' or ';'")
+    in
+    let list = parse_to_list parser is_terminal parse_expr in
+    List.fold_right begin fun elem acc ->
+      Expr.App(Expr.Var(Ident.intern("::")),Expr.Tuple([elem;acc]))
+    end list (Expr.Var(Ident.intern("[]")))
 
 and parse_expr_list parser =
   let is_terminal = function
