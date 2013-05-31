@@ -195,7 +195,17 @@ let lex_visible_token lexer pos c =
       lex_close_paren lexer pos '{' '}'
     | ']' ->
       lex_close_paren lexer pos '[' ']'
-    | '=' | '<' | '>' | '|' -> begin
+    | '|' -> begin
+      let buf = Buffer.create initial_buffer_size in
+      Buffer.add_char buf c;
+      Token.OrOp(lex_op lexer buf)
+    end
+    | '&' -> begin
+      let buf = Buffer.create initial_buffer_size in
+      Buffer.add_char buf c;
+      Token.AndOp(lex_op lexer buf)
+    end
+    | '=' | '<' | '>' -> begin
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
       Token.CmpOp(lex_op lexer buf)

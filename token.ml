@@ -14,22 +14,37 @@ type t =
   | String of string
   | Char of string
   | Just of char
+  | OrOp of string
+  | AndOp of string
   | CmpOp of string
   | ConsOp of string
   | AddOp of string
   | MulOp of string
 
 let show = function
-  | EOF -> "EOF"
-  | Def -> "'def'"
-  | Var -> "'var'"
-  | If -> "'if'"
-  | Else -> "'else'"
-  | Newline -> "newline"
-  | Undent -> "undent"
-  | Int(_) -> "integer"
-  | Ident(_) -> "identifier"
-  | String(_) -> "string"
-  | Char(_) -> "character"
-  | Just(c) -> sprintf "'%c'" c
-  | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) -> sprintf "'%s'" s
+  | EOF ->
+    "EOF"
+  | Def ->
+    "'def'"
+  | Var ->
+    "'var'"
+  | If ->
+    "'if'"
+  | Else ->
+    "'else'"
+  | Newline ->
+    "newline"
+  | Undent ->
+    "undent"
+  | Int(_) ->
+    "integer"
+  | Ident(_) ->
+    "identifier"
+  | String(_) ->
+    "string"
+  | Char(_) ->
+    "character"
+  | Just(c) ->
+    sprintf "'%c'" c
+  | OrOp(s) | AndOp(s) | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) ->
+    sprintf "'%s'" s
