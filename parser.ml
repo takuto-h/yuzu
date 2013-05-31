@@ -112,6 +112,11 @@ and parse_prim_expr parser =
         let arg_exprs = parse_expr_list parser [] in
         loop (make_app fun_expr arg_exprs)
       end
+      | Token.Just('^') -> begin
+        lookahead parser;
+        let arg_expr = parse_abs parser in
+        loop (Expr.App(fun_expr, arg_expr))
+      end
       | _ ->
         fun_expr
   in loop fun_expr
@@ -152,9 +157,7 @@ and parse_atomic_expr parser =
     end
     | Token.Just('^') -> begin
       lookahead parser;
-      let params = parse_params parser in
-      let body_expr = parse_block parser in
-      make_abs params body_expr
+      parse_abs parser
     end
     | Token.If -> begin
       lookahead parser;
@@ -166,6 +169,11 @@ and parse_atomic_expr parser =
     end
     | _ ->
       failwith (expected parser "expression")
+
+and parse_abs parser =
+  let params = parse_params parser in
+  let body_expr = parse_block parser in
+  make_abs params body_expr
 
 and parse_var parser buf =
   match parser.token with
