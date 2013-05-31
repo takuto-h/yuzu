@@ -211,6 +211,10 @@ and parse_atomic_expr parser =
       lookahead parser;
       parse_list parser
     end
+    | Token.Reserved("(") -> begin
+      lookahead parser;
+      parse_parens parser
+    end
     | _ ->
       failwith (expected parser "expression")
 
@@ -339,6 +343,15 @@ and parse_list parser =
     List.fold_right begin fun elem acc ->
       Expr.App(Expr.Var(Ident.intern("::")),Expr.Tuple([elem;acc]))
     end list (Expr.Var(Ident.intern("[]")))
+
+and parse_parens parser =
+  if parser.token = Token.Reserved(")") then begin
+    lookahead parser;
+    Expr.Var(Ident.intern("()"))
+  end
+  else
+    let list = parse_expr_list parser in
+    Expr.Tuple(list)
 
 and parse_expr_list parser =
   let is_terminal = function
