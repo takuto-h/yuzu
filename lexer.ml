@@ -63,10 +63,12 @@ let is_special_ident str =
     let rec loop i =
       if i = String.length str then
         false
-      else if is_ident_part (String.get str i) || (String.get str i) = '.' then
-        loop (i + 1)
       else
-        true
+        let c = String.get str i in
+        if is_ident_part c || String.contains ".[]" c then
+          loop (i + 1)
+        else
+          true
     in loop 1
 
 let ident_or_reserved str =
@@ -128,15 +130,17 @@ let rec lex_op lexer buf =
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
-    | ':' | ';' | ',' | '^' | '.' ->
+    | ';' | ',' | '^' | '.' ->
       Token.Just(c)
-    | '(' | '{' ->
+    | '(' | '{' | '[' ->
       Stack.push c lexer.parens;
       Token.Just(c)
     | ')' ->
       lex_close_paren lexer pos '(' ')'
     | '}' ->
       lex_close_paren lexer pos '{' '}'
+    | ']' ->
+      lex_close_paren lexer pos '[' ']'
     | '=' | '<' | '>' -> begin
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
@@ -152,6 +156,14 @@ let lex_visible_token lexer pos c =
       Buffer.add_char buf c;
       Token.MulOp(lex_op lexer buf)
     end
+    | ':' ->
+      begin match Source.peek lexer.source with
+        | Some(':') ->
+          Source.junk lexer.source;
+          Token.ConsOp("::")
+        | Some(_) | None ->
+          Token.Just(':')
+      end
     | '$' ->
       begin match Source.peek lexer.source with
         | Some('|') ->

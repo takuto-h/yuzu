@@ -29,3 +29,11 @@ var fac5 = fac(5)
 var fac10 = fac(10)
 
 var foldr = List.fold_right
+
+def map(func, list):
+  List.fold_right(^(elem, acc){
+    func(elem)::acc
+  }, list, [])
+
+var list = 1::2::3::[]
+var doubled = map($|*|(2), list)

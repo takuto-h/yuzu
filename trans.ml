@@ -50,6 +50,14 @@ let rec translate_expr trans = function
       (indent trans "else")
       (indent trans_then_else str_else)
       (indent trans "end")
+  | Expr.Tuple(x::xs) ->
+    let str_x = translate_expr trans x in
+    let str_x_xs = List.fold_left begin fun acc elem ->
+      sprintf "%s, %s" acc (translate_expr trans elem)
+    end str_x xs in
+    sprintf "(%s)" str_x_xs
+  | Expr.Tuple([]) ->
+    assert false
 
 let translate_top trans = function
   | Top.Expr(expr) ->

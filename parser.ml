@@ -49,13 +49,25 @@ let rec parse_expr parser =
   parse_cmp_expr parser
 
 and parse_cmp_expr parser =
-  let lhs = parse_add_expr parser in
+  let lhs = parse_cons_expr parser in
   match parser.token with
     | Token.CmpOp(str) -> begin
       lookahead parser;
       let op = Expr.Var(Ident.intern(str)) in
-      let rhs = parse_add_expr parser in
+      let rhs = parse_cons_expr parser in
       Expr.App(Expr.App(op,lhs),rhs)
+    end
+    | _ ->
+      lhs
+
+and parse_cons_expr parser =
+  let lhs = parse_add_expr parser in
+  match parser.token with
+    | Token.ConsOp(str) -> begin
+      lookahead parser;
+      let op = Expr.Var(Ident.intern(str)) in
+      let rhs = parse_cons_expr parser in
+      Expr.App(op,Expr.Tuple([lhs;rhs]))
     end
     | _ ->
       lhs
@@ -139,6 +151,10 @@ and parse_atomic_expr parser =
     | Token.If -> begin
       lookahead parser;
       parse_if_expr parser
+    end
+    | Token.Just('[') -> begin
+      lookahead parser;
+      parse_list parser
     end
     | _ ->
       failwith (expected parser "expression")
@@ -245,7 +261,15 @@ and parse_if_expr parser =
       end
     end
   end
-  
+
+and parse_list parser =
+  if parser.token <> Token.Just(']') then
+    failwith (expected parser "']'")
+  else begin
+    lookahead parser;
+    Expr.Var(Ident.intern("[]"))
+  end
+
 let parse_top_let_fun parser =
   match parser.token with
     | Token.Ident(str) ->
