@@ -11,6 +11,7 @@ type t =
   | Undent
   | Int of int
   | Ident of string
+  | String of string
   | Just of char
   | CmpOp of string
   | ConsOp of string
@@ -27,5 +28,6 @@ let show = function
   | Undent -> "undent"
   | Int(_) -> "integer"
   | Ident(_) -> "identifier"
+  | String(_) -> "string"
   | Just(c) -> sprintf "'%c'" c
   | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) -> sprintf "'%s'" s

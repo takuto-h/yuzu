@@ -127,6 +127,33 @@ let rec lex_op lexer buf =
     | Some(_) | None ->
       Buffer.contents buf
 
+let rec lex_string lexer buf =
+  match Source.peek lexer.source with
+    | Some('"') -> begin
+      Source.junk lexer.source;
+      Token.String(Buffer.contents buf)
+    end
+    | Some('\\') -> begin
+      Source.junk lexer.source;
+      begin match Source.peek lexer.source with
+        | Some('"') ->
+          Source.junk lexer.source;
+          Buffer.add_string buf "\\\"";
+          lex_string lexer buf
+        | Some(_) | None ->
+          Buffer.add_char buf '\\';
+          lex_string lexer buf
+      end
+    end
+    | Some(c) -> begin
+      Source.junk lexer.source;
+      Buffer.add_char buf c;
+      lex_string lexer buf
+    end
+    | None ->
+      let pos_eof = Source.pos lexer.source in
+      failwith (sprintf "%s: error: EOF inside a string\n" (Pos.show pos_eof))
+
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
@@ -173,6 +200,10 @@ let lex_visible_token lexer pos c =
         | Some(_) | None ->
           Token.Just('$')
       end
+    | '"' -> begin
+      let buf = Buffer.create initial_buffer_size in
+      lex_string lexer buf
+    end
     | _ when is_digit c ->
       lex_int lexer (int_of_digit c)
     | _ when is_ident_start c ->

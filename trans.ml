@@ -26,6 +26,8 @@ let translate_ident {Ident.name} =
 let rec translate_expr trans = function
   | Expr.Con(Literal.Int(n)) ->
     sprintf "%d" n
+  | Expr.Con(Literal.String(str)) ->
+    sprintf "\"%s\"" str
   | Expr.Var(ident) ->
     translate_ident ident
   | Expr.Abs(param_ident,body_expr) ->
