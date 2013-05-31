@@ -63,7 +63,7 @@ let is_special_ident str =
     let rec loop i =
       if i = String.length str then
         false
-      else if is_ident_part (String.get str i) then
+      else if is_ident_part (String.get str i) || (String.get str i) = '.' then
         loop (i + 1)
       else
         true
@@ -128,7 +128,7 @@ let rec lex_op lexer buf =
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
-    | ':' | ';' | ',' | '^' ->
+    | ':' | ';' | ',' | '^' | '.' ->
       Token.Just(c)
     | '(' | '{' ->
       Stack.push c lexer.parens;

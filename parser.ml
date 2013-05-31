@@ -7,12 +7,14 @@ type t = {
   mutable pos : Pos.t;
 }
 
+let initial_buffer_size = 16
+
 let create lexer = {
   lexer = lexer;
   token = Token.EOF;
   pos = Pos.dummy;
 }
-
+  
 let expected parser str_token =
   sprintf
     "%s: error: unexpected %s, expected %s\n"
@@ -124,7 +126,9 @@ and parse_atomic_expr parser =
     end
     | Token.Ident(str) -> begin
       lookahead parser;
-      Expr.Var(Ident.intern(str))
+      let buf = Buffer.create initial_buffer_size in
+      Buffer.add_string buf str;
+      parse_var parser buf
     end
     | Token.Just('^') -> begin
       lookahead parser;
@@ -138,6 +142,24 @@ and parse_atomic_expr parser =
     end
     | _ ->
       failwith (expected parser "expression")
+
+and parse_var parser buf =
+  match parser.token with
+    | Token.Just('.') -> begin
+      Buffer.add_char buf '.';
+      lookahead parser;
+      begin match parser.token with
+        | Token.Ident(str) -> begin
+          Buffer.add_string buf str;
+          lookahead parser;
+          parse_var parser buf
+        end
+        | _ ->
+          failwith (expected parser "identifier")
+      end
+    end
+    | _ ->
+      Expr.Var(Ident.intern (Buffer.contents buf))
 
 and parse_params parser =
   if parser.token <> Token.Just('(') then

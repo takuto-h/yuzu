@@ -27,3 +27,5 @@ def fac(n):
 
 var fac5 = fac(5)
 var fac10 = fac(10)
+
+var foldr = List.fold_right
