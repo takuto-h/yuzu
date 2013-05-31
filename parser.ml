@@ -44,73 +44,86 @@ let rec make_abs params body_expr =
 let rec make_app fun_expr arg_exprs =
   let mk_app e1 e2 = Expr.App(e1, e2) in
   List.fold_left mk_app fun_expr arg_exprs
-    
+
+let parse_non_assoc parser get_op parse_lower =
+  let lhs = parse_lower parser in
+  match get_op parser.token with
+    | None ->
+      lhs
+    | Some(str) ->
+      lookahead parser;
+      let op = Expr.Var(Ident.intern(str)) in
+      let rhs = parse_lower parser in
+      Expr.App(Expr.App(op,lhs),rhs)
+
+let rec parse_right_assoc parser get_op parse_lower =
+  let lhs = parse_lower parser in
+  match get_op parser.token with
+    | None ->
+      lhs
+    | Some(str) -> begin
+      lookahead parser;
+      let op = Expr.Var(Ident.intern(str)) in
+      let rhs = parse_right_assoc parser get_op parse_lower in
+      Expr.App(Expr.App(op,lhs),rhs)
+    end
+
+let parse_left_assoc parser get_op parse_lower =
+  let lhs = parse_lower parser in
+  let rec loop lhs =
+    match get_op parser.token with
+      | None ->
+        lhs
+      | Some(str) -> begin
+        lookahead parser;
+        let op = Expr.Var(Ident.intern(str)) in
+        let rhs = parse_lower parser in
+        loop (Expr.App(Expr.App(op,lhs),rhs))
+      end
+  in loop lhs
+
 let rec parse_expr parser =
   parse_cmp_expr parser
 
 and parse_cmp_expr parser =
-  let lhs = parse_or_or_expr parser in
-  match parser.token with
-    | Token.CmpOp(str) -> begin
-      lookahead parser;
-      let op = Expr.Var(Ident.intern(str)) in
-      let rhs = parse_or_or_expr parser in
-      Expr.App(Expr.App(op,lhs),rhs)
-    end
+  let get_op = function
+    | Token.CmpOp(str) ->
+      Some(str)
     | _ ->
-      lhs
+      None
+  in parse_non_assoc parser get_op parse_or_or_expr
 
 and parse_or_or_expr parser =
-  let lhs = parse_and_and_expr parser in
-  match parser.token with
-    | Token.OrOr(str) -> begin
-      lookahead parser;
-      let op = Expr.Var(Ident.intern(str)) in
-      let rhs = parse_or_or_expr parser in
-      Expr.App(Expr.App(op,lhs),rhs)
-    end
+  let get_op = function
+    | Token.OrOr(str) ->
+      Some(str)
     | _ ->
-      lhs
+      None
+  in parse_right_assoc parser get_op parse_and_and_expr
 
 and parse_and_and_expr parser =
-  let lhs = parse_or_expr parser in
-  match parser.token with
-    | Token.AndAnd(str) -> begin
-      lookahead parser;
-      let op = Expr.Var(Ident.intern(str)) in
-      let rhs = parse_and_and_expr parser in
-      Expr.App(Expr.App(op,lhs),rhs)
-    end
+  let get_op = function
+    | Token.AndAnd(str) ->
+      Some(str)
     | _ ->
-      lhs
+      None
+  in parse_right_assoc parser get_op parse_or_expr
 
 and parse_or_expr parser =
-  let lhs = parse_and_expr parser in
-  let rec loop lhs =
-    match parser.token with
-      | Token.OrOp(str) -> begin
-        lookahead parser;
-        let op = Expr.Var(Ident.intern(str)) in
-        let rhs = parse_and_expr parser in
-        loop (Expr.App(Expr.App(op,lhs),rhs))
-      end
-      | _ ->
-        lhs
-  in loop lhs
+  let get_op = function
+    | Token.OrOp(str) ->
+      Some(str)
+    | _ ->
+      None
+  in parse_left_assoc parser get_op parse_and_expr
 
 and parse_and_expr parser =
-  let lhs = parse_cons_expr parser in
-  let rec loop lhs =
-    match parser.token with
-      | Token.OrOp(str) -> begin
-        lookahead parser;
-        let op = Expr.Var(Ident.intern(str)) in
-        let rhs = parse_cons_expr parser in
-        loop (Expr.App(Expr.App(op,lhs),rhs))
-      end
-      | _ ->
-        lhs
-  in loop lhs
+  let get_op = function
+    | Token.AndOp(str) ->
+      Some(str)
+    | _ ->
+      None
+  in parse_left_assoc parser get_op parse_cons_expr
 
 and parse_cons_expr parser =
   let lhs = parse_add_expr parser in
@@ -125,32 +138,20 @@ and parse_cons_expr parser =
       lhs
 
 and parse_add_expr parser =
-  let lhs = parse_mul_expr parser in
-  let rec loop lhs =
-    match parser.token with
-      | Token.AddOp(str) -> begin
-        lookahead parser;
-        let op = Expr.Var(Ident.intern(str)) in
-        let rhs = parse_mul_expr parser in
-        loop (Expr.App(Expr.App(op,lhs),rhs))
-      end
-      | _ ->
-        lhs
-  in loop lhs
+  let get_op = function
+    | Token.AddOp(str) ->
+      Some(str)
+    | _ ->
+      None
+  in parse_left_assoc parser get_op parse_mul_expr
 
 and parse_mul_expr parser =
-  let lhs = parse_unary_expr parser in
-  let rec loop lhs =
-    match parser.token with
-      | Token.MulOp(str) -> begin
-        lookahead parser;
-        let op = Expr.Var(Ident.intern(str)) in
-        let rhs = parse_unary_expr parser in
-        loop (Expr.App(Expr.App(op,lhs),rhs))
-      end
-      | _ ->
-        lhs
-  in loop lhs
+  let get_op = function
+    | Token.MulOp(str) ->
+      Some(str)
+    | _ ->
+      None
+  in parse_left_assoc parser get_op parse_unary_expr
 
 and parse_unary_expr parser =
   parse_prim_expr parser
