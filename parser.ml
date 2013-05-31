@@ -135,7 +135,15 @@ and parse_mul_expr parser =
       Some(str)
     | _ ->
       None
-  in parse_left_assoc parser get_op parse_unary_expr
+  in parse_left_assoc parser get_op parse_pow_expr
+
+and parse_pow_expr parser =
+  let get_op = function
+    | Token.PowOp(str) ->
+      Some(str)
+    | _ ->
+      None
+  in parse_right_assoc parser get_op parse_unary_expr
 
 and parse_unary_expr parser =
   parse_prim_expr parser

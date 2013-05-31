@@ -55,3 +55,5 @@ Buffer.add_char(buf, '\n')
 Buffer.add_string(buf, "DEF")
 Buffer.add_char(buf, 'G')
 Printf.printf("%s\n", Buffer.contents(buf))
+
+var pow_2_10 = float_of_int(2) ** float_of_int(10)

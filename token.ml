@@ -16,6 +16,7 @@ type t =
   | ConsOp of string
   | AddOp of string
   | MulOp of string
+  | PowOp of string
 
 let show = function
   | EOF ->
@@ -33,5 +34,5 @@ let show = function
   | Char(_) ->
     "character"
   | Reserved(s) | OrOp(s) | AndOp(s) | CmpOp(s)
-  | ConsOp(s) | AddOp(s) | MulOp(s) ->
+  | ConsOp(s) | AddOp(s) | MulOp(s) | PowOp(s) ->
     sprintf "'%s'" s

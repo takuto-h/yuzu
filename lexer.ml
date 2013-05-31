@@ -224,11 +224,21 @@ let lex_visible_token lexer pos c =
       Buffer.add_char buf c;
       Token.AddOp(lex_op lexer buf)
     end
-    | '*' | '/' | '%' -> begin
+    | '/' | '%' -> begin
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
       Token.MulOp(lex_op lexer buf)
     end
+    | '*' ->
+      begin match Source.peek lexer.source with
+        | Some('*') ->
+          Source.junk lexer.source;
+          Token.PowOp("**")
+        | Some(_) | None ->
+          let buf = Buffer.create initial_buffer_size in
+          Buffer.add_char buf c;
+          Token.MulOp(lex_op lexer buf)
+      end
     | ':' ->
       begin match Source.peek lexer.source with
         | Some(':') ->
