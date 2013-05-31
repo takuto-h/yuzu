@@ -82,6 +82,19 @@ let parse_left_assoc parser get_op parse_lower =
       end
   in loop lhs
 
+let parse_to_list parser is_terminal parse_elem =
+  let rec loop list =
+    let elem = parse_elem parser in
+    if is_terminal parser.token then begin
+      lookahead parser;
+      List.rev (elem::list)
+    end
+    else begin
+      lookahead parser;
+      loop (elem::list)
+    end
+  in loop []
+
 let rec parse_expr parser =
   parse_or_expr parser
 
@@ -154,7 +167,7 @@ and parse_prim_expr parser =
     match parser.token with
       | Token.Reserved("(") -> begin
         lookahead parser;
-        let arg_exprs = parse_expr_list parser [] in
+        let arg_exprs = parse_expr_list parser in
         loop (make_app fun_expr arg_exprs)
       end
       | Token.Reserved("^") -> begin
@@ -165,20 +178,6 @@ and parse_prim_expr parser =
       | _ ->
         fun_expr
   in loop fun_expr
-
-and parse_expr_list parser lst =
-  let expr = parse_expr parser in
-  match parser.token with
-    | Token.Reserved(")") -> begin
-      lookahead parser;
-      List.rev (expr::lst)
-    end
-    | Token.Reserved(",") -> begin
-      lookahead parser;
-      parse_expr_list parser (expr::lst)
-    end
-    | _ ->
-      failwith (expected parser "')' or ','")
     
 and parse_atomic_expr parser =
   match parser.token with
@@ -215,11 +214,6 @@ and parse_atomic_expr parser =
     | _ ->
       failwith (expected parser "expression")
 
-and parse_abs parser =
-  let params = parse_params parser in
-  let body_expr = parse_block parser in
-  make_abs params body_expr
-
 and parse_var parser buf =
   match parser.token with
     | Token.Reserved(".") -> begin
@@ -238,31 +232,35 @@ and parse_var parser buf =
     | _ ->
       Expr.Var(Ident.intern (Buffer.contents buf))
 
+and parse_abs parser =
+  let params = parse_params parser in
+  let body_expr = parse_block parser in
+  make_abs params body_expr
+
 and parse_params parser =
   if parser.token <> Token.Reserved("(") then
     failwith (expected parser "'('")
   else begin
     lookahead parser;
-    parse_ident_list parser []
+    parse_ident_list parser
   end
 
-and parse_ident_list parser lst =
+and parse_ident_list parser =
+  let is_terminal = function
+    | Token.Reserved(")") ->
+      true
+    | Token.Reserved(",") ->
+      false
+    | _ -> 
+      failwith (expected parser "')' or ','")
+  in parse_to_list parser is_terminal parse_ident
+
+and parse_ident parser =
   match parser.token with
-    | Token.Ident(str) ->
+    | Token.Ident(str) -> begin
       lookahead parser;
-      let ident = Ident.intern str in
-      begin match parser.token with
-        | Token.Reserved(")") -> begin
-          lookahead parser;
-          List.rev (ident::lst)
-        end
-        | Token.Reserved(",") -> begin
-          lookahead parser;
-          parse_ident_list parser (ident::lst)
-        end
-        | _ ->
-          failwith (expected parser "')' or ','")
-      end
+      Ident.intern str
+    end
     | _ ->
       failwith (expected parser "identifier")
 
@@ -331,30 +329,30 @@ and parse_list parser =
     Expr.Var(Ident.intern("[]"))
   end
 
+and parse_expr_list parser =
+  let is_terminal = function
+    | Token.Reserved(")") ->
+      true
+    | Token.Reserved(",") ->
+      false
+    | _ -> 
+      failwith (expected parser "')' or ','")
+  in parse_to_list parser is_terminal parse_expr
+    
 let parse_top_let_fun parser =
-  match parser.token with
-    | Token.Ident(str) ->
-      lookahead parser;
-      let fun_ident = Ident.intern str in
-      let params = parse_params parser in
-      let body_expr = parse_block parser in
-      Top.LetFun(fun_ident, make_abs params body_expr)
-    | _ ->
-      failwith (expected parser "identifier")
+  let fun_ident = parse_ident parser in
+  let params = parse_params parser in
+  let body_expr = parse_block parser in
+  Top.LetFun(fun_ident, make_abs params body_expr)
 
 let parse_top_let_val parser =
-  match parser.token with
-    | Token.Ident(str) ->
-      let ident = Ident.intern str in
-      lookahead parser;
-      if parser.token <> Token.CmpOp("=") then
-        failwith (expected parser "'='")
-      else begin
-        lookahead parser;
-        Top.LetVal(ident, parse_expr parser)
-      end
-    | _ ->
-      failwith (expected parser "identifier")
+  let ident = parse_ident parser in
+  if parser.token <> Token.CmpOp("=") then
+    failwith (expected parser "'='")
+  else begin
+    lookahead parser;
+    Top.LetVal(ident, parse_expr parser)
+  end
 
 let parse_top parser =
   match parser.token with
