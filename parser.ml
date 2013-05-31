@@ -49,12 +49,36 @@ let rec parse_expr parser =
   parse_cmp_expr parser
 
 and parse_cmp_expr parser =
-  let lhs = parse_or_expr parser in
+  let lhs = parse_or_or_expr parser in
   match parser.token with
     | Token.CmpOp(str) -> begin
       lookahead parser;
       let op = Expr.Var(Ident.intern(str)) in
-      let rhs = parse_or_expr parser in
+      let rhs = parse_or_or_expr parser in
+      Expr.App(Expr.App(op,lhs),rhs)
+    end
+    | _ ->
+      lhs
+
+and parse_or_or_expr parser =
+  let lhs = parse_and_and_expr parser in
+  match parser.token with
+    | Token.OrOr(str) -> begin
+      lookahead parser;
+      let op = Expr.Var(Ident.intern(str)) in
+      let rhs = parse_or_or_expr parser in
+      Expr.App(Expr.App(op,lhs),rhs)
+    end
+    | _ ->
+      lhs
+
+and parse_and_and_expr parser =
+  let lhs = parse_or_expr parser in
+  match parser.token with
+    | Token.AndAnd(str) -> begin
+      lookahead parser;
+      let op = Expr.Var(Ident.intern(str)) in
+      let rhs = parse_and_and_expr parser in
       Expr.App(Expr.App(op,lhs),rhs)
     end
     | _ ->
