@@ -83,31 +83,7 @@ let parse_left_assoc parser get_op parse_lower =
   in loop lhs
 
 let rec parse_expr parser =
-  parse_cmp_expr parser
-
-and parse_cmp_expr parser =
-  let get_op = function
-    | Token.CmpOp(str) ->
-      Some(str)
-    | _ ->
-      None
-  in parse_non_assoc parser get_op parse_or_or_expr
-
-and parse_or_or_expr parser =
-  let get_op = function
-    | Token.OrOr(str) ->
-      Some(str)
-    | _ ->
-      None
-  in parse_right_assoc parser get_op parse_and_and_expr
-
-and parse_and_and_expr parser =
-  let get_op = function
-    | Token.AndAnd(str) ->
-      Some(str)
-    | _ ->
-      None
-  in parse_right_assoc parser get_op parse_or_expr
+  parse_or_expr parser
 
 and parse_or_expr parser =
   let get_op = function
@@ -115,7 +91,7 @@ and parse_or_expr parser =
       Some(str)
     | _ ->
       None
-  in parse_left_assoc parser get_op parse_and_expr
+  in parse_right_assoc parser get_op parse_and_expr
 
 and parse_and_expr parser =
   let get_op = function
@@ -123,7 +99,15 @@ and parse_and_expr parser =
       Some(str)
     | _ ->
       None
-  in parse_left_assoc parser get_op parse_cons_expr
+  in parse_right_assoc parser get_op parse_cmp_expr
+
+and parse_cmp_expr parser =
+  let get_op = function
+    | Token.CmpOp(str) ->
+      Some(str)
+    | _ ->
+      None
+  in parse_non_assoc parser get_op parse_cons_expr
 
 and parse_cons_expr parser =
   let lhs = parse_add_expr parser in

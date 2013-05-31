@@ -10,8 +10,6 @@ type t =
   | String of string
   | Char of string
   | Reserved of string
-  | OrOr of string
-  | AndAnd of string
   | OrOp of string
   | AndOp of string
   | CmpOp of string
@@ -34,6 +32,6 @@ let show = function
     "string"
   | Char(_) ->
     "character"
-  | Reserved(s) | OrOr(s) | AndAnd(s) | OrOp(s) | AndOp(s)
-  | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) ->
+  | Reserved(s) | OrOp(s) | AndOp(s) | CmpOp(s)
+  | ConsOp(s) | AddOp(s) | MulOp(s) ->
     sprintf "'%s'" s
