@@ -146,6 +146,10 @@ and parse_atomic_expr parser =
       lookahead parser;
       Expr.Con(Literal.String(str))
     end
+    | Token.Char(str) -> begin
+      lookahead parser;
+      Expr.Con(Literal.Char(str))
+    end
     | Token.Just('^') -> begin
       lookahead parser;
       let params = parse_params parser in

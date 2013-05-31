@@ -12,6 +12,7 @@ type t =
   | Int of int
   | Ident of string
   | String of string
+  | Char of string
   | Just of char
   | CmpOp of string
   | ConsOp of string
@@ -29,5 +30,6 @@ let show = function
   | Int(_) -> "integer"
   | Ident(_) -> "identifier"
   | String(_) -> "string"
+  | Char(_) -> "character"
   | Just(c) -> sprintf "'%c'" c
   | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) -> sprintf "'%s'" s

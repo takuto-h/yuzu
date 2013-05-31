@@ -28,6 +28,8 @@ let rec translate_expr trans = function
     sprintf "%d" n
   | Expr.Con(Literal.String(str)) ->
     sprintf "\"%s\"" str
+  | Expr.Con(Literal.Char(str)) ->
+    sprintf "'%s'" str
   | Expr.Var(ident) ->
     translate_ident ident
   | Expr.Abs(param_ident,body_expr) ->

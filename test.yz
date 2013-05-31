@@ -40,3 +40,12 @@ var doubled = map($|*|(2), list)
 
 Printf.printf("1 + 1 = %d\n", 1 + 1)
 List.iter(Printf.printf("\"%d\"\n"), list)
+
+var buf = Buffer.create(256)
+Buffer.add_char(buf, '\'')
+Buffer.add_string(buf, "ABC")
+Buffer.add_char(buf, '\'')
+Buffer.add_char(buf, '\n')
+Buffer.add_string(buf, "DEF")
+Buffer.add_char(buf, 'G')
+Printf.printf("%s\n", Buffer.contents(buf))

@@ -152,7 +152,34 @@ let rec lex_string lexer buf =
     end
     | None ->
       let pos_eof = Source.pos lexer.source in
-      failwith (sprintf "%s: error: EOF inside a string\n" (Pos.show pos_eof))
+      failwith (sprintf "%s: error: EOF inside a string literal\n" (Pos.show pos_eof))
+
+let rec lex_char lexer buf =
+  match Source.peek lexer.source with
+    | Some('\'') -> begin
+      Source.junk lexer.source;
+      Token.Char(Buffer.contents buf)
+    end
+    | Some('\\') -> begin
+      Source.junk lexer.source;
+      begin match Source.peek lexer.source with
+        | Some('\'') ->
+          Source.junk lexer.source;
+          Buffer.add_string buf "\\'";
+          lex_char lexer buf
+        | Some(_) | None ->
+          Buffer.add_char buf '\\';
+          lex_char lexer buf
+      end
+    end
+    | Some(c) -> begin
+      Source.junk lexer.source;
+      Buffer.add_char buf c;
+      lex_char lexer buf
+    end
+    | None ->
+      let pos_eof = Source.pos lexer.source in
+      failwith (sprintf "%s: error: EOF inside a character literal\n" (Pos.show pos_eof))
 
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
@@ -203,6 +230,10 @@ let lex_visible_token lexer pos c =
     | '"' -> begin
       let buf = Buffer.create initial_buffer_size in
       lex_string lexer buf
+    end
+    | '\'' -> begin
+      let buf = Buffer.create initial_buffer_size in
+      lex_char lexer buf
     end
     | _ when is_digit c ->
       lex_int lexer (int_of_digit c)
