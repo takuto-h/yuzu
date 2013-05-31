@@ -60,3 +60,5 @@ var pow_2_10 = float_of_int(2) ** float_of_int(10)
 
 var a = (1, true, "abc", 'd')
 var unit = ()
+
+var a = -fac(4) * 2

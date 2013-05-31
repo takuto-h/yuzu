@@ -159,7 +159,19 @@ and parse_pow_expr parser =
   in parse_right_assoc parser get_op parse_unary_expr
 
 and parse_unary_expr parser =
-  parse_prim_expr parser
+  match parser.token with
+    | Token.AddOp("-") -> begin
+      lookahead parser;
+      let expr = parse_unary_expr parser in
+      Expr.App(Expr.Var(Ident.intern "~-"),expr)
+    end
+    | Token.AddOp("+") -> begin
+      lookahead parser;
+      let expr = parse_unary_expr parser in
+      Expr.App(Expr.Var(Ident.intern "~+"),expr)
+    end
+    | _ ->
+      parse_prim_expr parser
 
 and parse_prim_expr parser =
   let fun_expr = parse_atomic_expr parser in
