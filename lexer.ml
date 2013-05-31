@@ -65,7 +65,7 @@ let is_special_ident str =
         false
       else
         let c = String.get str i in
-        if is_ident_part c || String.contains ".[]" c then
+        if is_ident_part c || String.contains "." c then
           loop (i + 1)
         else
           true
