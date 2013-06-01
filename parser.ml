@@ -219,17 +219,16 @@ and parse_var parser =
   let str = parse_ident parser in
   match parser.token with
     | Token.Reserved(".") ->
-      lookahead parser;
       let val_path = parse_value_path parser [str] in
       Expr.Var(val_path)
     | _ ->
       Expr.Var(Path.make [] (Name.make str))
 
 and parse_value_path parser mod_names =
+  lookahead parser;
   let str = parse_ident parser in
   match parser.token with
     | Token.Reserved(".") -> begin
-      lookahead parser;
       parse_value_path parser (str::mod_names)
     end
     | _ ->
@@ -244,12 +243,11 @@ and parse_abs parser =
 and parse_params parser =
   if parser.token <> Token.Reserved("(") then
     failwith (expected parser "'('")
-  else begin
-    lookahead parser;
+  else
     parse_value_name_list parser
-  end
 
 and parse_value_name_list parser =
+  lookahead parser;
   let is_terminal = function
     | Token.Reserved(")") ->
       true
@@ -370,12 +368,14 @@ and parse_args parser =
   in parse_to_list parser is_terminal parse_expr
 
 let parse_top_let_fun parser =
+  lookahead parser;
   let fun_name = parse_value_name parser in
   let params = parse_params parser in
   let body_expr = parse_block parser in
   Top.LetFun(fun_name, make_abs params body_expr)
 
 let parse_top_let_val parser =
+  lookahead parser;
   let val_name = parse_value_name parser in
   if parser.token <> Token.CmpOp("=") then
     failwith (expected parser "'='")
@@ -386,14 +386,10 @@ let parse_top_let_val parser =
     
 let parse_top parser =
   match parser.token with
-    | Token.Reserved("def") -> begin
-      lookahead parser;
+    | Token.Reserved("def") ->
       parse_top_let_fun parser
-    end
-    | Token.Reserved("var") -> begin
-      lookahead parser;
+    | Token.Reserved("var") ->
       parse_top_let_val parser
-    end
     | _ ->
       Top.Expr(parse_expr parser)
 
