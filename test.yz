@@ -66,3 +66,13 @@ var unit = ()
 var a = -fac(4) * 2
 
 printf("opened!\n")
+
+def bool_of_option(opt):
+  match(opt)
+  case None:
+    false
+  case _:
+    true
+
+var t = bool_of_option(Some(123))
+var f = bool_of_option(None)

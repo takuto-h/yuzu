@@ -13,11 +13,13 @@ let initial_buffer_size = 16
 
 module StringSet = Set.Make(String)
 let reserved = StringSet.empty
+let reserved = StringSet.add "open" reserved
 let reserved = StringSet.add "def" reserved
 let reserved = StringSet.add "var" reserved
 let reserved = StringSet.add "if" reserved
 let reserved = StringSet.add "else" reserved
-let reserved = StringSet.add "open" reserved
+let reserved = StringSet.add "match" reserved
+let reserved = StringSet.add "case" reserved
 
 let create source =
   let lexer = {

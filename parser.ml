@@ -212,6 +212,8 @@ and parse_atomic_expr parser =
       parse_list parser
     | Token.Reserved("(") ->
       parse_parens parser
+    | Token.Reserved("match") ->
+      parse_match_expr parser
     | _ ->
       failwith (expected parser "expression")
 
@@ -371,6 +373,38 @@ and parse_args parser =
     | _ -> 
       failwith (expected parser "')' or ','")
   in parse_to_list parser is_terminal parse_expr
+
+and parse_match_expr parser =
+  lookahead parser;
+  if parser.token <> Token.Reserved("(") then
+    failwith (expected parser "'('")
+  else begin
+    lookahead parser;
+    let target_expr = parse_expr parser in
+    if parser.token <> Token.Reserved(")") then
+      failwith (expected parser "')'")
+    else begin
+      lookahead parser;
+      let cases = parse_cases parser [] in
+      Expr.Match(target_expr, cases)
+    end
+  end
+
+and parse_cases parser cases =
+  skip parser Token.Newline;
+  match parser.token with
+    | Token.Reserved("case") -> begin
+      lookahead parser;
+      let pat = parse_pattern parser in
+      let expr = parse_block parser in
+      parse_cases parser ((pat,expr)::cases)
+    end
+    | _ ->
+      List.rev cases
+
+and parse_pattern parser =
+  let name = parse_value_name parser in
+  Pattern.Var(name)
 
 let parse_top_open parser =
   lookahead parser;

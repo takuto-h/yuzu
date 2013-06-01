@@ -37,6 +37,10 @@ let translate_value_path = function
   | (mod_path, val_name) ->
     sprintf "%s.%s" (translate_module_path mod_path) (translate_value_name val_name)
 
+let translate_pattern = function
+  | Pattern.Var(name) ->
+    translate_value_name name
+
 let rec translate_expr trans = function
   | Expr.Con(Literal.Int(n)) ->
     sprintf "%d" n
@@ -76,7 +80,20 @@ let rec translate_expr trans = function
     sprintf "(%s)" str_x_xs
   | Expr.Tuple([]) ->
     assert false
+  | Expr.Match(target_expr,cases) ->
+    let str_target = translate_expr trans target_expr in
+    let trans_case = {trans with indent_level=trans.indent_level+1} in
+    let str_cases = List.fold_left begin fun acc elem ->
+      sprintf "%s%s" acc (translate_case trans_case elem)
+    end "" cases in
+    sprintf "begin match %s with%s\n%s" str_target str_cases (indent trans "end")
 
+and translate_case trans (pat,body_expr) =
+  let str_pat = sprintf "| %s ->" (translate_pattern pat) in
+  let trans_body = {trans with indent_level=trans.indent_level+1} in
+  let str_body = translate_expr trans_body body_expr in
+  sprintf "\n%s\n%s" (indent trans str_pat) (indent trans_body str_body)
+      
 let translate_top trans = function
   | Top.Expr(expr) ->
     let str_expr = translate_expr trans expr in
