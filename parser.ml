@@ -193,12 +193,12 @@ and parse_prim_expr parser =
     
 and parse_atomic_expr parser =
   match parser.token with
+    | Token.Ident(str) ->
+      parse_var parser
     | Token.Int(n) -> begin
       lookahead parser;
       Expr.Con(Literal.Int(n))
     end
-    | Token.Ident(str) ->
-      parse_var parser
     | Token.String(str) -> begin
       lookahead parser;
       Expr.Con(Literal.String(str))
@@ -230,27 +230,6 @@ and parse_var parser =
   let buf = Buffer.create initial_buffer_size in
   Expr.Var(parse_value_path parser buf)
 
-and parse_value_path parser buf =
-  let str = parse_ident_str parser in
-  Buffer.add_string buf str;
-  match parser.token with
-    | Token.Reserved(".") -> begin
-      Buffer.add_char buf '.';
-      lookahead parser;
-      parse_value_path parser buf
-    end
-    | _ ->
-      Ident.intern (Buffer.contents buf)
-
-and parse_ident_str parser =
-  match parser.token with
-    | Token.Ident(str) -> begin
-      lookahead parser;
-      str
-    end
-    | _ ->
-      failwith (expected parser "identifier")
-
 and parse_abs parser =
   let params = parse_params parser in
   let body_expr = parse_block parser in
@@ -261,10 +240,10 @@ and parse_params parser =
     failwith (expected parser "'('")
   else begin
     lookahead parser;
-    parse_ident_list parser
+    parse_value_name_list parser
   end
 
-and parse_ident_list parser =
+and parse_value_name_list parser =
   let is_terminal = function
     | Token.Reserved(")") ->
       true
@@ -272,10 +251,31 @@ and parse_ident_list parser =
       false
     | _ -> 
       failwith (expected parser "')' or ','")
-  in parse_to_list parser is_terminal parse_ident
+  in parse_to_list parser is_terminal parse_value_name
+
+and parse_value_name parser =
+  Ident.intern (parse_ident parser)
+
+and parse_value_path parser buf =
+  let str = parse_ident parser in
+  Buffer.add_string buf str;
+  match parser.token with
+    | Token.Reserved(".") -> begin
+      Buffer.add_char buf '.';
+      lookahead parser;
+      parse_value_path parser buf
+    end
+    | _ ->
+      Ident.intern (Buffer.contents buf)
 
 and parse_ident parser =
-  Ident.intern (parse_ident_str parser)
+  match parser.token with
+    | Token.Ident(str) -> begin
+      lookahead parser;
+      str
+    end
+    | _ ->
+      failwith (expected parser "identifier")
 
 and parse_block parser =
   match parser.token with
@@ -371,20 +371,20 @@ and parse_expr_list parser =
     | _ -> 
       failwith (expected parser "')' or ','")
   in parse_to_list parser is_terminal parse_expr
-    
+
 let parse_top_let_fun parser =
-  let fun_ident = parse_ident parser in
+  let fun_name = parse_value_name parser in
   let params = parse_params parser in
   let body_expr = parse_block parser in
-  Top.LetFun(fun_ident, make_abs params body_expr)
+  Top.LetFun(fun_name, make_abs params body_expr)
 
 let parse_top_let_val parser =
-  let ident = parse_ident parser in
+  let val_name = parse_value_name parser in
   if parser.token <> Token.CmpOp("=") then
     failwith (expected parser "'='")
   else begin
     lookahead parser;
-    Top.LetVal(ident, parse_expr parser)
+    Top.LetVal(val_name, parse_expr parser)
   end
     
 let parse_top parser =
