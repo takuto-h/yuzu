@@ -216,19 +216,13 @@ and parse_atomic_expr parser =
       failwith (expected parser "expression")
 
 and parse_var parser =
-  let str = parse_ident parser in
-  match parser.token with
-    | Token.Reserved(".") ->
-      let val_path = parse_value_path parser [str] in
-      Expr.Var(val_path)
-    | _ ->
-      Expr.Var(Path.make [] (Name.make str))
+  Expr.Var(parse_value_path parser [])
 
 and parse_value_path parser mod_names =
-  lookahead parser;
   let str = parse_ident parser in
   match parser.token with
     | Token.Reserved(".") -> begin
+      lookahead parser;
       parse_value_path parser (str::mod_names)
     end
     | _ ->
@@ -386,6 +380,8 @@ let parse_top_let_val parser =
     
 let parse_top parser =
   match parser.token with
+(*    | Token.Reserved("open") ->
+      parse_top_open parser*)
     | Token.Reserved("def") ->
       parse_top_let_fun parser
     | Token.Reserved("var") ->
