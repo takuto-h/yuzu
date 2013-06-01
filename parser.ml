@@ -389,7 +389,7 @@ let parse_top_let_val parser =
     lookahead parser;
     Top.LetVal(ident, parse_expr parser)
   end
-
+    
 let parse_top parser =
   match parser.token with
     | Token.Reserved("def") -> begin
