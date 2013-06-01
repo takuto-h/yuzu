@@ -7,8 +7,6 @@ type t = {
   mutable pos : Pos.t;
 }
 
-let initial_buffer_size = 16
-
 let create lexer = {
   lexer = lexer;
   token = Token.EOF;
@@ -52,7 +50,7 @@ let parse_non_assoc parser get_op parse_lower =
       lhs
     | Some(str) ->
       lookahead parser;
-      let op = Expr.Var(Ident.intern(str)) in
+      let op = Expr.Var(Path.make [] (Name.make str)) in
       let rhs = parse_lower parser in
       Expr.App(Expr.App(op,lhs),rhs)
 
@@ -63,7 +61,7 @@ let rec parse_right_assoc parser get_op parse_lower =
       lhs
     | Some(str) -> begin
       lookahead parser;
-      let op = Expr.Var(Ident.intern(str)) in
+      let op = Expr.Var(Path.make [] (Name.make str)) in
       let rhs = parse_right_assoc parser get_op parse_lower in
       Expr.App(Expr.App(op,lhs),rhs)
     end
@@ -76,7 +74,7 @@ let parse_left_assoc parser get_op parse_lower =
         lhs
       | Some(str) -> begin
         lookahead parser;
-        let op = Expr.Var(Ident.intern(str)) in
+        let op = Expr.Var(Path.make [] (Name.make str)) in
         let rhs = parse_lower parser in
         loop (Expr.App(Expr.App(op,lhs),rhs))
       end
@@ -127,7 +125,7 @@ and parse_cons_expr parser =
   match parser.token with
     | Token.ConsOp(str) -> begin
       lookahead parser;
-      let op = Expr.Var(Ident.intern(str)) in
+      let op = Expr.Var(Path.make [] (Name.make str)) in
       let rhs = parse_cons_expr parser in
       Expr.App(op,Expr.Tuple([lhs;rhs]))
     end
@@ -163,12 +161,12 @@ and parse_unary_expr parser =
     | Token.AddOp("-") -> begin
       lookahead parser;
       let expr = parse_unary_expr parser in
-      Expr.App(Expr.Var(Ident.intern "~-"),expr)
+      Expr.App(Expr.Var(Path.make [] (Name.make "~-")),expr)
     end
     | Token.AddOp("+") -> begin
       lookahead parser;
       let expr = parse_unary_expr parser in
-      Expr.App(Expr.Var(Ident.intern "~+"),expr)
+      Expr.App(Expr.Var(Path.make [] (Name.make "~+")),expr)
     end
     | _ ->
       parse_prim_expr parser
@@ -194,7 +192,7 @@ and parse_prim_expr parser =
 and parse_atomic_expr parser =
   match parser.token with
     | Token.Ident(str) ->
-      parse_var parser
+      parse_var parser 
     | Token.Int(n) -> begin
       lookahead parser;
       Expr.Con(Literal.Int(n))
@@ -227,8 +225,14 @@ and parse_atomic_expr parser =
       failwith (expected parser "expression")
 
 and parse_var parser =
-  let buf = Buffer.create initial_buffer_size in
-  Expr.Var(parse_value_path parser buf)
+  let str = parse_ident parser in
+  match parser.token with
+    | Token.Reserved(".") ->
+      lookahead parser;
+      let val_path = parse_value_path parser [str] in
+      Expr.Var(val_path)
+    | _ ->
+      Expr.Var(Path.make [] (Name.make str))
 
 and parse_abs parser =
   let params = parse_params parser in
@@ -254,19 +258,17 @@ and parse_value_name_list parser =
   in parse_to_list parser is_terminal parse_value_name
 
 and parse_value_name parser =
-  Ident.intern (parse_ident parser)
+  Name.make (parse_ident parser)
 
-and parse_value_path parser buf =
+and parse_value_path parser mod_names =
   let str = parse_ident parser in
-  Buffer.add_string buf str;
   match parser.token with
     | Token.Reserved(".") -> begin
-      Buffer.add_char buf '.';
       lookahead parser;
-      parse_value_path parser buf
+      parse_value_path parser (str::mod_names)
     end
     | _ ->
-      Ident.intern (Buffer.contents buf)
+      Path.make (List.rev mod_names) (Name.make str)
 
 and parse_ident parser =
   match parser.token with
@@ -337,7 +339,7 @@ and parse_if_expr parser =
 and parse_list parser =
   if parser.token = Token.Reserved("]") then begin
     lookahead parser;
-    Expr.Var(Ident.intern("[]"))
+    Expr.Var(Path.make [] (Name.make "[]"))
   end
   else
     let is_terminal = function
@@ -350,13 +352,13 @@ and parse_list parser =
     in
     let list = parse_to_list parser is_terminal parse_expr in
     List.fold_right begin fun elem acc ->
-      Expr.App(Expr.Var(Ident.intern("::")),Expr.Tuple([elem;acc]))
-    end list (Expr.Var(Ident.intern("[]")))
+      Expr.App(Expr.Var(Path.make [] (Name.make "::")),Expr.Tuple([elem;acc]))
+    end list (Expr.Var(Path.make [] (Name.make "[]")))
 
 and parse_parens parser =
   if parser.token = Token.Reserved(")") then begin
     lookahead parser;
-    Expr.Var(Ident.intern("()"))
+    Expr.Var(Path.make [] (Name.make "()"))
   end
   else
     let list = parse_expr_list parser in

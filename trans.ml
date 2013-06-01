@@ -17,11 +17,16 @@ let indent {basic_offset;indent_level} str =
   let offset = basic_offset * indent_level in
   sprintf "%s%s" (String.make offset ' ') str
   
-let translate_ident {Ident.name} =
-  if Lexer.is_special_ident name then
-    sprintf "( %s )" name
+let translate_name {Name.str} =
+  if Lexer.is_special_ident str then
+    sprintf "( %s )" str
   else
-    name
+    str
+
+let translate_path (mod_names, val_name) =
+  List.fold_right begin fun elem acc ->
+    sprintf "%s.%s" elem acc
+  end mod_names (translate_name val_name)
 
 let rec translate_expr trans = function
   | Expr.Con(Literal.Int(n)) ->
@@ -30,10 +35,10 @@ let rec translate_expr trans = function
     sprintf "\"%s\"" str
   | Expr.Con(Literal.Char(str)) ->
     sprintf "'%s'" str
-  | Expr.Var(ident) ->
-    translate_ident ident
-  | Expr.Abs(param_ident,body_expr) ->
-    let str_param = translate_ident param_ident in
+  | Expr.Var(path) ->
+    translate_path path
+  | Expr.Abs(param_name,body_expr) ->
+    let str_param = translate_name param_name in
     let trans_body = {trans with indent_level=trans.indent_level+1} in
     let str_body = translate_expr trans_body body_expr in
     sprintf
@@ -67,14 +72,14 @@ let translate_top trans = function
   | Top.Expr(expr) ->
     let str_expr = translate_expr trans expr in
     sprintf "let () = %s\n" str_expr
-  | Top.LetFun(ident,expr) ->
-    let str_ident = translate_ident ident in
+  | Top.LetFun(name,expr) ->
+    let str_name = translate_name name in
     let str_expr = translate_expr trans expr in
-    sprintf "let rec %s = %s\n" str_ident str_expr
-  | Top.LetVal(ident,expr) ->
-    let str_ident = translate_ident ident in
+    sprintf "let rec %s = %s\n" str_name str_expr
+  | Top.LetVal(name,expr) ->
+    let str_name = translate_name name in
     let str_expr = translate_expr trans expr in
-    sprintf "let %s = %s\n" str_ident str_expr
+    sprintf "let %s = %s\n" str_name str_expr
 
 exception Break
       
@@ -93,7 +98,7 @@ let translate_file fname_in fname_out =
             raise Break
           | Some(top) ->
             let result = translate_top trans top in
-            fprintf chan_out "%s\n" result
+            fprintf chan_out "%s\n" result;
       done
     with
       | Failure(message) ->
