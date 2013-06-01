@@ -1,4 +1,6 @@
 
+open Printf
+
 ignore(123)
 ignore(456)
 
@@ -44,8 +46,8 @@ var list = [1; 2; 3]
 var doubled = list |> map($(*)(2))
 var tripled = list |> map^(x): x * 3
 
-Printf.printf("1 + 1 = %d\n", 1 + 1)
-List.iter(Printf.printf("\"%d\"\n"), list)
+printf("1 + 1 = %d\n", 1 + 1)
+List.iter(printf("\"%d\"\n"), list)
 
 var buf = Buffer.create(256)
 Buffer.add_char(buf, '\'')
@@ -54,7 +56,7 @@ Buffer.add_char(buf, '\'')
 Buffer.add_char(buf, '\n')
 Buffer.add_string(buf, "DEF")
 Buffer.add_char(buf, 'G')
-Printf.printf("%s\n", Buffer.contents(buf))
+printf("%s\n", Buffer.contents(buf))
 
 var pow_2_10 = float_of_int(2) ** float_of_int(10)
 
@@ -62,7 +64,5 @@ var a = (1, true, "abc", 'd')
 var unit = ()
 
 var a = -fac(4) * 2
-
-open Printf
 
 printf("opened!\n")
