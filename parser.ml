@@ -197,12 +197,8 @@ and parse_atomic_expr parser =
       lookahead parser;
       Expr.Con(Literal.Int(n))
     end
-    | Token.Ident(str) -> begin
-      lookahead parser;
-      let buf = Buffer.create initial_buffer_size in
-      Buffer.add_string buf str;
-      parse_var parser buf
-    end
+    | Token.Ident(str) ->
+      parse_var parser
     | Token.String(str) -> begin
       lookahead parser;
       Expr.Con(Literal.String(str))
@@ -230,23 +226,30 @@ and parse_atomic_expr parser =
     | _ ->
       failwith (expected parser "expression")
 
-and parse_var parser buf =
+and parse_var parser =
+  let buf = Buffer.create initial_buffer_size in
+  Expr.Var(parse_value_path parser buf)
+
+and parse_value_path parser buf =
+  let str = parse_ident_str parser in
+  Buffer.add_string buf str;
   match parser.token with
     | Token.Reserved(".") -> begin
       Buffer.add_char buf '.';
       lookahead parser;
-      begin match parser.token with
-        | Token.Ident(str) -> begin
-          Buffer.add_string buf str;
-          lookahead parser;
-          parse_var parser buf
-        end
-        | _ ->
-          failwith (expected parser "identifier")
-      end
+      parse_value_path parser buf
     end
     | _ ->
-      Expr.Var(Ident.intern (Buffer.contents buf))
+      Ident.intern (Buffer.contents buf)
+
+and parse_ident_str parser =
+  match parser.token with
+    | Token.Ident(str) -> begin
+      lookahead parser;
+      str
+    end
+    | _ ->
+      failwith (expected parser "identifier")
 
 and parse_abs parser =
   let params = parse_params parser in
@@ -272,13 +275,7 @@ and parse_ident_list parser =
   in parse_to_list parser is_terminal parse_ident
 
 and parse_ident parser =
-  match parser.token with
-    | Token.Ident(str) -> begin
-      lookahead parser;
-      Ident.intern str
-    end
-    | _ ->
-      failwith (expected parser "identifier")
+  Ident.intern (parse_ident_str parser)
 
 and parse_block parser =
   match parser.token with
