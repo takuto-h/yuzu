@@ -177,7 +177,7 @@ and parse_prim_expr parser =
     match parser.token with
       | Token.Reserved("(") -> begin
         lookahead parser;
-        let arg_exprs = parse_expr_list parser in
+        let arg_exprs = parse_args parser in
         loop (make_app fun_expr arg_exprs)
       end
       | Token.Reserved("^") -> begin
@@ -234,6 +234,16 @@ and parse_var parser =
     | _ ->
       Expr.Var(Path.make [] (Name.make str))
 
+and parse_value_path parser mod_names =
+  let str = parse_ident parser in
+  match parser.token with
+    | Token.Reserved(".") -> begin
+      lookahead parser;
+      parse_value_path parser (str::mod_names)
+    end
+    | _ ->
+      Path.make (List.rev mod_names) (Name.make str)
+
 and parse_abs parser =
   let params = parse_params parser in
   let body_expr = parse_block parser in
@@ -259,16 +269,6 @@ and parse_value_name_list parser =
 
 and parse_value_name parser =
   Name.make (parse_ident parser)
-
-and parse_value_path parser mod_names =
-  let str = parse_ident parser in
-  match parser.token with
-    | Token.Reserved(".") -> begin
-      lookahead parser;
-      parse_value_path parser (str::mod_names)
-    end
-    | _ ->
-      Path.make (List.rev mod_names) (Name.make str)
 
 and parse_ident parser =
   match parser.token with
@@ -361,10 +361,10 @@ and parse_parens parser =
     Expr.Var(Path.make [] (Name.make "()"))
   end
   else
-    let list = parse_expr_list parser in
+    let list = parse_args parser in
     Expr.Tuple(list)
 
-and parse_expr_list parser =
+and parse_args parser =
   let is_terminal = function
     | Token.Reserved(")") ->
       true
