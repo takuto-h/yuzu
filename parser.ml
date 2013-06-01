@@ -190,19 +190,10 @@ and parse_prim_expr parser =
     
 and parse_atomic_expr parser =
   match parser.token with
-    | Token.Int(n) -> begin
-      lookahead parser;
-      Expr.Con(Literal.Int(n))
-    end
-    | Token.String(str) -> begin
-      lookahead parser;
-      Expr.Con(Literal.String(str))
-    end
-    | Token.Char(str) -> begin
-      lookahead parser;
-      Expr.Con(Literal.Char(str))
-    end
-    | Token.Ident(str) ->
+    | Token.Int(_) | Token.String(_) | Token.Char(_) ->
+      let lit = parse_literal parser in
+      Expr.Con(lit)
+    | Token.Ident(_) ->
       parse_var parser 
     | Token.Reserved("^") ->
       parse_abs parser
@@ -404,23 +395,31 @@ and parse_cases parser cases =
 
 and parse_pattern parser =
   match parser.token with
-    | Token.Int(n) -> begin
-      lookahead parser;
-      Pattern.Con(Literal.Int(n))
-    end
-    | Token.String(str) -> begin
-      lookahead parser;
-      Pattern.Con(Literal.String(str))
-    end
-    | Token.Char(str) -> begin
-      lookahead parser;
-      Pattern.Con(Literal.Char(str))
-    end
+    | Token.Int(_) | Token.String(_) | Token.Char(_) ->
+      let lit = parse_literal parser in
+      Pattern.Con(lit)
     | Token.Ident(str) ->
       let name = parse_value_name parser in
       Pattern.Var(name)
     | _ ->
       failwith (expected parser "pattern")
+
+and parse_literal parser =
+  match parser.token with
+    | Token.Int(n) -> begin
+      lookahead parser;
+      Literal.Int(n)
+    end
+    | Token.String(str) -> begin
+      lookahead parser;
+      Literal.String(str)
+    end
+    | Token.Char(str) -> begin
+      lookahead parser;
+      Literal.Char(str)
+    end
+    | _ ->
+      failwith (expected parser "literal")
 
 let parse_top_open parser =
   lookahead parser;
