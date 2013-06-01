@@ -228,6 +228,16 @@ and parse_value_path parser mod_names =
     | _ ->
       ValPath.make (ModPath.make (List.rev mod_names)) (ValName.make str)
 
+and parse_module_path parser mod_names =
+  let str = parse_ident parser in
+  match parser.token with
+    | Token.Reserved(".") -> begin
+      lookahead parser;
+      parse_module_path parser (str::mod_names)
+    end
+    | _ ->
+      ModPath.make (List.rev (str::mod_names))
+
 and parse_abs parser =
   lookahead parser;
   let params = parse_params parser in
@@ -362,6 +372,11 @@ and parse_args parser =
       failwith (expected parser "')' or ','")
   in parse_to_list parser is_terminal parse_expr
 
+let parse_top_open parser =
+  lookahead parser;
+  let mod_path = parse_module_path parser [] in
+  Top.Open(mod_path)
+
 let parse_top_let_fun parser =
   lookahead parser;
   let fun_name = parse_value_name parser in
@@ -381,8 +396,8 @@ let parse_top_let_val parser =
     
 let parse_top parser =
   match parser.token with
-(*    | Token.Reserved("open") ->
-      parse_top_open parser*)
+    | Token.Reserved("open") ->
+      parse_top_open parser
     | Token.Reserved("def") ->
       parse_top_let_fun parser
     | Token.Reserved("var") ->

@@ -89,6 +89,9 @@ let translate_top trans = function
     let str_name = translate_value_name name in
     let str_expr = translate_expr trans expr in
     sprintf "let %s = %s\n" str_name str_expr
+  | Top.Open(path) ->
+    let str_path = translate_module_path path in
+    sprintf "open %s\n" str_path
 
 exception Break
       

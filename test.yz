@@ -62,3 +62,7 @@ var a = (1, true, "abc", 'd')
 var unit = ()
 
 var a = -fac(4) * 2
+
+open Printf
+
+printf("opened!\n")
