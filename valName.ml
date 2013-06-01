@@ -2,14 +2,14 @@
 open Printf
 
 type t = {
-  str : string;
+  value : string;
 }
 
 let make str = {
-  str = str;
+  value = str;
 }
 
-let show {str} =
+let show {value=str} =
   if Lexer.is_special_ident str then
     sprintf "$(%s)" str
   else

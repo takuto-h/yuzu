@@ -1,7 +1,7 @@
 
 SOURCES =\
   pos.ml source.ml token.ml lexer.ml\
-  literal.ml name.ml path.ml expr.ml top.ml parser.ml\
+  literal.ml valName.ml modPath.ml valPath.ml expr.ml top.ml parser.ml\
   trans.ml
 
 EXEC = myml

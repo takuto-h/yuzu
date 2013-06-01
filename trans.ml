@@ -17,16 +17,25 @@ let indent {basic_offset;indent_level} str =
   let offset = basic_offset * indent_level in
   sprintf "%s%s" (String.make offset ' ') str
   
-let translate_name {Name.str} =
+let translate_value_name {ValName.value=str} =
   if Lexer.is_special_ident str then
     sprintf "( %s )" str
   else
     str
 
-let translate_path (mod_names, val_name) =
-  List.fold_right begin fun elem acc ->
-    sprintf "%s.%s" elem acc
-  end mod_names (translate_name val_name)
+let translate_module_path = function
+  | {ModPath.value=[]} ->
+    ""
+  | {ModPath.value=name::names} ->
+    List.fold_left begin fun acc elem ->
+      sprintf "%s.%s" acc elem
+    end name names
+
+let translate_value_path = function
+  | ({ModPath.value=[]}, val_name) ->
+    translate_value_name val_name
+  | (mod_path, val_name) ->
+    sprintf "%s.%s" (translate_module_path mod_path) (translate_value_name val_name)
 
 let rec translate_expr trans = function
   | Expr.Con(Literal.Int(n)) ->
@@ -36,9 +45,9 @@ let rec translate_expr trans = function
   | Expr.Con(Literal.Char(str)) ->
     sprintf "'%s'" str
   | Expr.Var(path) ->
-    translate_path path
+    translate_value_path path
   | Expr.Abs(param_name,body_expr) ->
-    let str_param = translate_name param_name in
+    let str_param = translate_value_name param_name in
     let trans_body = {trans with indent_level=trans.indent_level+1} in
     let str_body = translate_expr trans_body body_expr in
     sprintf
@@ -73,11 +82,11 @@ let translate_top trans = function
     let str_expr = translate_expr trans expr in
     sprintf "let () = %s\n" str_expr
   | Top.LetFun(name,expr) ->
-    let str_name = translate_name name in
+    let str_name = translate_value_name name in
     let str_expr = translate_expr trans expr in
     sprintf "let rec %s = %s\n" str_name str_expr
   | Top.LetVal(name,expr) ->
-    let str_name = translate_name name in
+    let str_name = translate_value_name name in
     let str_expr = translate_expr trans expr in
     sprintf "let %s = %s\n" str_name str_expr
 
