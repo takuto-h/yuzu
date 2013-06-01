@@ -76,3 +76,13 @@ def bool_of_option(opt):
 
 var t = bool_of_option(Some(123))
 var f = bool_of_option(None)
+
+def flip(n):
+  match(n)
+  case 0:
+    1
+  case _:
+    0
+
+var one = flip(flip(flip(0)))
+var zero = flip(flip(0))

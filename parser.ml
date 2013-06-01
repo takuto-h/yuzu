@@ -403,8 +403,24 @@ and parse_cases parser cases =
       List.rev cases
 
 and parse_pattern parser =
-  let name = parse_value_name parser in
-  Pattern.Var(name)
+  match parser.token with
+    | Token.Int(n) -> begin
+      lookahead parser;
+      Pattern.Con(Literal.Int(n))
+    end
+    | Token.String(str) -> begin
+      lookahead parser;
+      Pattern.Con(Literal.String(str))
+    end
+    | Token.Char(str) -> begin
+      lookahead parser;
+      Pattern.Con(Literal.Char(str))
+    end
+    | Token.Ident(str) ->
+      let name = parse_value_name parser in
+      Pattern.Var(name)
+    | _ ->
+      failwith (expected parser "pattern")
 
 let parse_top_open parser =
   lookahead parser;

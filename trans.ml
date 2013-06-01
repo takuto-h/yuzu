@@ -37,17 +37,23 @@ let translate_value_path = function
   | (mod_path, val_name) ->
     sprintf "%s.%s" (translate_module_path mod_path) (translate_value_name val_name)
 
+let translate_literal = function
+  | Literal.Int(n) ->
+    sprintf "%d" n
+  | Literal.String(str) ->
+    sprintf "\"%s\"" str
+  | Literal.Char(str) ->
+    sprintf "'%s'" str
+
 let translate_pattern = function
+  | Pattern.Con(lit) ->
+    translate_literal lit
   | Pattern.Var(name) ->
     translate_value_name name
 
 let rec translate_expr trans = function
-  | Expr.Con(Literal.Int(n)) ->
-    sprintf "%d" n
-  | Expr.Con(Literal.String(str)) ->
-    sprintf "\"%s\"" str
-  | Expr.Con(Literal.Char(str)) ->
-    sprintf "'%s'" str
+  | Expr.Con(lit) ->
+    translate_literal lit
   | Expr.Var(path) ->
     translate_value_path path
   | Expr.Abs(param_name,body_expr) ->
