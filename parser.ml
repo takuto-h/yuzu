@@ -181,7 +181,6 @@ and parse_prim_expr parser =
         loop (make_app fun_expr arg_exprs)
       end
       | Token.Reserved("^") -> begin
-        lookahead parser;
         let arg_expr = parse_abs parser in
         loop (Expr.App(fun_expr, arg_expr))
       end
@@ -191,8 +190,6 @@ and parse_prim_expr parser =
     
 and parse_atomic_expr parser =
   match parser.token with
-    | Token.Ident(str) ->
-      parse_var parser 
     | Token.Int(n) -> begin
       lookahead parser;
       Expr.Con(Literal.Int(n))
@@ -205,22 +202,16 @@ and parse_atomic_expr parser =
       lookahead parser;
       Expr.Con(Literal.Char(str))
     end
-    | Token.Reserved("^") -> begin
-      lookahead parser;
+    | Token.Ident(str) ->
+      parse_var parser 
+    | Token.Reserved("^") ->
       parse_abs parser
-    end
-    | Token.Reserved("if") -> begin
-      lookahead parser;
+    | Token.Reserved("if") ->
       parse_if_expr parser
-    end
-    | Token.Reserved("[") -> begin
-      lookahead parser;
+    | Token.Reserved("[") ->
       parse_list parser
-    end
-    | Token.Reserved("(") -> begin
-      lookahead parser;
+    | Token.Reserved("(") ->
       parse_parens parser
-    end
     | _ ->
       failwith (expected parser "expression")
 
@@ -245,6 +236,7 @@ and parse_value_path parser mod_names =
       Path.make (List.rev mod_names) (Name.make str)
 
 and parse_abs parser =
+  lookahead parser;
   let params = parse_params parser in
   let body_expr = parse_block parser in
   make_abs params body_expr
@@ -315,6 +307,7 @@ and parse_block_elem parser =
   parse_expr parser
 
 and parse_if_expr parser =
+  lookahead parser;
   if parser.token <> Token.Reserved("(") then
     failwith (expected parser "'('")
   else begin
@@ -337,6 +330,7 @@ and parse_if_expr parser =
   end
 
 and parse_list parser =
+  lookahead parser;
   if parser.token = Token.Reserved("]") then begin
     lookahead parser;
     Expr.Var(Path.make [] (Name.make "[]"))
@@ -356,6 +350,7 @@ and parse_list parser =
     end list (Expr.Var(Path.make [] (Name.make "[]")))
 
 and parse_parens parser =
+  lookahead parser;
   if parser.token = Token.Reserved(")") then begin
     lookahead parser;
     Expr.Var(Path.make [] (Name.make "()"))
