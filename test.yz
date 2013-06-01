@@ -86,3 +86,12 @@ def flip(n):
 
 var one = flip(flip(flip(0)))
 var zero = flip(flip(0))
+
+def not(b):
+  match(b)
+  case true:
+    false
+  case false:
+    true
+
+var t = not(not(t))
