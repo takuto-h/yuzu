@@ -14,6 +14,7 @@ let initial_buffer_size = 16
 module StringSet = Set.Make(String)
 let reserved = StringSet.empty
 let reserved = StringSet.add "open" reserved
+let reserved = StringSet.add "type" reserved
 let reserved = StringSet.add "def" reserved
 let reserved = StringSet.add "var" reserved
 let reserved = StringSet.add "if" reserved
