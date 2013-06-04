@@ -42,14 +42,14 @@ let indent lexer =
 let is_digit c =
   String.contains "0123456789" c
 
-let is_varid_start c =
+let is_lowid_start c =
   String.contains "abcdefghijklmnopqrstuvwxyz_" c
 
-let is_conid_start c =
+let is_capid_start c =
   String.contains "ABCDEFGHIJKLMNOPQRSTUVWXYZ" c
 
 let is_id_part c =
-  is_varid_start c || is_conid_start c || is_digit c
+  is_lowid_start c || is_capid_start c || is_digit c
 
 let is_op_part c =
   String.contains "=<>|&+-*/%" c
@@ -139,29 +139,29 @@ let rec lex_char lexer buf =
       let pos_eof = Source.pos lexer.source in
       failwith (sprintf "%s: error: EOF inside a character literal\n" (Pos.show pos_eof))
 
-let varid_or_reserved str =
+let lowid_or_reserved str =
   if StringSet.mem str reserved then
     Token.Reserved(str)
   else
-    Token.VarId(str)
+    Token.LowId(str)
 
-let rec lex_varid lexer buf =
+let rec lex_lowid lexer buf =
   match Source.peek lexer.source with
     | Some(c) when is_id_part c ->
       Buffer.add_char buf c;
       Source.junk lexer.source;
-      lex_varid lexer buf
+      lex_lowid lexer buf
     | Some(_) | None ->
-      varid_or_reserved (Buffer.contents buf)
+      lowid_or_reserved (Buffer.contents buf)
 
-let rec lex_conid lexer buf =
+let rec lex_capid lexer buf =
   match Source.peek lexer.source with
     | Some(c) when is_id_part c ->
       Buffer.add_char buf c;
       Source.junk lexer.source;
-      lex_conid lexer buf
+      lex_capid lexer buf
     | Some(_) | None ->
-      Token.ConId(Buffer.contents buf)
+      Token.CapId(Buffer.contents buf)
 
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
@@ -240,14 +240,14 @@ let lex_visible_token lexer pos c =
     end
     | _ when is_digit c ->
       lex_int lexer (int_of_digit c)
-    | _ when is_varid_start c ->
+    | _ when is_lowid_start c ->
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
-      lex_varid lexer buf
-    | _ when is_conid_start c ->
+      lex_lowid lexer buf
+    | _ when is_capid_start c ->
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
-      lex_conid lexer buf
+      lex_capid lexer buf
     | _ ->
       failwith (sprintf "%s: error: unknown character: '%c'\n" (Pos.show pos) c)
 

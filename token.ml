@@ -8,8 +8,8 @@ type t =
   | Int of int
   | String of string
   | Char of string
-  | VarId of string
-  | ConId of string
+  | LowId of string
+  | CapId of string
   | Reserved of string
   | OrOp of string
   | AndOp of string
@@ -39,9 +39,9 @@ let show = function
     "string"
   | Char(_) ->
     "character"
-  | VarId(_) ->
+  | LowId(_) ->
     "lowercase identifier"
-  | ConId(_) ->
+  | CapId(_) ->
     "capitalized identifier"
   | Reserved(s) | OrOp(s) | AndOp(s) | CmpOp(s)
   | ConsOp(s) | AddOp(s) | MulOp(s) | PowOp(s) ->

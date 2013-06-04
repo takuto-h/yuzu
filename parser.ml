@@ -193,7 +193,7 @@ and parse_atomic_expr parser =
     | Token.Int(_) | Token.String(_) | Token.Char(_) ->
       let lit = parse_literal parser in
       Expr.Con(lit)
-    | Token.VarId(_) | Token.ConId(_) | Token.Reserved("$") ->
+    | Token.LowId(_) | Token.CapId(_) | Token.Reserved("$") ->
       parse_var_or_cstr parser []
     | Token.Reserved("^") ->
       parse_abs parser
@@ -210,42 +210,42 @@ and parse_atomic_expr parser =
 
 and parse_var_or_cstr parser mod_names =
   match parser.token with
-    | Token.VarId(_) | Token.Reserved("$") ->
+    | Token.LowId(_) | Token.Reserved("$") ->
       let val_name = parse_val_name parser in
       Expr.Var(mod_names, val_name)
-    | Token.ConId(_) ->
-      let conid = parse_conid parser in
+    | Token.CapId(_) ->
+      let capid = parse_capid parser in
       if parser.token <> Token.Reserved(".") then
-        Expr.Cstr(mod_names, conid)
+        Expr.Cstr(mod_names, capid)
       else begin
         lookahead parser;
-        parse_var_or_cstr parser (conid::mod_names)
+        parse_var_or_cstr parser (capid::mod_names)
       end
     | _ ->
       failwith (expected parser "identifier")
 
 and parse_cstr parser mod_names =
   match parser.token with
-    | Token.ConId(_) ->
-      let conid = parse_conid parser in
+    | Token.CapId(_) ->
+      let capid = parse_capid parser in
       if parser.token <> Token.Reserved(".") then
-        (mod_names, conid)
+        (mod_names, capid)
       else begin
         lookahead parser;
-        parse_cstr parser (conid::mod_names)
+        parse_cstr parser (capid::mod_names)
       end
     | _ ->
       failwith (expected parser "capitalized identifier")
 
 and parse_mod_path parser mod_names =
-  let conid = parse_conid parser in
+  let capid = parse_capid parser in
   match parser.token with
     | Token.Reserved(".") -> begin
       lookahead parser;
-      parse_mod_path parser (conid::mod_names)
+      parse_mod_path parser (capid::mod_names)
     end
     | _ ->
-      List.rev (conid::mod_names)
+      List.rev (capid::mod_names)
 
 and parse_abs parser =
   lookahead parser;
@@ -272,8 +272,8 @@ and parse_val_name_list parser =
 
 and parse_val_name parser =
   match parser.token with
-    | Token.VarId(_) ->
-      Names.Id(parse_varid parser)
+    | Token.LowId(_) ->
+      Names.Id(parse_lowid parser)
     | Token.Reserved("$") ->
       lookahead parser;
       if parser.token <> Token.Reserved("(") then
@@ -285,18 +285,18 @@ and parse_val_name parser =
     | _ ->
       failwith (expected parser "identifier")
 
-and parse_varid parser =
+and parse_lowid parser =
   match parser.token with
-    | Token.VarId(str) -> begin
+    | Token.LowId(str) -> begin
       lookahead parser;
       str
     end
     | _ ->
       failwith (expected parser "lowercase identifier")
 
-and parse_conid parser =
+and parse_capid parser =
   match parser.token with
-    | Token.ConId(str) -> begin
+    | Token.CapId(str) -> begin
       lookahead parser;
       str
     end
@@ -449,10 +449,10 @@ and parse_pattern parser =
     | Token.Int(_) | Token.String(_) | Token.Char(_) ->
       let lit = parse_literal parser in
       Pattern.Con(lit)
-    | Token.VarId(_) ->
+    | Token.LowId(_) ->
       let name = parse_val_name parser in
       Pattern.Var(name)
-    | Token.ConId(_) ->
+    | Token.CapId(_) ->
       parse_variant_pattern parser
     | _ ->
       failwith (expected parser "pattern")
