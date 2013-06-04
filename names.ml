@@ -5,9 +5,11 @@ type val_name =
   | Id of string
   | Op of string
 
+type cstr_name = string
 type mod_name = string
 type mod_path = mod_name list
 type val_path = mod_path * val_name
+type cstr = mod_path * cstr_name
 
 let show_val_name = function
   | Id(str) ->
@@ -28,3 +30,9 @@ let show_val_path = function
     show_val_name val_name
   | (mod_path, val_name) ->
     sprintf "%s.%s" (show_mod_path mod_path) (show_val_name val_name)
+
+let show_cstr = function
+  | ([], cstr_name) ->
+    cstr_name
+  | (mod_path, cstr_name) ->
+    sprintf "%s.%s" (show_mod_path mod_path) cstr_name

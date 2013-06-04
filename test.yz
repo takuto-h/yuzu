@@ -85,3 +85,14 @@ def not(b):
     true
 
 var t = not(not(true))
+
+def bool_of_option(opt):
+  match(opt)
+  case None:
+    false
+  case Some(_):
+    true
+
+var t = bool_of_option(Some(123))
+var t = bool_of_option(Some(true))
+var f = bool_of_option(None)

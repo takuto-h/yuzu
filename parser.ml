@@ -225,6 +225,19 @@ and parse_value_path parser mod_names =
     | _ ->
       failwith (expected parser "identifier")
 
+and parse_constr parser mod_names =
+  match parser.token with
+    | Token.ConId(_) ->
+      let conid = parse_conid parser in
+      if parser.token <> Token.Reserved(".") then
+        (mod_names, conid)
+      else begin
+        lookahead parser;
+        parse_constr parser (conid::mod_names)
+      end
+    | _ ->
+      failwith (expected parser "capitalized identifier")
+
 and parse_module_path parser mod_names =
   let conid = parse_conid parser in
   match parser.token with
@@ -440,8 +453,25 @@ and parse_pattern parser =
     | Token.VarId(_) ->
       let name = parse_value_name parser in
       Pattern.Var(name)
+    | Token.ConId(_) ->
+      parse_variant_pattern parser
     | _ ->
       failwith (expected parser "pattern")
+
+and parse_variant_pattern parser =
+  let cstr = parse_constr parser [] in
+  if parser.token <> Token.Reserved("(") then
+    Pattern.Variant(cstr, Pattern.Var(Names.Id("_")))
+  else begin
+    lookahead parser;
+    let pat = parse_pattern parser in
+    if parser.token <> Token.Reserved(")") then
+      failwith (expected parser "')'")
+    else begin
+      lookahead parser;
+      Pattern.Variant(cstr, pat)
+    end
+  end
 
 and parse_literal parser =
   match parser.token with
