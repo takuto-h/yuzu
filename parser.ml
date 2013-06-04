@@ -437,7 +437,7 @@ and parse_pattern parser =
     | Token.Int(_) | Token.String(_) | Token.Char(_) ->
       let lit = parse_literal parser in
       Pattern.Con(lit)
-    | Token.VarId(str) ->
+    | Token.VarId(_) ->
       let name = parse_value_name parser in
       Pattern.Var(name)
     | _ ->
