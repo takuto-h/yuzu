@@ -193,8 +193,9 @@ and parse_atomic_expr parser =
     | Token.Int(_) | Token.String(_) | Token.Char(_) ->
       let lit = parse_literal parser in
       Expr.Con(lit)
-    | Token.VarId(_) ->
-      parse_var parser 
+    | Token.VarId(_) | Token.ConId(_) | Token.Reserved("$") ->
+      let val_path = parse_value_path parser [] in
+      Expr.Var(val_path)
     | Token.Reserved("^") ->
       parse_abs parser
     | Token.Reserved("if") ->
@@ -208,28 +209,31 @@ and parse_atomic_expr parser =
     | _ ->
       failwith (expected parser "expression")
 
-and parse_var parser =
-  Expr.Var(parse_value_path parser [])
-
 and parse_value_path parser mod_names =
-  let str = parse_ident parser in
   match parser.token with
-    | Token.Reserved(".") -> begin
-      lookahead parser;
-      parse_value_path parser (str::mod_names)
-    end
+    | Token.VarId(_) | Token.Reserved("$") ->
+      let val_name = parse_value_name parser in
+      ValPath.make (ModPath.make mod_names) val_name
+    | Token.ConId(_) ->
+      let conid = parse_conid parser in
+      if parser.token <> Token.Reserved(".") then
+        failwith (expected parser "'.'")
+      else begin
+        lookahead parser;
+        parse_value_path parser (conid::mod_names)
+      end
     | _ ->
-      ValPath.make (ModPath.make (List.rev mod_names)) (ValName.make str)
+      failwith (expected parser "identifier")
 
 and parse_module_path parser mod_names =
-  let str = parse_ident parser in
+  let conid = parse_conid parser in
   match parser.token with
     | Token.Reserved(".") -> begin
       lookahead parser;
-      parse_module_path parser (str::mod_names)
+      parse_module_path parser (conid::mod_names)
     end
     | _ ->
-      ModPath.make (List.rev (str::mod_names))
+      ModPath.make (List.rev (conid::mod_names))
 
 and parse_abs parser =
   lookahead parser;
@@ -255,9 +259,16 @@ and parse_value_name_list parser =
   in parse_to_list parser is_terminal parse_value_name
 
 and parse_value_name parser =
-  ValName.make (parse_ident parser)
+  match parser.token with
+    | Token.VarId(_) ->
+      ValName.make (parse_varid parser)
+    | Token.Reserved("$") ->
+      lookahead parser;
+      ValName.make "$"
+    | _ ->
+      failwith (expected parser "identifier")
 
-and parse_ident parser =
+and parse_varid parser =
   match parser.token with
     | Token.VarId(str) -> begin
       lookahead parser;
@@ -265,6 +276,15 @@ and parse_ident parser =
     end
     | _ ->
       failwith (expected parser "lowercase identifier")
+
+and parse_conid parser =
+  match parser.token with
+    | Token.ConId(str) -> begin
+      lookahead parser;
+      str
+    end
+    | _ ->
+      failwith (expected parser "capitalized identifier")
 
 and parse_block parser =
   match parser.token with

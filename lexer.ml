@@ -166,7 +166,7 @@ let rec lex_conid lexer buf =
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
-    | ';' | ',' | '^' | '.' ->
+    | ';' | ',' | '^' | '.' | '$' ->
       Token.Reserved(sprintf "%c" c)
     | '(' | '{' | '[' ->
       Stack.push (sprintf "%c" c) lexer.parens;
