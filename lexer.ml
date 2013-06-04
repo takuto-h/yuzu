@@ -154,6 +154,15 @@ let rec lex_varid lexer buf =
     | Some(_) | None ->
       varid_or_reserved (Buffer.contents buf)
 
+let rec lex_conid lexer buf =
+  match Source.peek lexer.source with
+    | Some(c) when is_id_part c ->
+      Buffer.add_char buf c;
+      Source.junk lexer.source;
+      lex_conid lexer buf
+    | Some(_) | None ->
+      Token.ConId(Buffer.contents buf)
+
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
   match c with
@@ -235,6 +244,10 @@ let lex_visible_token lexer pos c =
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
       lex_varid lexer buf
+    | _ when is_conid_start c ->
+      let buf = Buffer.create initial_buffer_size in
+      Buffer.add_char buf c;
+      lex_conid lexer buf
     | _ ->
       failwith (sprintf "%s: error: unknown character: '%c'\n" (Pos.show pos) c)
 
