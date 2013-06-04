@@ -19,6 +19,13 @@ type t =
   | MulOp of string
   | PowOp of string
 
+let get_op = function
+  | OrOp(str) | AndOp(str) | CmpOp(str)
+  | ConsOp(str) | AddOp(str) | MulOp(str) | PowOp(str) ->
+    Some(str)
+  | _ ->
+    None
+
 let show = function
   | EOF ->
     "EOF"

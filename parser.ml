@@ -264,7 +264,12 @@ and parse_value_name parser =
       ValName.Id(parse_varid parser)
     | Token.Reserved("$") ->
       lookahead parser;
-      ValName.Op("$")
+      if parser.token <> Token.Reserved("(") then
+        failwith (expected parser "'('")
+      else begin
+        lookahead parser;
+        ValName.Op(parse_op parser)
+      end
     | _ ->
       failwith (expected parser "identifier")
 
@@ -285,6 +290,20 @@ and parse_conid parser =
     end
     | _ ->
       failwith (expected parser "capitalized identifier")
+
+and parse_op parser =
+  match Token.get_op parser.token with
+    | Some(str) -> begin
+      lookahead parser;
+      if parser.token <> Token.Reserved(")") then
+        failwith (expected parser "')'")
+      else begin
+        lookahead parser;
+        str
+      end
+    end
+    | None ->
+      failwith (expected parser "operator")
 
 and parse_block parser =
   match parser.token with
