@@ -194,8 +194,7 @@ and parse_atomic_expr parser =
       let lit = parse_literal parser in
       Expr.Con(lit)
     | Token.VarId(_) | Token.ConId(_) | Token.Reserved("$") ->
-      let val_path = parse_value_path parser [] in
-      Expr.Var(val_path)
+      parse_var_or_constr parser []
     | Token.Reserved("^") ->
       parse_abs parser
     | Token.Reserved("if") ->
@@ -209,18 +208,18 @@ and parse_atomic_expr parser =
     | _ ->
       failwith (expected parser "expression")
 
-and parse_value_path parser mod_names =
+and parse_var_or_constr parser mod_names =
   match parser.token with
     | Token.VarId(_) | Token.Reserved("$") ->
       let val_name = parse_value_name parser in
-      (mod_names, val_name)
+      Expr.Var(mod_names, val_name)
     | Token.ConId(_) ->
       let conid = parse_conid parser in
       if parser.token <> Token.Reserved(".") then
-        failwith (expected parser "'.'")
+        Expr.Cstr(mod_names, conid)
       else begin
         lookahead parser;
-        parse_value_path parser (conid::mod_names)
+        parse_var_or_constr parser (conid::mod_names)
       end
     | _ ->
       failwith (expected parser "identifier")

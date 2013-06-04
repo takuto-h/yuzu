@@ -4,6 +4,7 @@ open Printf
 type t =
   | Con of Literal.t
   | Var of Names.val_path
+  | Cstr of Names.cstr
   | Abs of Names.val_name * t
   | App of t * t
   | If of t * t * t
@@ -15,6 +16,8 @@ let rec show = function
     sprintf "Con(%s)" (Literal.show lit)
   | Var(path) ->
     sprintf "Var(%s)" (Names.show_val_path path)
+  | Cstr(cstr) ->
+    sprintf "Cstr(%s)" (Names.show_cstr cstr)
   | Abs(param_name,body_expr) ->
     sprintf "Abs(%s,%s)" (Names.show_val_name param_name) (show body_expr)
   | App(fun_expr,arg_expr) ->

@@ -66,6 +66,8 @@ let rec translate_expr trans = function
     translate_literal lit
   | Expr.Var(path) ->
     translate_value_path path
+  | Expr.Cstr(cstr) ->
+    translate_constr cstr
   | Expr.Abs(param_name,body_expr) ->
     let str_param = translate_value_name param_name in
     let trans_body = {trans with indent_level=trans.indent_level+1} in
