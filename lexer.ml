@@ -42,76 +42,24 @@ let indent lexer =
 let is_digit c =
   String.contains "0123456789" c
 
-let is_ident_start c =
-  String.contains "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_" c
+let is_varid_start c =
+  String.contains "abcdefghijklmnopqrstuvwxyz_" c
 
-let is_ident_part c =
-  is_ident_start c || is_digit c
+let is_conid_start c =
+  String.contains "ABCDEFGHIJKLMNOPQRSTUVWXYZ" c
 
-let is_whitespace c =
-  String.contains " \t\r\n" c
+let is_id_part c =
+  is_varid_start c || is_conid_start c || is_digit c
 
 let is_op_part c =
   String.contains "=<>|&+-*/%" c
 
+let is_whitespace c =
+  String.contains " \t\r\n" c
+
 let int_of_digit c =
   Char.code c - Char.code '0'
 
-let is_special_ident str =
-  if String.length str = 0 then
-    true
-  else if not (is_ident_start (String.get str 0)) then
-    true
-  else
-    let rec loop i =
-      if i = String.length str then
-        false
-      else
-        let c = String.get str i in
-        if is_ident_part c then
-          loop (i + 1)
-        else
-          true
-    in loop 1
-
-let ident_or_reserved str =
-  if StringSet.mem str reserved then
-    Token.Reserved(str)
-  else
-    Token.Ident(str)
-
-let rec lex_int lexer n =
-  match Source.peek lexer.source with
-    | Some(c) when is_digit c ->
-      Source.junk lexer.source;
-      lex_int lexer (n * 10 + int_of_digit c)
-    | Some(_) | None ->
-      Token.Int(n)
-
-let rec lex_ident lexer buf =
-  match Source.peek lexer.source with
-    | Some(c) when is_ident_part c ->
-      Buffer.add_char buf c;
-      Source.junk lexer.source;
-      lex_ident lexer buf
-    | Some(_) | None ->
-      ident_or_reserved (Buffer.contents buf)
-
-let rec lex_special_ident lexer buf =
-  match Source.peek lexer.source with
-    | Some(')') -> begin
-      Source.junk lexer.source;
-      Token.Ident(Buffer.contents buf)
-    end
-    | Some(c) -> begin
-      Source.junk lexer.source;
-      Buffer.add_char buf c;
-      lex_special_ident lexer buf
-    end
-    | None ->
-      let pos_eof = Source.pos lexer.source in
-      failwith (sprintf "%s: error: EOF inside a special identifier\n" (Pos.show pos_eof))
-        
 let lex_close_paren lexer pos open_paren close_paren =
   if Stack.is_empty lexer.parens || Stack.top lexer.parens <> open_paren then
     failwith (sprintf "%s: error: unmatched parentheses: '%s'\n" (Pos.show pos) close_paren)
@@ -128,6 +76,14 @@ let rec lex_op lexer buf =
       lex_op lexer buf
     | Some(_) | None ->
       Buffer.contents buf
+
+let rec lex_int lexer n =
+  match Source.peek lexer.source with
+    | Some(c) when is_digit c ->
+      Source.junk lexer.source;
+      lex_int lexer (n * 10 + int_of_digit c)
+    | Some(_) | None ->
+      Token.Int(n)
 
 let rec lex_string lexer buf =
   match Source.peek lexer.source with
@@ -182,6 +138,21 @@ let rec lex_char lexer buf =
     | None ->
       let pos_eof = Source.pos lexer.source in
       failwith (sprintf "%s: error: EOF inside a character literal\n" (Pos.show pos_eof))
+
+let varid_or_reserved str =
+  if StringSet.mem str reserved then
+    Token.Reserved(str)
+  else
+    Token.VarId(str)
+
+let rec lex_varid lexer buf =
+  match Source.peek lexer.source with
+    | Some(c) when is_id_part c ->
+      Buffer.add_char buf c;
+      Source.junk lexer.source;
+      lex_varid lexer buf
+    | Some(_) | None ->
+      varid_or_reserved (Buffer.contents buf)
 
 let lex_visible_token lexer pos c =
   Source.junk lexer.source;
@@ -250,15 +221,6 @@ let lex_visible_token lexer pos c =
         | Some(_) | None ->
           Token.Reserved(":")
       end
-    | '$' ->
-      begin match Source.peek lexer.source with
-        | Some('(') ->
-          let buf = Buffer.create initial_buffer_size in
-          Source.junk lexer.source;
-          lex_special_ident lexer buf
-        | Some(_) | None ->
-          Token.Reserved("$")
-      end
     | '"' -> begin
       let buf = Buffer.create initial_buffer_size in
       lex_string lexer buf
@@ -269,10 +231,10 @@ let lex_visible_token lexer pos c =
     end
     | _ when is_digit c ->
       lex_int lexer (int_of_digit c)
-    | _ when is_ident_start c ->
+    | _ when is_varid_start c ->
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
-      lex_ident lexer buf
+      lex_varid lexer buf
     | _ ->
       failwith (sprintf "%s: error: unknown character: '%c'\n" (Pos.show pos) c)
 

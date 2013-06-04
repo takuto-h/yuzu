@@ -193,7 +193,7 @@ and parse_atomic_expr parser =
     | Token.Int(_) | Token.String(_) | Token.Char(_) ->
       let lit = parse_literal parser in
       Expr.Con(lit)
-    | Token.Ident(_) ->
+    | Token.VarId(_) ->
       parse_var parser 
     | Token.Reserved("^") ->
       parse_abs parser
@@ -259,12 +259,12 @@ and parse_value_name parser =
 
 and parse_ident parser =
   match parser.token with
-    | Token.Ident(str) -> begin
+    | Token.VarId(str) -> begin
       lookahead parser;
       str
     end
     | _ ->
-      failwith (expected parser "identifier")
+      failwith (expected parser "lowercase identifier")
 
 and parse_block parser =
   match parser.token with
@@ -398,7 +398,7 @@ and parse_pattern parser =
     | Token.Int(_) | Token.String(_) | Token.Char(_) ->
       let lit = parse_literal parser in
       Pattern.Con(lit)
-    | Token.Ident(str) ->
+    | Token.VarId(str) ->
       let name = parse_value_name parser in
       Pattern.Var(name)
     | _ ->

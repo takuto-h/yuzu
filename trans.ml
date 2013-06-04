@@ -18,10 +18,7 @@ let indent {basic_offset;indent_level} str =
   sprintf "%s%s" (String.make offset ' ') str
   
 let translate_value_name {ValName.value=str} =
-  if Lexer.is_special_ident str then
-    sprintf "( %s )" str
-  else
-    str
+  str
 
 let translate_module_path = function
   | {ModPath.value=[]} ->
