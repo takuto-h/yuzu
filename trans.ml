@@ -17,13 +17,13 @@ let indent {basic_offset;indent_level} str =
   let offset = basic_offset * indent_level in
   sprintf "%s%s" (String.make offset ' ') str
   
-let translate_value_name = function
+let translate_val_name = function
   | Names.Id(str) ->
     str
   | Names.Op(str) ->
     sprintf "( %s )" str
 
-let translate_module_path = function
+let translate_mod_path = function
   | [] ->
     ""
   | name::names ->
@@ -31,17 +31,17 @@ let translate_module_path = function
       sprintf "%s.%s" acc elem
     end name names
 
-let translate_value_path = function
+let translate_val_path = function
   | ([], val_name) ->
-    translate_value_name val_name
+    translate_val_name val_name
   | (mod_path, val_name) ->
-    sprintf "%s.%s" (translate_module_path mod_path) (translate_value_name val_name)
+    sprintf "%s.%s" (translate_mod_path mod_path) (translate_val_name val_name)
 
-let translate_constr = function
+let translate_cstr = function
   | ([], cstr_name) ->
     cstr_name
   | (mod_path, cstr_name) ->
-    sprintf "%s.%s" (translate_module_path mod_path) cstr_name
+    sprintf "%s.%s" (translate_mod_path mod_path) cstr_name
 
 let translate_literal = function
   | Literal.Int(n) ->
@@ -55,9 +55,9 @@ let rec translate_pattern = function
   | Pattern.Con(lit) ->
     translate_literal lit
   | Pattern.Var(name) ->
-    translate_value_name name
+    translate_val_name name
   | Pattern.Variant(cstr,pat) ->
-    let str_cstr = translate_constr cstr in
+    let str_cstr = translate_cstr cstr in
     let str_pat = translate_pattern pat in
     sprintf "(%s %s)" str_cstr str_pat
 
@@ -65,11 +65,11 @@ let rec translate_expr trans = function
   | Expr.Con(lit) ->
     translate_literal lit
   | Expr.Var(path) ->
-    translate_value_path path
+    translate_val_path path
   | Expr.Cstr(cstr) ->
-    translate_constr cstr
+    translate_cstr cstr
   | Expr.Abs(param_name,body_expr) ->
-    let str_param = translate_value_name param_name in
+    let str_param = translate_val_name param_name in
     let trans_body = {trans with indent_level=trans.indent_level+1} in
     let str_body = translate_expr trans_body body_expr in
     sprintf
@@ -117,15 +117,15 @@ let translate_top trans = function
     let str_expr = translate_expr trans expr in
     sprintf "let () = %s\n" str_expr
   | Top.LetFun(name,expr) ->
-    let str_name = translate_value_name name in
+    let str_name = translate_val_name name in
     let str_expr = translate_expr trans expr in
     sprintf "let rec %s = %s\n" str_name str_expr
   | Top.LetVal(name,expr) ->
-    let str_name = translate_value_name name in
+    let str_name = translate_val_name name in
     let str_expr = translate_expr trans expr in
     sprintf "let %s = %s\n" str_name str_expr
   | Top.Open(path) ->
-    let str_path = translate_module_path path in
+    let str_path = translate_mod_path path in
     sprintf "open %s\n" str_path
 
 exception Break

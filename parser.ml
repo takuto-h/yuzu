@@ -194,7 +194,7 @@ and parse_atomic_expr parser =
       let lit = parse_literal parser in
       Expr.Con(lit)
     | Token.VarId(_) | Token.ConId(_) | Token.Reserved("$") ->
-      parse_var_or_constr parser []
+      parse_var_or_cstr parser []
     | Token.Reserved("^") ->
       parse_abs parser
     | Token.Reserved("if") ->
@@ -208,10 +208,10 @@ and parse_atomic_expr parser =
     | _ ->
       failwith (expected parser "expression")
 
-and parse_var_or_constr parser mod_names =
+and parse_var_or_cstr parser mod_names =
   match parser.token with
     | Token.VarId(_) | Token.Reserved("$") ->
-      let val_name = parse_value_name parser in
+      let val_name = parse_val_name parser in
       Expr.Var(mod_names, val_name)
     | Token.ConId(_) ->
       let conid = parse_conid parser in
@@ -219,12 +219,12 @@ and parse_var_or_constr parser mod_names =
         Expr.Cstr(mod_names, conid)
       else begin
         lookahead parser;
-        parse_var_or_constr parser (conid::mod_names)
+        parse_var_or_cstr parser (conid::mod_names)
       end
     | _ ->
       failwith (expected parser "identifier")
 
-and parse_constr parser mod_names =
+and parse_cstr parser mod_names =
   match parser.token with
     | Token.ConId(_) ->
       let conid = parse_conid parser in
@@ -232,17 +232,17 @@ and parse_constr parser mod_names =
         (mod_names, conid)
       else begin
         lookahead parser;
-        parse_constr parser (conid::mod_names)
+        parse_cstr parser (conid::mod_names)
       end
     | _ ->
       failwith (expected parser "capitalized identifier")
 
-and parse_module_path parser mod_names =
+and parse_mod_path parser mod_names =
   let conid = parse_conid parser in
   match parser.token with
     | Token.Reserved(".") -> begin
       lookahead parser;
-      parse_module_path parser (conid::mod_names)
+      parse_mod_path parser (conid::mod_names)
     end
     | _ ->
       List.rev (conid::mod_names)
@@ -257,9 +257,9 @@ and parse_params parser =
   if parser.token <> Token.Reserved("(") then
     failwith (expected parser "'('")
   else
-    parse_value_name_list parser
+    parse_val_name_list parser
 
-and parse_value_name_list parser =
+and parse_val_name_list parser =
   lookahead parser;
   let is_terminal = function
     | Token.Reserved(")") ->
@@ -268,9 +268,9 @@ and parse_value_name_list parser =
       false
     | _ -> 
       failwith (expected parser "')' or ','")
-  in parse_to_list parser is_terminal parse_value_name
+  in parse_to_list parser is_terminal parse_val_name
 
-and parse_value_name parser =
+and parse_val_name parser =
   match parser.token with
     | Token.VarId(_) ->
       Names.Id(parse_varid parser)
@@ -450,7 +450,7 @@ and parse_pattern parser =
       let lit = parse_literal parser in
       Pattern.Con(lit)
     | Token.VarId(_) ->
-      let name = parse_value_name parser in
+      let name = parse_val_name parser in
       Pattern.Var(name)
     | Token.ConId(_) ->
       parse_variant_pattern parser
@@ -458,7 +458,7 @@ and parse_pattern parser =
       failwith (expected parser "pattern")
 
 and parse_variant_pattern parser =
-  let cstr = parse_constr parser [] in
+  let cstr = parse_cstr parser [] in
   if parser.token <> Token.Reserved("(") then
     Pattern.Variant(cstr, Pattern.Var(Names.Id("_")))
   else begin
@@ -491,19 +491,19 @@ and parse_literal parser =
 
 let parse_top_open parser =
   lookahead parser;
-  let mod_path = parse_module_path parser [] in
+  let mod_path = parse_mod_path parser [] in
   Top.Open(mod_path)
 
 let parse_top_let_fun parser =
   lookahead parser;
-  let fun_name = parse_value_name parser in
+  let fun_name = parse_val_name parser in
   let params = parse_params parser in
   let body_expr = parse_block parser in
   Top.LetFun(fun_name, make_abs params body_expr)
 
 let parse_top_let_val parser =
   lookahead parser;
-  let val_name = parse_value_name parser in
+  let val_name = parse_val_name parser in
   if parser.token <> Token.CmpOp("=") then
     failwith (expected parser "'='")
   else begin
