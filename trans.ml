@@ -17,8 +17,11 @@ let indent {basic_offset;indent_level} str =
   let offset = basic_offset * indent_level in
   sprintf "%s%s" (String.make offset ' ') str
   
-let translate_value_name {ValName.value=str} =
-  str
+let translate_value_name = function
+  | ValName.Id(str) ->
+    str
+  | ValName.Op(str) ->
+    sprintf "( %s )" str
 
 let translate_module_path = function
   | {ModPath.value=[]} ->

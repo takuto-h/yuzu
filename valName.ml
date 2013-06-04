@@ -1,11 +1,12 @@
 
-type t = {
-  value : string;
-}
+open Printf
 
-let make str = {
-  value = str;
-}
+type t =
+  | Id of string
+  | Op of string
 
-let show {value=str} =
-  str
+let show = function
+  | Id(str) ->
+    str
+  | Op(str) ->
+    sprintf "$(%s)" str
