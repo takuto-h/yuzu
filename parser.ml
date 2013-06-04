@@ -50,7 +50,7 @@ let parse_non_assoc parser get_op parse_lower =
       lhs
     | Some(str) ->
       lookahead parser;
-      let op = Expr.Var(ValPath.make (ModPath.make []) (ValName.Op(str))) in
+      let op = Expr.Var([], (Names.Op(str))) in
       let rhs = parse_lower parser in
       Expr.App(Expr.App(op,lhs),rhs)
 
@@ -61,7 +61,7 @@ let rec parse_right_assoc parser get_op parse_lower =
       lhs
     | Some(str) -> begin
       lookahead parser;
-      let op = Expr.Var(ValPath.make (ModPath.make []) (ValName.Op(str))) in
+      let op = Expr.Var([], (Names.Op(str))) in
       let rhs = parse_right_assoc parser get_op parse_lower in
       Expr.App(Expr.App(op,lhs),rhs)
     end
@@ -74,7 +74,7 @@ let parse_left_assoc parser get_op parse_lower =
         lhs
       | Some(str) -> begin
         lookahead parser;
-        let op = Expr.Var(ValPath.make (ModPath.make []) (ValName.Op(str))) in
+        let op = Expr.Var([], (Names.Op(str))) in
         let rhs = parse_lower parser in
         loop (Expr.App(Expr.App(op,lhs),rhs))
       end
@@ -125,7 +125,7 @@ and parse_cons_expr parser =
   match parser.token with
     | Token.ConsOp(str) -> begin
       lookahead parser;
-      let op = Expr.Var(ValPath.make (ModPath.make []) (ValName.Op(str))) in
+      let op = Expr.Var([], (Names.Op(str))) in
       let rhs = parse_cons_expr parser in
       Expr.App(op,Expr.Tuple([lhs;rhs]))
     end
@@ -161,12 +161,12 @@ and parse_unary_expr parser =
     | Token.AddOp("-") -> begin
       lookahead parser;
       let expr = parse_unary_expr parser in
-      Expr.App(Expr.Var(ValPath.make (ModPath.make []) (ValName.Op("~-"))),expr)
+      Expr.App(Expr.Var([],(Names.Op("~-"))),expr)
     end
     | Token.AddOp("+") -> begin
       lookahead parser;
       let expr = parse_unary_expr parser in
-      Expr.App(Expr.Var(ValPath.make (ModPath.make []) (ValName.Op("~+"))),expr)
+      Expr.App(Expr.Var([],(Names.Op("~+"))),expr)
     end
     | _ ->
       parse_prim_expr parser
@@ -213,7 +213,7 @@ and parse_value_path parser mod_names =
   match parser.token with
     | Token.VarId(_) | Token.Reserved("$") ->
       let val_name = parse_value_name parser in
-      ValPath.make (ModPath.make mod_names) val_name
+      (mod_names, val_name)
     | Token.ConId(_) ->
       let conid = parse_conid parser in
       if parser.token <> Token.Reserved(".") then
@@ -233,7 +233,7 @@ and parse_module_path parser mod_names =
       parse_module_path parser (conid::mod_names)
     end
     | _ ->
-      ModPath.make (List.rev (conid::mod_names))
+      List.rev (conid::mod_names)
 
 and parse_abs parser =
   lookahead parser;
@@ -261,14 +261,14 @@ and parse_value_name_list parser =
 and parse_value_name parser =
   match parser.token with
     | Token.VarId(_) ->
-      ValName.Id(parse_varid parser)
+      Names.Id(parse_varid parser)
     | Token.Reserved("$") ->
       lookahead parser;
       if parser.token <> Token.Reserved("(") then
         failwith (expected parser "'('")
       else begin
         lookahead parser;
-        ValName.Op(parse_op parser)
+        Names.Op(parse_op parser)
       end
     | _ ->
       failwith (expected parser "identifier")
@@ -367,7 +367,7 @@ and parse_list parser =
   lookahead parser;
   if parser.token = Token.Reserved("]") then begin
     lookahead parser;
-    Expr.Var(ValPath.make (ModPath.make []) (ValName.Id("[]")))
+    Expr.Var([], (Names.Id("[]")))
   end
   else
     let is_terminal = function
@@ -380,15 +380,15 @@ and parse_list parser =
     in
     let list = parse_to_list parser is_terminal parse_expr in
     List.fold_right begin fun elem acc ->
-      let ctor = Expr.Var(ValPath.make (ModPath.make []) (ValName.Op("::"))) in
+      let ctor = Expr.Var([], (Names.Op("::"))) in
       Expr.App(ctor, Expr.Tuple([elem;acc]))
-    end list (Expr.Var(ValPath.make (ModPath.make []) (ValName.Id("[]"))))
+    end list (Expr.Var([], (Names.Id("[]"))))
 
 and parse_parens parser =
   lookahead parser;
   if parser.token = Token.Reserved(")") then begin
     lookahead parser;
-    Expr.Var(ValPath.make (ModPath.make []) (ValName.Id("()")))
+    Expr.Var([], (Names.Id("()")))
   end
   else
     let list = parse_args parser in

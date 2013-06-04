@@ -18,21 +18,21 @@ let indent {basic_offset;indent_level} str =
   sprintf "%s%s" (String.make offset ' ') str
   
 let translate_value_name = function
-  | ValName.Id(str) ->
+  | Names.Id(str) ->
     str
-  | ValName.Op(str) ->
+  | Names.Op(str) ->
     sprintf "( %s )" str
 
 let translate_module_path = function
-  | {ModPath.value=[]} ->
+  | [] ->
     ""
-  | {ModPath.value=name::names} ->
+  | name::names ->
     List.fold_left begin fun acc elem ->
       sprintf "%s.%s" acc elem
     end name names
 
 let translate_value_path = function
-  | ({ModPath.value=[]}, val_name) ->
+  | ([], val_name) ->
     translate_value_name val_name
   | (mod_path, val_name) ->
     sprintf "%s.%s" (translate_module_path mod_path) (translate_value_name val_name)
