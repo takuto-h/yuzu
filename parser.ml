@@ -652,17 +652,22 @@ and parse_pattern parser =
 and parse_variant_pattern parser =
   let ctor = parse_ctor parser [] in
   if parser.token <> Token.Reserved("(") then
-    Pattern.Variant(ctor, Pattern.Var(Names.Id("_")))
+    Pattern.Variant(ctor, [Pattern.Var(Names.Id("_"))])
   else begin
     lookahead parser;
-    let pat = parse_pattern parser in
-    if parser.token <> Token.Reserved(")") then
-      failwith (expected parser "')'")
-    else begin
-      lookahead parser;
-      Pattern.Variant(ctor, pat)
-    end
+    let pat_list = parse_pattern_list parser in
+    Pattern.Variant(ctor, pat_list)
   end
+
+and parse_pattern_list parser =
+  let is_terminal = function
+    | Token.Reserved(")") ->
+      true
+    | Token.Reserved(",") ->
+      false
+    | _ -> 
+      failwith (expected parser "')' or ','")
+  in parse_to_list parser is_terminal parse_pattern
 
 and parse_literal parser =
   match parser.token with

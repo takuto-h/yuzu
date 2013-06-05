@@ -56,10 +56,14 @@ let rec translate_pattern = function
     translate_literal lit
   | Pattern.Var(name) ->
     translate_val_name name
-  | Pattern.Variant(ctor,pat) ->
+  | Pattern.Variant(ctor,pat::pats) ->
     let str_ctor = translate_ctor ctor in
-    let str_pat = translate_pattern pat in
-    sprintf "(%s %s)" str_ctor str_pat
+    let str_pat_list = List.fold_left begin fun acc elem ->
+      sprintf "%s, %s" acc (translate_pattern elem)
+    end (translate_pattern pat) pats
+    in sprintf "%s(%s)" str_ctor str_pat_list
+  | Pattern.Variant(ctor,[]) ->
+    assert false
 
 let rec translate_expr trans = function
   | Expr.Con(lit) ->
