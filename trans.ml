@@ -111,7 +111,17 @@ and translate_case trans (pat,body_expr) =
   let trans_body = {trans with indent_level=trans.indent_level+1} in
   let str_body = translate_expr trans_body body_expr in
   sprintf "\n%s\n%s" (indent trans str_pat) (indent trans_body str_body)
-      
+
+let translate_typecstr = translate_cstr
+
+let translate_type = function
+  | Type.Con(typecstr) ->
+    translate_typecstr typecstr
+
+let translate_cstr_def (cstr_name,t) =
+  let str_type = translate_type t in
+  sprintf " | %s of %s\n" cstr_name str_type
+
 let translate_top trans = function
   | Top.Expr(expr) ->
     let str_expr = translate_expr trans expr in
@@ -127,6 +137,12 @@ let translate_top trans = function
   | Top.Open(path) ->
     let str_path = translate_mod_path path in
     sprintf "open %s\n" str_path
+  | Top.Variant(name,cstrs) ->
+    let trans_cstr = {trans with indent_level=trans.indent_level+1} in
+    let str_cstrs = List.fold_left begin fun acc elem ->
+      sprintf "%s%s" acc (indent trans_cstr (translate_cstr_def elem))
+    end "" cstrs in
+    sprintf "type %s =\n%s" name str_cstrs
 
 exception Break
       

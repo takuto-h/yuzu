@@ -6,6 +6,7 @@ type t =
   | LetFun of Names.val_name * Expr.t
   | LetVal of Names.val_name * Expr.t
   | Open of Names.mod_path
+  | Variant of Names.typecstr_name * (Names.cstr_name * Type.t) list
 
 let show = function
   | Expr(expr) ->
@@ -22,3 +23,5 @@ let show = function
   | Open(path) ->
     let str_path = Names.show_mod_path path in
     sprintf "Open(%s)" str_path
+  | Variant(name,cstrs) ->
+    sprintf "Variant(%s)" name
