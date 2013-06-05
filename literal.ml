@@ -1,9 +1,9 @@
 open Printf
 
 type t =
-   | Int of int
-   | String of string
-   | Char of string
+  | Int of int
+  | String of string
+  | Char of string
 
 let rec show = begin fun lit ->
   begin match lit with

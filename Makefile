@@ -1,25 +1,29 @@
 
-SOURCES =\
-  pos.ml source.ml token.ml lexer.ml\
-  literal.ml names.ml pattern.ml type.ml expr.ml top.ml parser.ml\
-  trans.ml main.ml
+OBJS =\
+  pos.cmo source.cmo token.cmo lexer.cmo\
+  literal.cmo names.cmo pattern.cmo type.cmo expr.cmo top.cmo parser.cmo\
+  trans.cmo main.cmo
 
-EXEC = ./myml
+EXE = ./myml
 
 .PHONY: all
-all: $(EXEC)
+all: $(EXE)
 
-$(EXEC): $(SOURCES)
-	ocamlc -g -o $(EXEC) $(SOURCES)
+$(EXE): $(OBJS)
+	ocamlc -g -o $(EXE) $(OBJS)
 
-.SUFFIXES: .yz .ml
+.SUFFIXES: .yz .ml .cmi .cmo
 .yz.ml:
-	$(EXEC) $< $@
+	$(EXE) $< $@
+.ml.cmi:
+	ocamlc -g -c $<
+.ml.cmo:
+	ocamlc -g -c $<
 
 .PHONY: clean
 clean:
-	rm -f $(EXEC) *.cmi *.cmo *.annot *.out
+	rm -f $(EXE) *.cmi *.cmo *.annot *.out
 
 .PHONY: wc
 wc:
-	wc -l $(SOURCES)
+	find . \( -name "*.ml" -o -name "*.yz" \) | xargs wc -l
