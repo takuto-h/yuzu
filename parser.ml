@@ -93,7 +93,133 @@ let parse_to_list parser is_terminal parse_elem =
     end
   in loop []
 
-let rec parse_expr parser =
+let rec parse_top parser =
+  match parser.token with
+    | Token.Reserved("def") -> begin
+      parse_top_let_fun parser
+    end
+    | Token.Reserved("var") -> begin
+      parse_top_let_val parser
+    end
+    | Token.Reserved("open") -> begin
+      parse_top_open parser
+    end
+    | Token.Reserved("type") -> begin
+      parse_top_typedef parser
+    end
+    | _ ->
+      Top.Expr(parse_expr parser)
+
+and parse_top_let_fun parser =
+  lookahead parser;
+  let fun_name = parse_val_name parser in
+  let params = parse_params parser in
+  let body_expr = parse_block parser in
+  Top.LetFun(fun_name, make_abs params body_expr)
+
+and parse_top_let_val parser =
+  lookahead parser;
+  let val_name = parse_val_name parser in
+  if parser.token <> Token.CmpOp("=") then
+    failwith (expected parser "'='")
+  else begin
+    lookahead parser;
+    Top.LetVal(val_name, parse_expr parser)
+  end
+
+and parse_top_open parser =
+  lookahead parser;
+  let mod_path = parse_mod_path parser [] in
+  Top.Open(mod_path)
+
+and parse_top_typedef parser =
+  lookahead parser;
+  let typector_name = parse_lowid parser in
+  let ctor_decls = parse_ctor_decls parser in
+  Top.Variant(typector_name,ctor_decls)
+
+and parse_ctor_decls parser =
+  match parser.token with
+    | Token.Reserved(":") ->
+      Lexer.indent parser.lexer;
+      parse_indented_ctor_decls parser []
+    | Token.Reserved("{") ->
+      parse_braced_ctor_decls parser []
+    | _ ->
+      failwith (expected parser "':' or '{'")
+
+and parse_indented_ctor_decls parser ctor_decls =
+  lookahead parser;
+  skip parser Token.Newline;
+  if parser.token <> Token.Reserved("def") then
+    List.rev ctor_decls
+  else
+    let ctor_decl = parse_ctor_decl parser in
+    match parser.token with
+      | Token.Reserved(";") ->
+        parse_indented_ctor_decls parser (ctor_decl::ctor_decls)
+      | Token.Newline ->
+        parse_indented_ctor_decls parser (ctor_decl::ctor_decls)
+      | Token.Undent -> begin
+        lookahead parser;
+        List.rev (ctor_decl::ctor_decls)
+      end
+      | _ ->
+        failwith (expected parser "';' or newline or undent")
+
+and parse_braced_ctor_decls parser ctor_decls =
+  lookahead parser;
+  if parser.token <> Token.Reserved("def") then
+    List.rev ctor_decls
+  else
+    let ctor_decl = parse_ctor_decl parser in
+    match parser.token with
+      | Token.Reserved(";") ->
+        parse_braced_ctor_decls parser (ctor_decl::ctor_decls)
+      | Token.Reserved("}") -> begin
+        lookahead parser;
+        List.rev (ctor_decl::ctor_decls)
+      end
+      | _ ->
+        failwith (expected parser "';' or '}'")
+
+and parse_ctor_decl parser =
+  lookahead parser;
+  let ctor_name = parse_capid parser in
+  if parser.token <> Token.Reserved("(") then
+    (ctor_name, None)
+  else begin
+    lookahead parser;
+    let t = parse_type parser in
+    if parser.token <> Token.Reserved(")") then
+      failwith (expected parser "')'")
+    else begin
+      lookahead parser;
+      (ctor_name, Some(t))
+    end
+  end
+
+and parse_type parser =
+  let typector = parse_typector parser [] in
+  Type.Con(typector)
+
+and parse_typector parser mod_names =
+  match parser.token with
+    | Token.LowId(_) ->
+      let typector_name = parse_lowid parser in
+      (List.rev mod_names, typector_name)
+    | Token.CapId(_) ->
+      let capid = parse_capid parser in
+      if parser.token <> Token.Reserved(".") then
+        failwith (expected parser "'.'")
+      else begin
+        lookahead parser;
+        parse_typector parser (capid::mod_names)
+      end
+    | _ ->
+      failwith (expected parser "identifier")
+
+and parse_expr parser =
   parse_or_expr parser
 
 and parse_or_expr parser =
@@ -489,132 +615,6 @@ and parse_literal parser =
     | _ ->
       failwith (expected parser "literal")
 
-let parse_top_open parser =
-  lookahead parser;
-  let mod_path = parse_mod_path parser [] in
-  Top.Open(mod_path)
-
-let rec parse_ctor_decls parser =
-  match parser.token with
-    | Token.Reserved(":") ->
-      Lexer.indent parser.lexer;
-      parse_indented_ctor_decls parser []
-    | Token.Reserved("{") ->
-      parse_braced_ctor_decls parser []
-    | _ ->
-      failwith (expected parser "':' or '{'")
-
-and parse_indented_ctor_decls parser ctor_decls =
-  lookahead parser;
-  skip parser Token.Newline;
-  if parser.token <> Token.Reserved("def") then
-    List.rev ctor_decls
-  else
-    let ctor_decl = parse_ctor_decl parser in
-    match parser.token with
-      | Token.Reserved(";") ->
-        parse_indented_ctor_decls parser (ctor_decl::ctor_decls)
-      | Token.Newline ->
-        parse_indented_ctor_decls parser (ctor_decl::ctor_decls)
-      | Token.Undent -> begin
-        lookahead parser;
-        List.rev (ctor_decl::ctor_decls)
-      end
-      | _ ->
-        failwith (expected parser "';' or newline or undent")
-
-and parse_braced_ctor_decls parser ctor_decls =
-  lookahead parser;
-  if parser.token <> Token.Reserved("def") then
-    List.rev ctor_decls
-  else
-    let ctor_decl = parse_ctor_decl parser in
-    match parser.token with
-      | Token.Reserved(";") ->
-        parse_braced_ctor_decls parser (ctor_decl::ctor_decls)
-      | Token.Reserved("}") -> begin
-        lookahead parser;
-        List.rev (ctor_decl::ctor_decls)
-      end
-      | _ ->
-        failwith (expected parser "';' or '}'")
-
-and parse_ctor_decl parser =
-  lookahead parser;
-  let ctor_name = parse_capid parser in
-  if parser.token <> Token.Reserved("(") then
-    (ctor_name, None)
-  else begin
-    lookahead parser;
-    let t = parse_type parser in
-    if parser.token <> Token.Reserved(")") then
-      failwith (expected parser "')'")
-    else begin
-      lookahead parser;
-      (ctor_name, Some(t))
-    end
-  end
-
-and parse_type parser =
-  let typector = parse_typector parser [] in
-  Type.Con(typector)
-
-and parse_typector parser mod_names =
-  match parser.token with
-    | Token.LowId(_) ->
-      let typector_name = parse_lowid parser in
-      (List.rev mod_names, typector_name)
-    | Token.CapId(_) ->
-      let capid = parse_capid parser in
-      if parser.token <> Token.Reserved(".") then
-        failwith (expected parser "'.'")
-      else begin
-        lookahead parser;
-        parse_typector parser (capid::mod_names)
-      end
-    | _ ->
-      failwith (expected parser "identifier")
-
-let parse_top_typedef parser =
-  lookahead parser;
-  let typector_name = parse_lowid parser in
-  let ctor_decls = parse_ctor_decls parser in
-  Top.Variant(typector_name,ctor_decls)
-
-let parse_top_let_fun parser =
-  lookahead parser;
-  let fun_name = parse_val_name parser in
-  let params = parse_params parser in
-  let body_expr = parse_block parser in
-  Top.LetFun(fun_name, make_abs params body_expr)
-
-let parse_top_let_val parser =
-  lookahead parser;
-  let val_name = parse_val_name parser in
-  if parser.token <> Token.CmpOp("=") then
-    failwith (expected parser "'='")
-  else begin
-    lookahead parser;
-    Top.LetVal(val_name, parse_expr parser)
-  end
-    
-let parse_top parser =
-  match parser.token with
-    | Token.Reserved("open") -> begin
-      parse_top_open parser
-    end
-    | Token.Reserved("type") -> begin
-      parse_top_typedef parser
-    end
-    | Token.Reserved("def") -> begin
-      parse_top_let_fun parser
-    end
-    | Token.Reserved("var") -> begin
-      parse_top_let_val parser
-    end
-    | _ ->
-      Top.Expr(parse_expr parser)
-
 let parse_stmt parser =
   let expr = parse_top parser in
   match parser.token with
@@ -622,7 +622,7 @@ let parse_stmt parser =
       expr
     | _ ->
       failwith (expected parser "newline or ';'")
-        
+  
 let parse parser =
   lookahead parser;
   skip parser Token.Newline;
