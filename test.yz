@@ -99,6 +99,19 @@ var f = bool_of_option(None)
 
 var add = Pervasives.$(+)
 
-type int_list:
-  def Nil
-  def Cons(int, int_list)
+type int_or_bool:
+  def Int(int)
+  def Bool(bool)
+
+var i = Int(123)
+var b = Bool(false)
+
+def bool_of_int_or_bool(iob):
+  match(iob)
+  case Int(n):
+    true
+  case Bool(b):
+    b
+
+var t = bool_of_int_or_bool(i)
+var f = bool_of_int_or_bool(b)

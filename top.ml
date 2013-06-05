@@ -6,7 +6,7 @@ type t =
   | LetFun of Names.val_name * Expr.t
   | LetVal of Names.val_name * Expr.t
   | Open of Names.mod_path
-  | Variant of Names.typector_name * (Names.ctor_name * Type.t) list
+  | Variant of Names.typector_name * (Names.ctor_name * Type.t option) list
 
 let show = function
   | Expr(expr) ->
