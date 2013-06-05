@@ -1,0 +1,16 @@
+
+open Printf
+
+type t:
+  def Int(int)
+  def String(string)
+  def Char(string)
+
+def show(lit):
+  match(lit)
+  case Int(n):
+    sprintf("%d", n)
+  case String(str):
+    sprintf("\"%s\"", str)
+  case Char(str):
+    sprintf("'%s'", str)

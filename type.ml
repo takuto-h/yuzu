@@ -1,3 +1,3 @@
-
 type t =
-  | Con of Names.typector
+   | Con of Names.typector
+

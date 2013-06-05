@@ -120,10 +120,10 @@ let translate_type = function
 
 let translate_ctor_decl = function
   | (ctor_name,None) ->
-    sprintf " | %s\n" ctor_name
+    sprintf "| %s\n" ctor_name
   | (ctor_name,Some(t)) ->
     let str_type = translate_type t in
-    sprintf " | %s of %s\n" ctor_name str_type
+    sprintf "| %s of %s\n" ctor_name str_type
 
 let translate_top trans = function
   | Top.Expr(expr) ->
