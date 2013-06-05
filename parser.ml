@@ -372,7 +372,7 @@ and parse_atomic_expr parser =
       let lit = parse_literal parser in
       Expr.Con(lit)
     | Token.LowId(_) | Token.CapId(_) | Token.Reserved("$") ->
-      parse_var_or_ctor parser []
+      parse_var_or_ctor_app parser []
     | Token.Reserved("^") ->
       parse_abs parser
     | Token.Reserved("if") ->
@@ -386,7 +386,7 @@ and parse_atomic_expr parser =
     | _ ->
       failwith (expected parser "expression")
 
-and parse_var_or_ctor parser mod_names =
+and parse_var_or_ctor_app parser mod_names =
   match parser.token with
     | Token.LowId(_) | Token.Reserved("$") ->
       let val_name = parse_val_name parser in
@@ -394,13 +394,27 @@ and parse_var_or_ctor parser mod_names =
     | Token.CapId(_) ->
       let capid = parse_capid parser in
       if parser.token <> Token.Reserved(".") then
-        Expr.Ctor(List.rev mod_names, capid)
+        parse_ctor_app parser (Expr.Ctor(List.rev mod_names, capid))
       else begin
         lookahead parser;
-        parse_var_or_ctor parser (capid::mod_names)
+        parse_var_or_ctor_app parser (capid::mod_names)
       end
     | _ ->
       failwith (expected parser "identifier")
+
+and parse_ctor_app parser ctor =
+  match parser.token with
+    | Token.Reserved("(") -> begin
+      lookahead parser;
+      let arg_exprs = parse_args parser in
+      Expr.App(ctor, Expr.Tuple(arg_exprs))
+    end
+    | Token.Reserved("^") -> begin
+      let arg_expr = parse_abs parser in
+      Expr.App(ctor, arg_expr)
+    end
+    | _ ->
+      ctor
 
 and parse_ctor parser mod_names =
   match parser.token with
