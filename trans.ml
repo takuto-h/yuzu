@@ -114,9 +114,16 @@ and translate_case trans (pat,body_expr) =
 
 let translate_typector = translate_ctor
 
-let translate_type = function
+let rec translate_type = function
   | Type.Con(typector) ->
     translate_typector typector
+  | Type.Tuple(t::ts) ->
+    let str_types = List.fold_left begin fun acc elem ->
+      sprintf "%s * %s" acc (translate_type elem)
+    end (translate_type t) ts
+    in sprintf "(%s)" str_types
+  | Type.Tuple([]) ->
+    assert false
 
 let translate_ctor_decl = function
   | (ctor_name,None) ->

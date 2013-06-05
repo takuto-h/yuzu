@@ -200,8 +200,15 @@ and parse_ctor_decl parser =
   end
 
 and parse_type parser =
-  let typector = parse_typector parser [] in
-  Type.Con(typector)
+  match parser.token with
+    | Token.LowId(_) | Token.CapId(_) ->
+      let typector = parse_typector parser [] in
+      Type.Con(typector)
+    | Token.Reserved("(") -> begin
+      parse_type_parens parser
+    end
+    | _ ->
+      failwith (expected parser "type")
 
 and parse_typector parser mod_names =
   match parser.token with
@@ -218,6 +225,26 @@ and parse_typector parser mod_names =
       end
     | _ ->
       failwith (expected parser "identifier")
+
+and parse_type_parens parser =
+  lookahead parser;
+  if parser.token = Token.Reserved(")") then begin
+    lookahead parser;
+    Type.Con([],"unit")
+  end
+  else
+    let list = parse_type_args parser in
+    Type.Tuple(list)
+
+and parse_type_args parser =
+  let is_terminal = function
+    | Token.Reserved(")") ->
+      true
+    | Token.Reserved(",") ->
+      false
+    | _ -> 
+      failwith (expected parser "')' or ','")
+  in parse_to_list parser is_terminal parse_type
 
 and parse_expr parser =
   parse_or_expr parser

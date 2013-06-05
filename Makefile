@@ -1,24 +1,20 @@
 
-OBJS =\
-  pos.cmo source.cmo token.cmo lexer.cmo\
-  literal.cmo names.cmo pattern.cmo type.cmo expr.cmo top.cmo parser.cmo\
-  trans.cmo main.cmo
+SRCS =\
+  pos.ml source.ml token.ml lexer.ml\
+  literal.ml names.ml pattern.ml type.ml expr.ml top.ml parser.ml\
+  trans.ml main.ml
 
 EXE = ./myml
 
 .PHONY: all
 all: $(EXE)
 
-$(EXE): $(OBJS)
-	ocamlc -g -o $(EXE) $(OBJS)
+$(EXE): $(SRCS)
+	ocamlc -g -o $(EXE) $(SRCS)
 
-.SUFFIXES: .yz .ml .cmi .cmo
+.SUFFIXES: .yz .ml
 .yz.ml:
 	$(EXE) $< $@
-.ml.cmi:
-	ocamlc -g -c $<
-.ml.cmo:
-	ocamlc -g -c $<
 
 .PHONY: clean
 clean:
