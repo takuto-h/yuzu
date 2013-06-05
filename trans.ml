@@ -118,7 +118,7 @@ let translate_type = function
   | Type.Con(typector) ->
     translate_typector typector
 
-let translate_ctor_def (ctor_name,t) =
+let translate_ctor_decl (ctor_name,t) =
   let str_type = translate_type t in
   sprintf " | %s of %s\n" ctor_name str_type
 
@@ -140,7 +140,7 @@ let translate_top trans = function
   | Top.Variant(name,ctors) ->
     let trans_ctor = {trans with indent_level=trans.indent_level+1} in
     let str_ctors = List.fold_left begin fun acc elem ->
-      sprintf "%s%s" acc (indent trans_ctor (translate_ctor_def elem))
+      sprintf "%s%s" acc (indent trans_ctor (translate_ctor_decl elem))
     end "" ctors in
     sprintf "type %s =\n%s" name str_ctors
 
