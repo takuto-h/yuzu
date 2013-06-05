@@ -200,9 +200,26 @@ and parse_ctor_decl parser =
   end
 
 and parse_type parser =
-  parse_simple_type parser
+  parse_tuple_type parser
 
-and parse_simple_type parser =
+and parse_tuple_type parser =
+  let t = parse_atomic_type parser in
+  let rec loop ts =
+    match parser.token with
+      | Token.MulOp("*") ->
+        lookahead parser;
+        let t = parse_atomic_type parser in
+        loop (t::ts)
+      | _ ->
+        List.rev ts
+  in
+  match parser.token with
+    | Token.MulOp("*") ->
+      Type.Tuple(loop [t])
+    | _ ->
+      t
+
+and parse_atomic_type parser =
   match parser.token with
     | Token.LowId(_) | Token.CapId(_) ->
       let typector = parse_typector parser [] in
@@ -216,7 +233,14 @@ and parse_simple_type parser =
         Type.Con(typector)
       end
     | Token.Reserved("(") -> begin
-      parse_paren_type parser
+      lookahead parser;
+      let t = parse_type parser in
+      if parser.token <> Token.Reserved(")") then
+        failwith (expected parser "')'")
+      else begin
+        lookahead parser;
+        t
+      end
     end
     | _ ->
       failwith (expected parser "type")
@@ -236,16 +260,6 @@ and parse_typector parser mod_names =
       end
     | _ ->
       failwith (expected parser "identifier")
-
-and parse_paren_type parser =
-  lookahead parser;
-  if parser.token = Token.Reserved(")") then begin
-    lookahead parser;
-    Type.Con([],"unit")
-  end
-  else
-    let list = parse_type_args parser in
-    Type.Tuple(list)
 
 and parse_type_args parser =
   let is_terminal = function
