@@ -1,3 +1,3 @@
 
 type t =
-  | Con of Names.typecstr
+  | Con of Names.typector

@@ -194,7 +194,7 @@ and parse_atomic_expr parser =
       let lit = parse_literal parser in
       Expr.Con(lit)
     | Token.LowId(_) | Token.CapId(_) | Token.Reserved("$") ->
-      parse_var_or_cstr parser []
+      parse_var_or_ctor parser []
     | Token.Reserved("^") ->
       parse_abs parser
     | Token.Reserved("if") ->
@@ -208,7 +208,7 @@ and parse_atomic_expr parser =
     | _ ->
       failwith (expected parser "expression")
 
-and parse_var_or_cstr parser mod_names =
+and parse_var_or_ctor parser mod_names =
   match parser.token with
     | Token.LowId(_) | Token.Reserved("$") ->
       let val_name = parse_val_name parser in
@@ -216,15 +216,15 @@ and parse_var_or_cstr parser mod_names =
     | Token.CapId(_) ->
       let capid = parse_capid parser in
       if parser.token <> Token.Reserved(".") then
-        Expr.Cstr(mod_names, capid)
+        Expr.Ctor(mod_names, capid)
       else begin
         lookahead parser;
-        parse_var_or_cstr parser (capid::mod_names)
+        parse_var_or_ctor parser (capid::mod_names)
       end
     | _ ->
       failwith (expected parser "identifier")
 
-and parse_cstr parser mod_names =
+and parse_ctor parser mod_names =
   match parser.token with
     | Token.CapId(_) ->
       let capid = parse_capid parser in
@@ -232,7 +232,7 @@ and parse_cstr parser mod_names =
         (mod_names, capid)
       else begin
         lookahead parser;
-        parse_cstr parser (capid::mod_names)
+        parse_ctor parser (capid::mod_names)
       end
     | _ ->
       failwith (expected parser "capitalized identifier")
@@ -458,9 +458,9 @@ and parse_pattern parser =
       failwith (expected parser "pattern")
 
 and parse_variant_pattern parser =
-  let cstr = parse_cstr parser [] in
+  let ctor = parse_ctor parser [] in
   if parser.token <> Token.Reserved("(") then
-    Pattern.Variant(cstr, Pattern.Var(Names.Id("_")))
+    Pattern.Variant(ctor, Pattern.Var(Names.Id("_")))
   else begin
     lookahead parser;
     let pat = parse_pattern parser in
@@ -468,7 +468,7 @@ and parse_variant_pattern parser =
       failwith (expected parser "')'")
     else begin
       lookahead parser;
-      Pattern.Variant(cstr, pat)
+      Pattern.Variant(ctor, pat)
     end
   end
 
