@@ -200,12 +200,23 @@ and parse_ctor_decl parser =
   end
 
 and parse_type parser =
+  parse_simple_type parser
+
+and parse_simple_type parser =
   match parser.token with
     | Token.LowId(_) | Token.CapId(_) ->
       let typector = parse_typector parser [] in
-      Type.Con(typector)
+      begin match parser.token with
+      | Token.Reserved("(") -> begin
+        lookahead parser;
+        let args = parse_type_args parser in
+        Type.App(typector, args)
+      end
+      | _ ->
+        Type.Con(typector)
+      end
     | Token.Reserved("(") -> begin
-      parse_type_parens parser
+      parse_paren_type parser
     end
     | _ ->
       failwith (expected parser "type")
@@ -226,7 +237,7 @@ and parse_typector parser mod_names =
     | _ ->
       failwith (expected parser "identifier")
 
-and parse_type_parens parser =
+and parse_paren_type parser =
   lookahead parser;
   if parser.token = Token.Reserved(")") then begin
     lookahead parser;

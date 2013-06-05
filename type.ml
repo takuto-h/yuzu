@@ -1,3 +1,5 @@
 type t =
   | Con of Names.typector
-  | Tuple of t list
+  | App of (Names.typector * (t) list)
+  | Tuple of (t) list
+

@@ -117,6 +117,14 @@ let translate_typector = translate_ctor
 let rec translate_type = function
   | Type.Con(typector) ->
     translate_typector typector
+  | Type.App(typector,t::ts) ->
+    let str_typector = translate_typector typector in
+    let str_types = List.fold_left begin fun acc elem ->
+      sprintf "%s, %s" acc (translate_type elem)
+    end (translate_type t) ts
+    in sprintf "(%s) %s" str_types str_typector
+  | Type.App(typector,[]) ->
+    assert false
   | Type.Tuple(t::ts) ->
     let str_types = List.fold_left begin fun acc elem ->
       sprintf "%s * %s" acc (translate_type elem)
