@@ -22,4 +22,5 @@ clean:
 
 .PHONY: wc
 wc:
-	find . \( -name "*.ml" -o -name "*.yz" \) | xargs wc -l
+#	find . \( -name "*.ml" -o -name "*.yz" \) | xargs wc -l
+	wc -l $(SRCS)
