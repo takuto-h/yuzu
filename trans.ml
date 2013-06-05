@@ -137,12 +137,12 @@ let translate_top trans = function
   | Top.Open(path) ->
     let str_path = translate_mod_path path in
     sprintf "open %s\n" str_path
-  | Top.Variant(name,ctors) ->
-    let trans_ctor = {trans with indent_level=trans.indent_level+1} in
-    let str_ctors = List.fold_left begin fun acc elem ->
-      sprintf "%s%s" acc (indent trans_ctor (translate_ctor_decl elem))
-    end "" ctors in
-    sprintf "type %s =\n%s" name str_ctors
+  | Top.Variant(name,ctor_decls) ->
+    let trans_ctor_decl = {trans with indent_level=trans.indent_level+1} in
+    let str_ctor_decls = List.fold_left begin fun acc elem ->
+      sprintf "%s%s" acc (indent trans_ctor_decl (translate_ctor_decl elem))
+    end "" ctor_decls in
+    sprintf "type %s =\n%s" name str_ctor_decls
 
 exception Break
       

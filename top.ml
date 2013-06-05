@@ -23,5 +23,5 @@ let show = function
   | Open(path) ->
     let str_path = Names.show_mod_path path in
     sprintf "Open(%s)" str_path
-  | Variant(name,ctors) ->
+  | Variant(name,ctor_decls) ->
     sprintf "Variant(%s)" name

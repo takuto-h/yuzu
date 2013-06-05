@@ -98,3 +98,7 @@ var t = bool_of_option(Some(true))
 var f = bool_of_option(None)
 
 var add = Pervasives.$(+)
+
+type int_list:
+  def Nil
+  def Cons(int, int_list)

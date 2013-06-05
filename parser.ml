@@ -513,12 +513,18 @@ let parse_top_let_val parser =
     
 let parse_top parser =
   match parser.token with
-    | Token.Reserved("open") ->
+    | Token.Reserved("open") -> begin
       parse_top_open parser
-    | Token.Reserved("def") ->
+    end
+    (*| Token.Reserved("type") -> begin
+      parse_top_typedef parser
+    end*)
+    | Token.Reserved("def") -> begin
       parse_top_let_fun parser
-    | Token.Reserved("var") ->
+    end
+    | Token.Reserved("var") -> begin
       parse_top_let_val parser
+    end
     | _ ->
       Top.Expr(parse_expr parser)
 
