@@ -15,6 +15,7 @@
            ("type\\s +\\(\\sw+\\)" . (1 font-lock-type-face))
            ("\\(\"\\(\\\\[\\\"]\\|[^\"\n]\\)*\"\\)" . (1 font-lock-string-face t))
            ("\\('\\(\\\\[\\']\\|[^'\n]\\)*'\\)" . (1 font-lock-string-face t))
+           ("\\(//[^\n]*\\)$" . (1 font-lock-comment-face t))
            )))
     (setq font-lock-defaults
           (list
