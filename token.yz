@@ -21,8 +21,7 @@ type t:
 
 def get_op(token):
   match(token)
-  case OrOp(str) | AndOp(str) | CmpOp(str) | ConsOp(str) |
-       AddOp(str) | MulOp(str) | PowOp(str):
+  case OrOp(str) | AndOp(str) | CmpOp(str) | ConsOp(str) | AddOp(str) | MulOp(str) | PowOp(str):
     Some(str)
   case _:
     None
@@ -45,6 +44,5 @@ def show(token):
     "lowercase identifier"
   case CapId(_):
     "capitalized identifier"
-  case Reserved(s) | OrOp(s) | AndOp(s) | CmpOp(s) |
-       ConsOp(s) | AddOp(s) | MulOp(s) | PowOp(s):
+  case Reserved(s) | OrOp(s) | AndOp(s) | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) | PowOp(s):
     sprintf("'%s'", s)
