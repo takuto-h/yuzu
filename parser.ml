@@ -185,7 +185,7 @@ and parse_braced_ctor_decls parser ctor_decls =
 
 and parse_ctor_decl parser =
   lookahead parser;
-  let ctor_name = parse_capid parser in
+  let ctor_name = Names.Id(parse_capid parser) in
   if parser.token <> Token.Reserved("(") then
     (ctor_name, None)
   else begin
@@ -394,7 +394,7 @@ and parse_var_or_ctor_app parser mod_names =
     | Token.CapId(_) ->
       let capid = parse_capid parser in
       if parser.token <> Token.Reserved(".") then
-        parse_ctor_app parser (Expr.Ctor(List.rev mod_names, capid))
+        parse_ctor_app parser (Expr.Ctor(List.rev mod_names, Names.Id(capid)))
       else begin
         lookahead parser;
         parse_var_or_ctor_app parser (capid::mod_names)
@@ -421,7 +421,7 @@ and parse_ctor parser mod_names =
     | Token.CapId(_) ->
       let capid = parse_capid parser in
       if parser.token <> Token.Reserved(".") then
-        (List.rev mod_names, capid)
+        (List.rev mod_names, Names.Id(capid))
       else begin
         lookahead parser;
         parse_ctor parser (capid::mod_names)
@@ -543,33 +543,48 @@ and parse_braced_block parser =
 
 and parse_block_elem parser =
   match parser.token with
-    | Token.Reserved("var") ->
+    | Token.Reserved("var") -> begin
       parse_let_val parser
+    end
+    | Token.Reserved("def") -> begin
+      parse_let_fun parser
+    end
     | _ ->
       parse_expr parser
 
 and parse_let_val parser =
   lookahead parser;
-  let name = parse_val_name parser in
+  let val_name = parse_val_name parser in
   if parser.token <> Token.CmpOp("=") then
     failwith (expected parser "'='")
   else begin
     lookahead parser;
     let val_expr = parse_expr parser in
-    begin match parser.token with
-      | Token.Reserved(";") -> begin
-        lookahead parser;
-        skip parser Token.Newline
-      end
-      | Token.Newline -> begin
-        lookahead parser
-      end
-      | _ ->
-        failwith (expected parser "';' or newline")
-    end;
+    parse_block_sep parser;
     let cont_expr = parse_block_elem parser in
-    Expr.LetVal(name,val_expr,cont_expr)
+    Expr.LetVal(val_name,val_expr,cont_expr)
   end
+
+and parse_let_fun parser =
+  lookahead parser;
+  let fun_name = parse_val_name parser in
+  let params = parse_params parser in
+  let body_expr = parse_block parser in
+  parse_block_sep parser;
+  let cont_expr = parse_block_elem parser in
+  Expr.LetFun(fun_name, make_abs params body_expr, cont_expr)
+
+and parse_block_sep parser =
+  match parser.token with
+    | Token.Reserved(";") -> begin
+      lookahead parser;
+      skip parser Token.Newline
+    end
+    | Token.Newline -> begin
+      lookahead parser
+    end
+    | _ ->
+      failwith (expected parser "';' or newline")
 
 and parse_if_expr parser =
   lookahead parser;
@@ -672,7 +687,7 @@ and parse_cons_pattern parser =
     | Token.ConsOp(str) -> begin
       lookahead parser;
       let rhs = parse_cons_pattern parser in
-      Pattern.Variant(([], str), [lhs;rhs])
+      Pattern.Variant(([], Names.Op(str)), [lhs;rhs])
     end
     | _ ->
       lhs
@@ -708,7 +723,7 @@ and parse_list_pattern parser =
   lookahead parser;
   if parser.token = Token.Reserved("]") then begin
     lookahead parser;
-    Pattern.Variant(([], "[]"), [Pattern.Var(Names.Id("_"))])
+    Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))])
   end
   else
     let is_terminal = function
@@ -721,8 +736,8 @@ and parse_list_pattern parser =
     in
     let list = parse_to_list parser is_terminal parse_pattern in
     List.fold_right begin fun elem acc ->
-      Pattern.Variant(([], "::"), [elem;acc])
-    end list (Pattern.Variant(([], "[]"), [Pattern.Var(Names.Id("_"))]))
+      Pattern.Variant(([], Names.Op("::")), [elem;acc])
+    end list (Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))]))
 
 and parse_pattern_list parser =
   let is_terminal = function

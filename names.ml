@@ -6,7 +6,7 @@ type val_name =
   | Op of string
 
 type typector_name = string
-type ctor_name = string
+type ctor_name = val_name
 type mod_name = string
 type mod_path = mod_name list
 type val_path = mod_path * val_name
@@ -18,6 +18,8 @@ let show_val_name = function
     str
   | Op(str) ->
     sprintf "$(%s)" str
+
+let show_ctor_name = show_val_name
 
 let show_mod_path = function
   | [] ->
@@ -33,8 +35,4 @@ let show_val_path = function
   | (mod_path, val_name) ->
     sprintf "%s.%s" (show_mod_path mod_path) (show_val_name val_name)
 
-let show_ctor = function
-  | ([], ctor_name) ->
-    ctor_name
-  | (mod_path, ctor_name) ->
-    sprintf "%s.%s" (show_mod_path mod_path) ctor_name
+let show_ctor = show_val_path

@@ -23,6 +23,8 @@ let translate_val_name = function
   | Names.Op(str) ->
     sprintf "( %s )" str
 
+let translate_ctor_name = translate_val_name
+
 let translate_mod_path = function
   | [] ->
     ""
@@ -37,11 +39,7 @@ let translate_val_path = function
   | (mod_path, val_name) ->
     sprintf "%s.%s" (translate_mod_path mod_path) (translate_val_name val_name)
 
-let translate_ctor = function
-  | ([], ctor_name) ->
-    ctor_name
-  | (mod_path, ctor_name) ->
-    sprintf "%s.%s" (translate_mod_path mod_path) ctor_name
+let translate_ctor = translate_val_path
 
 let translate_literal = function
   | Literal.Int(n) ->
@@ -116,6 +114,13 @@ let rec translate_expr trans = function
     sprintf
       "begin let %s = %s in\n%s\n%s"
       str_name str_val (indent trans str_cont) (indent trans "end")
+  | Expr.LetFun(name,val_expr,cont_expr) ->
+    let str_name = Names.show_val_name name in
+    let str_val = translate_expr trans val_expr in
+    let str_cont = translate_expr trans cont_expr in
+    sprintf
+      "begin let rec %s = %s in\n%s\n%s"
+      str_name str_val (indent trans str_cont) (indent trans "end")
 
 and translate_case trans (pat,body_expr) =
   let str_pat = sprintf "| %s ->" (translate_pattern pat) in
@@ -123,7 +128,11 @@ and translate_case trans (pat,body_expr) =
   let str_body = translate_expr trans_body body_expr in
   sprintf "\n%s\n%s" (indent trans str_pat) (indent trans_body str_body)
 
-let translate_typector = translate_ctor
+let translate_typector = function
+  | ([], typector_name) ->
+    typector_name
+  | (mod_path, typector_name) ->
+    sprintf "%s.%s" (translate_mod_path mod_path) typector_name
 
 let rec translate_type = function
   | Type.Con(typector) ->
@@ -146,10 +155,10 @@ let rec translate_type = function
 
 let translate_ctor_decl = function
   | (ctor_name,None) ->
-    sprintf "| %s\n" ctor_name
+    sprintf "| %s\n" (translate_ctor_name ctor_name)
   | (ctor_name,Some(t)) ->
     let str_type = translate_type t in
-    sprintf "| %s of %s\n" ctor_name str_type
+    sprintf "| %s of %s\n" (translate_ctor_name ctor_name) str_type
 
 let translate_top trans = function
   | Top.Expr(expr) ->

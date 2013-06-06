@@ -1,0 +1,55 @@
+
+open Printf
+
+type t:
+  def Con(Literal.t)
+  def Var(Names.val_path)
+  def Ctor(Names.ctor)
+  def Abs(Names.val_name * t)
+  def App(t * t)
+  def If(t * t * t)
+  def Tuple(list(t))
+  def Match(t * list(Pattern.t * t))
+  def LetVal(Names.val_name * t * t)
+  def LetFun(Names.val_name * t * t)
+
+def show(expr):
+  match(expr)
+  case Con(lit):
+    sprintf("Con(%s)", Literal.show(lit))
+  case Var(path):
+    sprintf("Var(%s)", Names.show_val_path(path))
+  case Ctor(ctor):
+    sprintf("Ctor(%s)", Names.show_ctor(ctor))
+  case Abs(param_name,body_expr):
+    sprintf("Abs(%s,%s)", Names.show_val_name(param_name), show(body_expr))
+  case App(fun_expr,arg_expr):
+    sprintf("App(%s,%s)", show(fun_expr), show(arg_expr))
+  case If(cond_expr,then_expr,else_expr):
+    sprintf("If(%s,%s,%s)", show(cond_expr), show(then_expr), show(else_expr))
+  case Tuple(x::xs):
+    sprintf("Tuple([%s])", List.fold_left^(acc, elem){
+      sprintf("%s;%s", acc, show(elem))
+    }(show(x), xs))
+  case Tuple([]):
+    assert(false)
+  case Match(target_expr,[]):
+    sprintf("Match(%s,[])", show(target_expr))
+  case Match(target_expr,c::cs):
+    def show_case(c):
+      var pat = fst(c)
+      var expr = snd(c)
+      sprintf("Case(%s,%s)", Pattern.show(pat), show(expr))
+    sprintf("Match(%s,[%s])", show(target_expr), List.fold_left^(acc, elem){
+      sprintf("%s;%s", acc, show_case(elem))
+    }(show_case(c), cs))
+  case LetVal(name,val_expr,cont_expr):
+    var str_name = Names.show_val_name(name)
+    var str_val = show(val_expr)
+    var str_cont = show(cont_expr)
+    sprintf("LetVal(%s,%s,%s)", str_name, str_val, str_cont)
+  case LetFun(name,val_expr,cont_expr):
+    var str_name = Names.show_val_name(name)
+    var str_val = show(val_expr)
+    var str_cont = show(cont_expr)
+    sprintf("LetFun(%s,%s,%s)", str_name, str_val, str_cont)
