@@ -637,6 +637,20 @@ and parse_cases parser cases =
       List.rev cases
 
 and parse_pattern parser =
+  parse_cons_pattern parser
+
+and parse_cons_pattern parser =
+  let lhs = parse_atomic_pattern parser in
+  match parser.token with
+    | Token.ConsOp(str) -> begin
+      lookahead parser;
+      let rhs = parse_cons_pattern parser in
+      Pattern.Variant(([], str), [lhs;rhs])
+    end
+    | _ ->
+      lhs
+
+and parse_atomic_pattern parser =
   match parser.token with
     | Token.Int(_) | Token.String(_) | Token.Char(_) ->
       let lit = parse_literal parser in
@@ -644,8 +658,12 @@ and parse_pattern parser =
     | Token.LowId(_) ->
       let name = parse_val_name parser in
       Pattern.Var(name)
-    | Token.CapId(_) ->
+    | Token.CapId(_) -> begin
       parse_variant_pattern parser
+    end
+    | Token.Reserved("[") -> begin
+      parse_list_pattern parser
+    end
     | _ ->
       failwith (expected parser "pattern")
 
@@ -658,6 +676,26 @@ and parse_variant_pattern parser =
     let pat_list = parse_pattern_list parser in
     Pattern.Variant(ctor, pat_list)
   end
+
+and parse_list_pattern parser =
+  lookahead parser;
+  if parser.token = Token.Reserved("]") then begin
+    lookahead parser;
+    Pattern.Variant(([], "[]"), [Pattern.Var(Names.Id("_"))])
+  end
+  else
+    let is_terminal = function
+      | Token.Reserved("]") ->
+        true
+      | Token.Reserved(";") ->
+        false
+      | _ ->
+        failwith (expected parser "']' or ';'")
+    in
+    let list = parse_to_list parser is_terminal parse_pattern in
+    List.fold_right begin fun elem acc ->
+      Pattern.Variant(([], "::"), [elem;acc])
+    end list (Pattern.Variant(([], "[]"), [Pattern.Var(Names.Id("_"))]))
 
 and parse_pattern_list parser =
   let is_terminal = function
