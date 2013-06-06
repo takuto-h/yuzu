@@ -450,7 +450,12 @@ and parse_params parser =
     failwith (expected parser "'('")
   else begin
     lookahead parser;
-    parse_pattern_list parser
+    if parser.token = Token.Reserved(")") then begin
+      lookahead parser;
+      [Pattern.Variant(([], Names.Id("()")), [Pattern.Var(Names.Id("_"))])]
+    end
+    else
+      parse_pattern_list parser
   end
 
 and parse_val_name parser =
@@ -628,10 +633,18 @@ and parse_parens parser =
     Expr.Var([], (Names.Id("()")))
   end
   else
-    let list = parse_args parser in
+    let list = parse_expr_list parser in
     Expr.Tuple(list)
 
 and parse_args parser =
+  if parser.token = Token.Reserved(")") then begin
+    lookahead parser;
+    [Expr.Var([], Names.Id("()"))]
+  end
+  else
+    parse_expr_list parser
+
+and parse_expr_list parser =
   let is_terminal = function
     | Token.Reserved(")") ->
       true
