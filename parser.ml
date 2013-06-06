@@ -613,7 +613,22 @@ and parse_block_elem parser =
       parse_let_fun parser
     end
     | _ ->
-      parse_expr parser
+      let lhs = parse_expr parser in
+      begin match parser.token with
+        | Token.Reserved(";") -> begin
+          lookahead parser;
+          skip parser Token.Newline;
+          let rhs = parse_block_elem parser in
+          Expr.Seq(lhs, rhs)
+        end
+        | Token.Newline -> begin
+          lookahead parser;
+          let rhs = parse_block_elem parser in
+          Expr.Seq(lhs, rhs)
+        end
+        | _ ->
+          lhs
+      end
 
 and parse_let_val parser =
   lookahead parser;

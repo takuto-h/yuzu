@@ -150,6 +150,11 @@ let rec translate_expr trans = function
     sprintf
       "begin let rec %s = %s in\n%s\n%s"
       str_name str_val (indent trans str_cont) (indent trans "end")
+  | Expr.Seq(lhs,rhs) ->
+    let str_lhs = translate_expr trans lhs in
+    let str_rhs = translate_expr trans rhs in
+    sprintf "begin\n%s;\n%s\n%s"
+      (indent trans str_lhs) (indent trans str_rhs) (indent trans "end")
 
 and translate_field_def trans (path,expr) =
   let str_path = translate_val_path path in

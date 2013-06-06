@@ -12,6 +12,7 @@ type t =
   | Match of (t * ((Pattern.t * t)) list)
   | LetVal of (Pattern.t * t * t)
   | LetFun of (Names.val_name * t * t)
+  | Seq of (t * t)
 
 let rec show = begin fun expr ->
   begin match expr with
@@ -63,6 +64,12 @@ let rec show = begin fun expr ->
       begin let str_cont = (show cont_expr) in
       ((((sprintf "LetFun(%s,%s,%s)") str_name) str_val) str_cont)
       end
+      end
+      end
+    | (Seq(lhs, rhs)) ->
+      begin let str_lhs = (show lhs) in
+      begin let str_rhs = (show rhs) in
+      (((sprintf "Seq(%s,%s)") str_lhs) str_rhs)
       end
       end
   end

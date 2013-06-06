@@ -13,6 +13,7 @@ type t:
   def Match(t * list(Pattern.t * t))
   def LetVal(Pattern.t * t * t)
   def LetFun(Names.val_name * t * t)
+  def Seq(t * t)
 
 def show(expr):
   match(expr)
@@ -54,3 +55,7 @@ def show(expr):
     var str_val = show(val_expr)
     var str_cont = show(cont_expr)
     sprintf("LetFun(%s,%s,%s)", str_name, str_val, str_cont)
+  case Seq(lhs, rhs):
+    var str_lhs = show(lhs)
+    var str_rhs = show(rhs)
+    sprintf("Seq(%s,%s)", str_lhs, str_rhs)
