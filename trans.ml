@@ -155,6 +155,14 @@ let rec translate_expr trans = function
     let str_rhs = translate_expr trans rhs in
     sprintf "begin\n%s;\n%s\n%s"
       (indent trans str_lhs) (indent trans str_rhs) (indent trans "end")
+  | Expr.Field(expr,path) ->
+    let str_expr = translate_expr trans expr in
+    let str_path = translate_val_path path in
+    sprintf "%s.%s" str_expr str_path
+  | Expr.Assign(lhs,rhs) ->
+    let str_lhs = translate_expr trans lhs in
+    let str_rhs = translate_expr trans rhs in
+    sprintf "(%s <- %s)" str_lhs str_rhs
 
 and translate_field_def trans (path,expr) =
   let str_path = translate_val_path path in

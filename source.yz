@@ -1,0 +1,34 @@
+
+type t:
+  fname : string
+  mutable lnum : int
+  mutable cnum : int
+  mutable bol : int
+  strm : Stream.t(char)
+
+def create(fname, chan): {
+  fname = fname;
+  lnum = 1;
+  cnum = 0;
+  bol = 0;
+  strm = Stream.of_channel(chan);
+}
+
+def pos({fname;lnum;cnum;bol}):
+  Pos.make(fname, lnum, cnum, bol)
+
+def peek({strm}):
+  Stream.peek(strm)
+
+def junk(src):
+  match(peek(src))
+  case None:
+    ()
+  case Some('\n'):
+    src.lnum <- src.lnum + 1
+    src.cnum <- src.cnum + 1
+    src.bol <- src.cnum
+    Stream.junk(src.strm)
+  case Some(_):
+    src.cnum <- src.cnum + 1
+    Stream.junk(src.strm)

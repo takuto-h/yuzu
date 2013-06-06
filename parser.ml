@@ -316,12 +316,15 @@ and parse_expr parser =
   parse_assign_expr parser
 
 and parse_assign_expr parser =
-  let get_op = function
-    | Token.AssignOp(str) ->
-      Some(str)
+  let lhs = parse_or_expr parser in
+  match parser.token with
+    | Token.AssignOp("<-") -> begin
+      lookahead parser;
+      let rhs = parse_assign_expr parser in
+      Expr.Assign(lhs, rhs)
+    end
     | _ ->
-      None
-  in parse_right_assoc parser get_op parse_or_expr
+      lhs
 
 and parse_or_expr parser =
   let get_op = function
@@ -399,7 +402,7 @@ and parse_unary_expr parser =
       parse_prim_expr parser
 
 and parse_prim_expr parser =
-  let fun_expr = parse_atomic_expr parser in
+  let fun_expr = parse_dot_expr parser in
   let rec loop fun_expr =
     match parser.token with
       | Token.Reserved("(") -> begin
@@ -415,6 +418,17 @@ and parse_prim_expr parser =
         fun_expr
   in loop fun_expr
     
+and parse_dot_expr parser =
+  let expr = parse_atomic_expr parser in
+  match parser.token with
+    | Token.Reserved(".") -> begin
+      lookahead parser;
+      let path = parse_val_path parser [] in
+      Expr.Field(expr, path)
+    end
+    | _ ->
+      expr
+
 and parse_atomic_expr parser =
   match parser.token with
     | Token.Int(_) | Token.String(_) | Token.Char(_) ->

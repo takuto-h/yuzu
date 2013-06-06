@@ -14,6 +14,8 @@ type t:
   def LetVal(Pattern.t * t * t)
   def LetFun(Names.val_name * t * t)
   def Seq(t * t)
+  def Field(t * Names.val_path)
+  def Assign(t * t)
 
 def show(expr):
   match(expr)
@@ -59,3 +61,12 @@ def show(expr):
     var str_lhs = show(lhs)
     var str_rhs = show(rhs)
     sprintf("Seq(%s,%s)", str_lhs, str_rhs)
+  case Field(expr, path):
+    var str_expr = show(expr)
+    var str_path = Names.show_val_path(path)
+    sprintf("Field(%s,%s)", str_expr, str_path)
+  case Assign(lhs, rhs):
+    var str_lhs = show(lhs)
+    var str_rhs = show(rhs)
+    sprintf("Assign(%s,%s)", str_lhs, str_rhs)
+  

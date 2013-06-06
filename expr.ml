@@ -13,6 +13,8 @@ type t =
   | LetVal of (Pattern.t * t * t)
   | LetFun of (Names.val_name * t * t)
   | Seq of (t * t)
+  | Field of (t * Names.val_path)
+  | Assign of (t * t)
 
 let rec show = begin fun expr ->
   begin match expr with
@@ -70,6 +72,18 @@ let rec show = begin fun expr ->
       begin let str_lhs = (show lhs) in
       begin let str_rhs = (show rhs) in
       (((sprintf "Seq(%s,%s)") str_lhs) str_rhs)
+      end
+      end
+    | (Field(expr, path)) ->
+      begin let str_expr = (show expr) in
+      begin let str_path = (Names.show_val_path path) in
+      (((sprintf "Field(%s,%s)") str_expr) str_path)
+      end
+      end
+    | (Assign(lhs, rhs)) ->
+      begin let str_lhs = (show lhs) in
+      begin let str_rhs = (show rhs) in
+      (((sprintf "Assign(%s,%s)") str_lhs) str_rhs)
       end
       end
   end
