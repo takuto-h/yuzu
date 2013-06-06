@@ -4,6 +4,7 @@ type t =
   | Con of Literal.t
   | Var of Names.val_name
   | Variant of (Names.ctor * (t) list)
+  | Tuple of (t) list
 
 let rec show = begin fun pat ->
   begin match pat with
@@ -13,6 +14,8 @@ let rec show = begin fun pat ->
       ((sprintf "Var(%s)") (Names.show_val_name name))
     | Variant(ctor, pat_list) ->
       ((sprintf "Variant(%s)") (Names.show_ctor ctor))
+    | Tuple(pat_list) ->
+      (sprintf "Tuple()")
   end
 end
 

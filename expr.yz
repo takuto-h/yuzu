@@ -37,8 +37,7 @@ def show(expr):
     sprintf("Match(%s,[])", show(target_expr))
   case Match(target_expr,c::cs):
     def show_case(c):
-      var pat = fst(c)
-      var expr = snd(c)
+      var (pat,expr) = c
       sprintf("Case(%s,%s)", Pattern.show(pat), show(expr))
     sprintf("Match(%s,[%s])", show(target_expr), List.fold_left^(acc, elem){
       sprintf("%s;%s", acc, show_case(elem))

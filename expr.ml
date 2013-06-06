@@ -38,10 +38,8 @@ let rec show = begin fun expr ->
       ((sprintf "Match(%s,[])") (show target_expr))
     | Match(target_expr, ( :: )(c, cs)) ->
       begin let rec show_case = begin fun c ->
-        begin let pat = (fst c) in
-        begin let expr = (snd c) in
+        begin let (pat, expr) = c in
         (((sprintf "Case(%s,%s)") (Pattern.show pat)) (show expr))
-        end
         end
       end in
       (((sprintf "Match(%s,[%s])") (show target_expr)) (((List.fold_left begin fun acc ->

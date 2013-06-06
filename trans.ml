@@ -62,6 +62,13 @@ let rec translate_pattern = function
     in sprintf "%s(%s)" str_ctor str_pat_list
   | Pattern.Variant(ctor,[]) ->
     assert false
+  | Pattern.Tuple(pat::pats) ->
+    let str_pat_list = List.fold_left begin fun acc elem ->
+      sprintf "%s, %s" acc (translate_pattern elem)
+    end (translate_pattern pat) pats
+    in sprintf "(%s)" str_pat_list
+  | Pattern.Tuple([]) ->
+    assert false
 
 let rec translate_expr trans = function
   | Expr.Con(lit) ->

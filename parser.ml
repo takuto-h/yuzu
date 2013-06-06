@@ -706,6 +706,9 @@ and parse_atomic_pattern parser =
     | Token.Reserved("[") -> begin
       parse_list_pattern parser
     end
+    | Token.Reserved("(") -> begin
+      parse_parens_pattern parser
+    end
     | _ ->
       failwith (expected parser "pattern")
 
@@ -738,6 +741,16 @@ and parse_list_pattern parser =
     List.fold_right begin fun elem acc ->
       Pattern.Variant(([], Names.Op("::")), [elem;acc])
     end list (Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))]))
+
+and parse_parens_pattern parser =
+  lookahead parser;
+  if parser.token = Token.Reserved(")") then begin
+    lookahead parser;
+    Pattern.Variant(([], Names.Id("()")), [Pattern.Var(Names.Id("_"))])
+  end
+  else
+    let list = parse_pattern_list parser in
+    Pattern.Tuple(list)
 
 and parse_pattern_list parser =
   let is_terminal = function

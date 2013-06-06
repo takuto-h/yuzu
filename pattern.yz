@@ -5,6 +5,7 @@ type t:
   def Con(Literal.t)
   def Var(Names.val_name)
   def Variant(Names.ctor * list(t))
+  def Tuple(list(t))
 
 def show(pat):
   match(pat)
@@ -14,3 +15,5 @@ def show(pat):
     sprintf("Var(%s)", Names.show_val_name(name))
   case Variant(ctor,pat_list):
     sprintf("Variant(%s)", Names.show_ctor(ctor))
+  case Tuple(pat_list):
+    sprintf("Tuple()")
