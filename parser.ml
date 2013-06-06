@@ -119,12 +119,12 @@ and parse_top_let_fun parser =
 
 and parse_top_let_val parser =
   lookahead parser;
-  let val_name = parse_val_name parser in
+  let val_pat = parse_pattern parser in
   if parser.token <> Token.CmpOp("=") then
     failwith (expected parser "'='")
   else begin
     lookahead parser;
-    Top.LetVal(val_name, parse_expr parser)
+    Top.LetVal(val_pat, parse_expr parser)
   end
 
 and parse_top_open parser =
@@ -554,7 +554,7 @@ and parse_block_elem parser =
 
 and parse_let_val parser =
   lookahead parser;
-  let val_name = parse_val_name parser in
+  let val_pat = parse_pattern parser in
   if parser.token <> Token.CmpOp("=") then
     failwith (expected parser "'='")
   else begin
@@ -562,7 +562,7 @@ and parse_let_val parser =
     let val_expr = parse_expr parser in
     parse_block_sep parser;
     let cont_expr = parse_block_elem parser in
-    Expr.LetVal(val_name,val_expr,cont_expr)
+    Expr.LetVal(val_pat,val_expr,cont_expr)
   end
 
 and parse_let_fun parser =

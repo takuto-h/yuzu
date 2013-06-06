@@ -9,7 +9,7 @@ type t =
   | If of (t * t * t)
   | Tuple of (t) list
   | Match of (t * ((Pattern.t * t)) list)
-  | LetVal of (Names.val_name * t * t)
+  | LetVal of (Pattern.t * t * t)
   | LetFun of (Names.val_name * t * t)
 
 let rec show = begin fun expr ->
@@ -50,11 +50,11 @@ let rec show = begin fun expr ->
         end
       end) (show_case c)) cs))
       end
-    | LetVal(name, val_expr, cont_expr) ->
-      begin let str_name = (Names.show_val_name name) in
+    | LetVal(pat, val_expr, cont_expr) ->
+      begin let str_pat = (Pattern.show pat) in
       begin let str_val = (show val_expr) in
       begin let str_cont = (show cont_expr) in
-      ((((sprintf "LetVal(%s,%s,%s)") str_name) str_val) str_cont)
+      ((((sprintf "LetVal(%s,%s,%s)") str_pat) str_val) str_cont)
       end
       end
       end
