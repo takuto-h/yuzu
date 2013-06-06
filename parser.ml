@@ -542,7 +542,34 @@ and parse_braced_block parser =
   end
 
 and parse_block_elem parser =
-  parse_expr parser
+  match parser.token with
+    | Token.Reserved("var") ->
+      parse_let_val parser
+    | _ ->
+      parse_expr parser
+
+and parse_let_val parser =
+  lookahead parser;
+  let name = parse_val_name parser in
+  if parser.token <> Token.CmpOp("=") then
+    failwith (expected parser "'='")
+  else begin
+    lookahead parser;
+    let val_expr = parse_expr parser in
+    begin match parser.token with
+      | Token.Reserved(";") -> begin
+        lookahead parser;
+        skip parser Token.Newline
+      end
+      | Token.Newline -> begin
+        lookahead parser
+      end
+      | _ ->
+        failwith (expected parser "';' or newline")
+    end;
+    let cont_expr = parse_block_elem parser in
+    Expr.LetVal(name,val_expr,cont_expr)
+  end
 
 and parse_if_expr parser =
   lookahead parser;

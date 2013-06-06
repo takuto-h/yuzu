@@ -1,0 +1,28 @@
+
+open Printf
+
+type t:
+  def Expr(Expr.t)
+  def LetFun(Names.val_name * Expr.t)
+  def LetVal(Names.val_name * Expr.t)
+  def Open(Names.mod_path)
+  def Variant(Names.typector_name * list(Names.ctor_name * option(Type.t)))
+
+def show(top):
+  match(top)
+  case Expr(expr):
+    var str_expr = Expr.show(expr)
+    sprintf("Expr(%s)", str_expr)
+  case LetFun(name,expr):
+    var str_name = Names.show_val_name(name)
+    var str_expr = Expr.show(expr)
+    sprintf("LetFun(%s,%s)", str_name, str_expr)
+  case LetVal(name,expr):
+    var str_name = Names.show_val_name(name)
+    var str_expr = Expr.show(expr)
+    sprintf("LetVal(%s,%s)", str_name, str_expr)
+  case Open(path):
+    var str_path = Names.show_mod_path(path)
+    sprintf("Open(%s)", str_path)
+  case Variant(name,ctor_decls):
+    sprintf("Variant(%s)", name)
