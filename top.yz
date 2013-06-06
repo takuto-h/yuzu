@@ -6,6 +6,7 @@ type t:
   def LetVal(Pattern.t * Expr.t)
   def LetFun(Names.val_name * Expr.t)
   def Open(Names.mod_path)
+  def Abbrev(Names.typector_name * Type.t)
   def Variant(Names.typector_name * list(Names.ctor_name * option(Type.t)))
 
 def show(top):
@@ -24,5 +25,7 @@ def show(top):
   case Open(path):
     var str_path = Names.show_mod_path(path)
     sprintf("Open(%s)", str_path)
+  case Abbrev(name,t):
+    sprintf("Abbrev(%s)", name)
   case Variant(name,ctor_decls):
     sprintf("Variant(%s)", name)

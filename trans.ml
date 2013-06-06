@@ -186,6 +186,9 @@ let translate_top trans = function
   | Top.Open(path) ->
     let str_path = translate_mod_path path in
     sprintf "open %s\n" str_path
+  | Top.Abbrev(name,t) ->
+    let str_type = translate_type t in
+    sprintf "type %s = %s\n" name str_type
   | Top.Variant(name,ctor_decls) ->
     let trans_ctor_decl = {trans with indent_level=trans.indent_level+1} in
     let str_ctor_decls = List.fold_left begin fun acc elem ->
