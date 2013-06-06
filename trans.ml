@@ -111,6 +111,12 @@ let rec translate_expr trans = function
     sprintf "(%s)" str_x_xs
   | Expr.Tuple([]) ->
     assert false
+  | Expr.Record(field_defs) ->
+    let trans_field_def = {trans with indent_level=trans.indent_level+1} in
+    let str_field_defs = List.fold_left begin fun acc elem ->
+      sprintf "%s%s" acc (indent trans_field_def (translate_field_def trans_field_def elem))
+    end "" field_defs in
+    sprintf "{\n%s%s" str_field_defs (indent trans "}")
   | Expr.Match(target_expr,cases) ->
     let str_target = translate_expr trans target_expr in
     let trans_case = {trans with indent_level=trans.indent_level+1} in
@@ -132,6 +138,11 @@ let rec translate_expr trans = function
     sprintf
       "begin let rec %s = %s in\n%s\n%s"
       str_name str_val (indent trans str_cont) (indent trans "end")
+
+and translate_field_def trans (path,expr) =
+  let str_path = translate_val_path path in
+  let str_expr = translate_expr trans expr in
+  sprintf "%s = %s" str_path str_expr
 
 and translate_case trans (pat,body_expr) =
   let str_pat = sprintf "| %s ->" (translate_pattern pat) in

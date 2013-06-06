@@ -415,6 +415,8 @@ and parse_atomic_expr parser =
       parse_if_expr parser
     | Token.Reserved("[") ->
       parse_list parser
+    | Token.Reserved("{") ->
+      parse_record parser
     | Token.Reserved("(") ->
       parse_parens parser
     | Token.Reserved("match") ->
@@ -451,6 +453,22 @@ and parse_ctor_app parser ctor =
     end
     | _ ->
       ctor
+
+and parse_val_path parser mod_names =
+  match parser.token with
+    | Token.LowId(_) | Token.Reserved("$") ->
+      let val_name = parse_val_name parser in
+      (List.rev mod_names, val_name)
+    | Token.CapId(_) ->
+      let capid = parse_capid parser in
+      if parser.token <> Token.Reserved(".") then
+        failwith (expected parser "'.'")
+      else begin
+        lookahead parser;
+        parse_val_path parser (capid::mod_names)
+      end
+    | _ ->
+      failwith (expected parser "identifier")
 
 and parse_ctor parser mod_names =
   match parser.token with
@@ -689,6 +707,20 @@ and parse_expr_list parser =
     | _ -> 
       failwith (expected parser "')' or ','")
   in parse_to_list parser is_terminal parse_expr
+
+and parse_record parser =
+  lookahead parser;
+  Expr.Record(parse_braced_elems parser parse_field_def [])
+
+and parse_field_def parser =
+  let field_name = parse_val_path parser [] in
+  if parser.token <> Token.Reserved("=") then
+    failwith (expected parser "'='")
+  else begin
+    lookahead parser;
+    let expr = parse_expr parser in
+    (field_name, expr)
+  end
 
 and parse_match_expr parser =
   lookahead parser;

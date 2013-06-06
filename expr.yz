@@ -9,6 +9,7 @@ type t:
   def App(t * t)
   def If(t * t * t)
   def Tuple(list(t))
+  def Record(list(Names.val_path * t))
   def Match(t * list(Pattern.t * t))
   def LetVal(Pattern.t * t * t)
   def LetFun(Names.val_name * t * t)
@@ -33,6 +34,8 @@ def show(expr):
     }(show(x), xs))
   case Tuple([]):
     assert(false)
+  case Record(field_defs):
+    sprintf("Record()")
   case Match(target_expr,[]):
     sprintf("Match(%s,[])", show(target_expr))
   case Match(target_expr,c::cs):

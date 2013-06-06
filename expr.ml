@@ -8,6 +8,7 @@ type t =
   | App of (t * t)
   | If of (t * t * t)
   | Tuple of (t) list
+  | Record of ((Names.val_path * t)) list
   | Match of (t * ((Pattern.t * t)) list)
   | LetVal of (Pattern.t * t * t)
   | LetFun of (Names.val_name * t * t)
@@ -34,6 +35,8 @@ let rec show = begin fun expr ->
       end) (show x)) xs))
     | (Tuple(([](_)))) ->
       (assert false)
+    | (Record(field_defs)) ->
+      (sprintf "Record()")
     | (Match(target_expr, ([](_)))) ->
       ((sprintf "Match(%s,[])") (show target_expr))
     | (Match(target_expr, (( :: )(c, cs)))) ->
