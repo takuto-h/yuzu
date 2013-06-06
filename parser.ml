@@ -93,6 +93,47 @@ let parse_to_list parser is_terminal parse_elem =
     end
   in loop []
 
+let rec parse_indented_list parser parse_elem elems =
+  if parser.token = Token.Undent then begin
+    lookahead parser;
+    List.rev elems
+  end
+  else
+    let elem = parse_elem parser in
+    match parser.token with
+      | Token.Reserved(";") ->
+        lookahead parser;
+        skip parser Token.Newline;
+        parse_indented_list parser parse_elem (elem::elems)
+      | Token.Newline ->
+        lookahead parser;
+        parse_indented_list parser parse_elem (elem::elems)
+      | Token.Undent -> begin
+        lookahead parser;
+        List.rev (elem::elems)
+      end
+      | _ ->
+        failwith (expected parser "';' or newline or undent")
+
+let rec parse_braced_list parser parse_elem elems =
+  if parser.token = Token.Reserved("}") then begin
+    lookahead parser;
+    List.rev elems
+  end
+  else
+    let elem = parse_elem parser in
+    match parser.token with
+      | Token.Reserved(";") -> begin
+        lookahead parser;
+        parse_braced_list parser parse_elem (elem::elems)
+      end
+      | Token.Reserved("}") -> begin
+        lookahead parser;
+        List.rev (elem::elems)
+      end
+      | _ ->
+        failwith (expected parser "';' or '}'")
+  
 let rec parse_top parser =
   match parser.token with
     | Token.Reserved("def") -> begin
@@ -153,60 +194,20 @@ and parse_type_repr parser typector_name =
       lookahead parser;
       begin match parser.token with
         | Token.Reserved("def") ->
-          Top.Variant(typector_name, parse_indented_ctor_decls parser [])
+          Top.Variant(typector_name, parse_indented_list parser parse_ctor_decl [])
         | _ ->
-          Top.Record(typector_name, parse_indented_field_decls parser [])
+          Top.Record(typector_name, parse_indented_list parser parse_field_decl [])
       end
     | Token.Reserved("{") ->
       lookahead parser;
       begin match parser.token with
         | Token.Reserved("def") ->
-          Top.Variant(typector_name, parse_braced_ctor_decls parser [])
+          Top.Variant(typector_name, parse_braced_list parser parse_ctor_decl [])
         | _ ->
-          Top.Record(typector_name, parse_braced_field_decls parser [])
+          Top.Record(typector_name, parse_braced_list parser parse_field_decl [])
       end
     | _ ->
       failwith (expected parser "':' or '{'")
-
-and parse_indented_ctor_decls parser ctor_decls =
-  if parser.token = Token.Undent then begin
-    lookahead parser;
-    List.rev ctor_decls
-  end
-  else
-    let ctor_decl = parse_ctor_decl parser in
-    match parser.token with
-      | Token.Reserved(";") ->
-        lookahead parser;
-        skip parser Token.Newline;
-        parse_indented_ctor_decls parser (ctor_decl::ctor_decls)
-      | Token.Newline ->
-        lookahead parser;
-        parse_indented_ctor_decls parser (ctor_decl::ctor_decls)
-      | Token.Undent -> begin
-        lookahead parser;
-        List.rev (ctor_decl::ctor_decls)
-      end
-      | _ ->
-        failwith (expected parser "';' or newline or undent")
-
-and parse_braced_ctor_decls parser ctor_decls =
-  if parser.token = Token.Reserved("}") then begin
-    lookahead parser;
-    List.rev ctor_decls
-  end
-  else
-    let ctor_decl = parse_ctor_decl parser in
-    match parser.token with
-      | Token.Reserved(";") ->
-        lookahead parser;
-        parse_braced_ctor_decls parser (ctor_decl::ctor_decls)
-      | Token.Reserved("}") -> begin
-        lookahead parser;
-        List.rev (ctor_decl::ctor_decls)
-      end
-      | _ ->
-        failwith (expected parser "';' or '}'")
 
 and parse_ctor_decl parser =
   lookahead parser;
@@ -224,46 +225,6 @@ and parse_ctor_decl parser =
     end
   end
 
-and parse_indented_field_decls parser field_decls =
-  if parser.token = Token.Undent then begin
-    lookahead parser;
-    List.rev field_decls
-  end
-  else
-    let field_decl = parse_field_decl parser in
-    match parser.token with
-      | Token.Reserved(";") ->
-        lookahead parser;
-        skip parser Token.Newline;
-        parse_indented_field_decls parser (field_decl::field_decls)
-      | Token.Newline ->
-        lookahead parser;
-        parse_indented_field_decls parser (field_decl::field_decls)
-      | Token.Undent -> begin
-        lookahead parser;
-        List.rev (field_decl::field_decls)
-      end
-      | _ ->
-        failwith (expected parser "';' or newline or undent")
-
-and parse_braced_field_decls parser field_decls =
-  if parser.token = Token.Undent then begin
-    lookahead parser;
-    List.rev field_decls
-  end
-  else
-    let field_decl = parse_field_decl parser in
-    match parser.token with
-      | Token.Reserved(";") ->
-        lookahead parser;
-        parse_braced_field_decls parser (field_decl::field_decls)
-      | Token.Reserved("}") -> begin
-        lookahead parser;
-        List.rev (field_decl::field_decls)
-      end
-      | _ ->
-        failwith (expected parser "';' or '}'")
-
 and parse_field_decl parser =
   let field_name = parse_val_name parser in
   if parser.token <> Token.Reserved(":") then
@@ -273,7 +234,7 @@ and parse_field_decl parser =
     let t = parse_type parser in
     (field_name, t)
   end
-    
+
 and parse_type parser =
   parse_tuple_type parser
 
