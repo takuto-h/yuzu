@@ -10,6 +10,7 @@ type t =
   | If of t * t * t
   | Tuple of t list
   | Match of t * (Pattern.t * t) list
+  | LetVal of Names.val_name * t * t
 
 let rec show = function
   | Con(lit) ->
@@ -36,6 +37,11 @@ let rec show = function
       (List.fold_left begin fun acc elem ->
         sprintf "%s;%s" acc (show_case elem)
       end (show_case case) cases)
+  | LetVal(name,val_expr,cont_expr) ->
+    let str_name = Names.show_val_name name in
+    let str_val = show val_expr in
+    let str_cont = show cont_expr in
+    sprintf "LetVal(%s,%s,%s)" str_name str_val str_cont
 
 and show_case (pat,expr) =
   sprintf "Case(%s,%s)" (Pattern.show pat) (show expr)

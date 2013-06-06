@@ -109,6 +109,13 @@ let rec translate_expr trans = function
       sprintf "%s%s" acc (translate_case trans_case elem)
     end "" cases in
     sprintf "begin match %s with%s\n%s" str_target str_cases (indent trans "end")
+  | Expr.LetVal(name,val_expr,cont_expr) ->
+    let str_name = Names.show_val_name name in
+    let str_val = translate_expr trans val_expr in
+    let str_cont = translate_expr trans cont_expr in
+    sprintf
+      "begin let %s = %s in\n%s\n%s"
+      str_name str_val (indent trans str_cont) (indent trans "end")
 
 and translate_case trans (pat,body_expr) =
   let str_pat = sprintf "| %s ->" (translate_pattern pat) in
