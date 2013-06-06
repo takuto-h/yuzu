@@ -1,0 +1,41 @@
+
+open Printf
+
+type val_name:
+  def Id(string)
+  def Op(string)
+
+type typector_name = string
+type ctor_name = val_name
+type mod_name = string
+type mod_path = list(mod_name)
+type val_path = mod_path * val_name
+type typector = mod_path * typector_name
+type ctor = mod_path * ctor_name
+
+def show_val_name(name):
+  match(name)
+  case Id(str):
+    str
+  case Op(str):
+    sprintf("$(%s)", str)
+
+var show_ctor_name = show_val_name
+
+def show_mod_path(path):
+  match(path)
+  case []:
+    ""
+  case (name::names):
+    List.fold_left^(acc, elem){
+      sprintf("%s.%s", acc, elem)
+    }(name, names)
+
+def show_val_path(path):
+  match(path)
+  case ([], val_name):
+    show_val_name(val_name)
+  case (mod_path, val_name):
+    sprintf("%s.%s", show_mod_path(mod_path), show_val_name(val_name))
+
+var show_ctor = show_val_path

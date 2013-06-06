@@ -135,8 +135,17 @@ and parse_top_open parser =
 and parse_top_typedef parser =
   lookahead parser;
   let typector_name = parse_lowid parser in
-  let ctor_decls = parse_ctor_decls parser in
-  Top.Variant(typector_name,ctor_decls)
+  match parser.token with
+    | Token.CmpOp("=") -> begin
+      lookahead parser;
+      let t = parse_type parser in
+      Top.Abbrev(typector_name,t)
+    end
+    | Token.Reserved(":") | Token.Reserved("{") ->
+      let ctor_decls = parse_ctor_decls parser in
+      Top.Variant(typector_name,ctor_decls)
+    | _ ->
+      failwith (expected parser "'=' or ':' or '{'")
 
 and parse_ctor_decls parser =
   match parser.token with
