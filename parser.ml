@@ -308,7 +308,15 @@ and parse_type_args parser =
   in parse_to_list parser is_terminal parse_type
 
 and parse_expr parser =
-  parse_or_expr parser
+  parse_assign_expr parser
+
+and parse_assign_expr parser =
+  let get_op = function
+    | Token.AssignOp(str) ->
+      Some(str)
+    | _ ->
+      None
+  in parse_right_assoc parser get_op parse_or_expr
 
 and parse_or_expr parser =
   let get_op = function
