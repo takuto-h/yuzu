@@ -142,32 +142,44 @@ and parse_top_typedef parser =
       Top.Abbrev(typector_name,t)
     end
     | Token.Reserved(":") | Token.Reserved("{") ->
-      let ctor_decls = parse_ctor_decls parser in
-      Top.Variant(typector_name,ctor_decls)
+      parse_type_repr parser typector_name
     | _ ->
       failwith (expected parser "'=' or ':' or '{'")
 
-and parse_ctor_decls parser =
+and parse_type_repr parser typector_name =
   match parser.token with
     | Token.Reserved(":") ->
       Lexer.indent parser.lexer;
-      parse_indented_ctor_decls parser []
+      lookahead parser;
+      begin match parser.token with
+        | Token.Reserved("def") ->
+          Top.Variant(typector_name, parse_indented_ctor_decls parser [])
+        | _ ->
+          failwith (expected parser "def")
+      end
     | Token.Reserved("{") ->
-      parse_braced_ctor_decls parser []
+      lookahead parser;
+      begin match parser.token with
+        | Token.Reserved("def") ->
+          Top.Variant(typector_name, parse_braced_ctor_decls parser [])
+        | _ ->
+          failwith (expected parser "def")
+      end
     | _ ->
       failwith (expected parser "':' or '{'")
 
 and parse_indented_ctor_decls parser ctor_decls =
-  lookahead parser;
-  skip parser Token.Newline;
   if parser.token <> Token.Reserved("def") then
     List.rev ctor_decls
   else
     let ctor_decl = parse_ctor_decl parser in
     match parser.token with
       | Token.Reserved(";") ->
+        lookahead parser;
+        skip parser Token.Newline;
         parse_indented_ctor_decls parser (ctor_decl::ctor_decls)
       | Token.Newline ->
+        lookahead parser;
         parse_indented_ctor_decls parser (ctor_decl::ctor_decls)
       | Token.Undent -> begin
         lookahead parser;
@@ -177,13 +189,13 @@ and parse_indented_ctor_decls parser ctor_decls =
         failwith (expected parser "';' or newline or undent")
 
 and parse_braced_ctor_decls parser ctor_decls =
-  lookahead parser;
   if parser.token <> Token.Reserved("def") then
     List.rev ctor_decls
   else
     let ctor_decl = parse_ctor_decl parser in
     match parser.token with
       | Token.Reserved(";") ->
+        lookahead parser;
         parse_braced_ctor_decls parser (ctor_decl::ctor_decls)
       | Token.Reserved("}") -> begin
         lookahead parser;

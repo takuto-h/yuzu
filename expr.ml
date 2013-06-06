@@ -14,29 +14,29 @@ type t =
 
 let rec show = begin fun expr ->
   begin match expr with
-    | Con(lit) ->
+    | (Con(lit)) ->
       ((sprintf "Con(%s)") (Literal.show lit))
-    | Var(path) ->
+    | (Var(path)) ->
       ((sprintf "Var(%s)") (Names.show_val_path path))
-    | Ctor(ctor) ->
+    | (Ctor(ctor)) ->
       ((sprintf "Ctor(%s)") (Names.show_ctor ctor))
-    | Abs(param_pat, body_expr) ->
+    | (Abs(param_pat, body_expr)) ->
       (((sprintf "Abs(%s,%s)") (Pattern.show param_pat)) (show body_expr))
-    | App(fun_expr, arg_expr) ->
+    | (App(fun_expr, arg_expr)) ->
       (((sprintf "App(%s,%s)") (show fun_expr)) (show arg_expr))
-    | If(cond_expr, then_expr, else_expr) ->
+    | (If(cond_expr, then_expr, else_expr)) ->
       ((((sprintf "If(%s,%s,%s)") (show cond_expr)) (show then_expr)) (show else_expr))
-    | Tuple(( :: )(x, xs)) ->
+    | (Tuple((( :: )(x, xs)))) ->
       ((sprintf "Tuple([%s])") (((List.fold_left begin fun acc ->
         begin fun elem ->
           (((sprintf "%s;%s") acc) (show elem))
         end
       end) (show x)) xs))
-    | Tuple([](_)) ->
+    | (Tuple(([](_)))) ->
       (assert false)
-    | Match(target_expr, [](_)) ->
+    | (Match(target_expr, ([](_)))) ->
       ((sprintf "Match(%s,[])") (show target_expr))
-    | Match(target_expr, ( :: )(c, cs)) ->
+    | (Match(target_expr, (( :: )(c, cs)))) ->
       begin let rec show_case = begin fun (pat, expr) ->
         (((sprintf "Case(%s,%s)") (Pattern.show pat)) (show expr))
       end in
@@ -46,7 +46,7 @@ let rec show = begin fun expr ->
         end
       end) (show_case c)) cs))
       end
-    | LetVal(pat, val_expr, cont_expr) ->
+    | (LetVal(pat, val_expr, cont_expr)) ->
       begin let str_pat = (Pattern.show pat) in
       begin let str_val = (show val_expr) in
       begin let str_cont = (show cont_expr) in
@@ -54,7 +54,7 @@ let rec show = begin fun expr ->
       end
       end
       end
-    | LetFun(name, val_expr, cont_expr) ->
+    | (LetFun(name, val_expr, cont_expr)) ->
       begin let str_name = (Names.show_val_name name) in
       begin let str_val = (show val_expr) in
       begin let str_cont = (show cont_expr) in
