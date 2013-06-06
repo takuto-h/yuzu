@@ -171,6 +171,9 @@ let translate_ctor_decl = function
     let str_type = translate_type t in
     sprintf "| %s of %s\n" (translate_ctor_name ctor_name) str_type
 
+let translate_field_decl (field_name, t) =
+  sprintf "%s : %s;\n" (translate_val_name field_name) (translate_type t)
+
 let translate_top trans = function
   | Top.Expr(expr) ->
     let str_expr = translate_expr trans expr in
@@ -195,6 +198,12 @@ let translate_top trans = function
       sprintf "%s%s" acc (indent trans_ctor_decl (translate_ctor_decl elem))
     end "" ctor_decls in
     sprintf "type %s =\n%s" name str_ctor_decls
+  | Top.Record(name,field_decls) ->
+    let trans_field_decl = {trans with indent_level=trans.indent_level+1} in
+    let str_field_decls = List.fold_left begin fun acc elem ->
+      sprintf "%s%s" acc (indent trans_field_decl (translate_field_decl elem))
+    end "" field_decls in
+    sprintf "type %s = {\n%s%s\n" name str_field_decls (indent trans "}")
 
 exception Break
       

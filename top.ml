@@ -7,6 +7,7 @@ type t =
   | Open of Names.mod_path
   | Abbrev of (Names.typector_name * Type.t)
   | Variant of (Names.typector_name * ((Names.ctor_name * (Type.t) option)) list)
+  | Record of (Names.typector_name * ((Names.val_name * Type.t)) list)
 
 let rec show = begin fun top ->
   begin match top with
@@ -34,6 +35,8 @@ let rec show = begin fun top ->
       ((sprintf "Abbrev(%s)") name)
     | (Variant(name, ctor_decls)) ->
       ((sprintf "Variant(%s)") name)
+    | (Record(name, field_decls)) ->
+      ((sprintf "Record(%s)") name)
   end
 end
 

@@ -8,6 +8,7 @@ type t:
   def Open(Names.mod_path)
   def Abbrev(Names.typector_name * Type.t)
   def Variant(Names.typector_name * list(Names.ctor_name * option(Type.t)))
+  def Record(Names.typector_name * list(Names.val_name * Type.t))
 
 def show(top):
   match(top)
@@ -29,3 +30,5 @@ def show(top):
     sprintf("Abbrev(%s)", name)
   case Variant(name,ctor_decls):
     sprintf("Variant(%s)", name)
+  case Record(name,field_decls):
+    sprintf("Record(%s)", name)
