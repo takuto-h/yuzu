@@ -1,4 +1,3 @@
-
 open Printf
 
 type t =
@@ -19,30 +18,35 @@ type t =
   | MulOp of string
   | PowOp of string
 
-let get_op = function
-  | OrOp(str) | AndOp(str) | CmpOp(str)
-  | ConsOp(str) | AddOp(str) | MulOp(str) | PowOp(str) ->
-    Some(str)
-  | _ ->
-    None
+let rec get_op = begin fun token ->
+  begin match token with
+    | (((((((OrOp(str)) | (AndOp(str))) | (CmpOp(str))) | (ConsOp(str))) | (AddOp(str))) | (MulOp(str))) | (PowOp(str))) ->
+      (Some (str))
+    | _ ->
+      None
+  end
+end
 
-let show = function
-  | EOF ->
-    "EOF"
-  | Newline ->
-    "newline"
-  | Undent ->
-    "undent"
-  | Int(_) ->
-    "integer"
-  | String(_) ->
-    "string"
-  | Char(_) ->
-    "character"
-  | LowId(_) ->
-    "lowercase identifier"
-  | CapId(_) ->
-    "capitalized identifier"
-  | Reserved(s) | OrOp(s) | AndOp(s) | CmpOp(s)
-  | ConsOp(s) | AddOp(s) | MulOp(s) | PowOp(s) ->
-    sprintf "'%s'" s
+let rec show = begin fun token ->
+  begin match token with
+    | (EOF(_)) ->
+      "EOF"
+    | (Newline(_)) ->
+      "newline"
+    | (Undent(_)) ->
+      "undent"
+    | (Int(_)) ->
+      "integer"
+    | (String(_)) ->
+      "string"
+    | (Char(_)) ->
+      "character"
+    | (LowId(_)) ->
+      "lowercase identifier"
+    | (CapId(_)) ->
+      "capitalized identifier"
+    | ((((((((Reserved(s)) | (OrOp(s))) | (AndOp(s))) | (CmpOp(s))) | (ConsOp(s))) | (AddOp(s))) | (MulOp(s))) | (PowOp(s))) ->
+      ((sprintf "'%s'") s)
+  end
+end
+

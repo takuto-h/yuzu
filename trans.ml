@@ -69,6 +69,10 @@ let rec translate_pattern = function
     in sprintf "(%s)" str_pat_list
   | Pattern.Tuple([]) ->
     assert false
+  | Pattern.Or(lhs,rhs) ->
+    let str_lhs = translate_pattern lhs in
+    let str_rhs = translate_pattern rhs in
+    sprintf "(%s | %s)" str_lhs str_rhs
 
 let rec translate_expr trans = function
   | Expr.Con(lit) ->

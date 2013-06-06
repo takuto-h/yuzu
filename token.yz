@@ -1,0 +1,50 @@
+
+open Printf
+
+type t:
+  def EOF
+  def Newline
+  def Undent
+  def Int(int)
+  def String(string)
+  def Char(string)
+  def LowId(string)
+  def CapId(string)
+  def Reserved(string)
+  def OrOp(string)
+  def AndOp(string)
+  def CmpOp(string)
+  def ConsOp(string)
+  def AddOp(string)
+  def MulOp(string)
+  def PowOp(string)
+
+def get_op(token):
+  match(token)
+  case OrOp(str) | AndOp(str) | CmpOp(str) | ConsOp(str) |
+       AddOp(str) | MulOp(str) | PowOp(str):
+    Some(str)
+  case _:
+    None
+
+def show(token):
+  match(token)
+  case EOF:
+    "EOF"
+  case Newline:
+    "newline"
+  case Undent:
+    "undent"
+  case Int(_):
+    "integer"
+  case String(_):
+    "string"
+  case Char(_):
+    "character"
+  case LowId(_):
+    "lowercase identifier"
+  case CapId(_):
+    "capitalized identifier"
+  case Reserved(s) | OrOp(s) | AndOp(s) | CmpOp(s) |
+       ConsOp(s) | AddOp(s) | MulOp(s) | PowOp(s):
+    sprintf("'%s'", s)

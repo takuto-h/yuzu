@@ -6,6 +6,7 @@ type t:
   def Var(Names.val_name)
   def Variant(Names.ctor * list(t))
   def Tuple(list(t))
+  def Or(t * t)
 
 def show(pat):
   match(pat)
@@ -17,3 +18,5 @@ def show(pat):
     sprintf("Variant(%s)", Names.show_ctor(ctor))
   case Tuple(pat_list):
     sprintf("Tuple()")
+  case Or(lhs,rhs):
+    sprintf("Or(%s,%s)", show(lhs), show(rhs))

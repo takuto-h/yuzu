@@ -683,15 +683,28 @@ and parse_cases parser cases =
       List.rev cases
 
 and parse_pattern parser =
-  parse_cons_pattern parser
+  parse_or_pattern parser
+
+and parse_or_pattern parser =
+  let lhs = parse_cons_pattern parser in
+  let rec loop lhs =
+    match parser.token with
+      | Token.CmpOp("|") -> begin
+        lookahead parser;
+        let rhs = parse_cons_pattern parser in
+        loop (Pattern.Or(lhs, rhs))
+      end
+      | _ ->
+        lhs
+  in loop lhs
 
 and parse_cons_pattern parser =
   let lhs = parse_atomic_pattern parser in
   match parser.token with
-    | Token.ConsOp(str) -> begin
+    | Token.ConsOp("::") -> begin
       lookahead parser;
       let rhs = parse_cons_pattern parser in
-      Pattern.Variant(([], Names.Op(str)), [lhs;rhs])
+      Pattern.Variant(([], Names.Op("::")), [lhs;rhs])
     end
     | _ ->
       lhs
