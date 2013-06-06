@@ -219,7 +219,7 @@ let lex_visible_token lexer pos c =
       Buffer.add_char buf c;
       Token.AddOp(lex_op lexer buf)
     end
-    | '/' | '%' -> begin
+    | '%' -> begin
       let buf = Buffer.create initial_buffer_size in
       Buffer.add_char buf c;
       Token.MulOp(lex_op lexer buf)
@@ -288,6 +288,14 @@ let lex_token lexer pos c =
   else
     lex_visible_token lexer pos c
 
+let rec skip_single_line_comment lexer =
+  match Source.peek lexer.source with
+    | None | Some('\n') ->
+      ()
+    | Some(_) ->
+      Source.junk lexer.source;
+      skip_single_line_comment lexer
+
 let rec next lexer =
   let pos = Source.pos lexer.source in
   match Source.peek lexer.source with
@@ -303,5 +311,19 @@ let rec next lexer =
     | Some(c) when is_whitespace c ->
       Source.junk lexer.source;
       next lexer
+    | Some('/') -> begin
+      Source.junk lexer.source;
+      begin match Source.peek lexer.source with
+        | Some('/') -> begin
+          Source.junk lexer.source;
+          skip_single_line_comment lexer;
+          next lexer
+        end
+        | Some(_) | None ->
+          let buf = Buffer.create initial_buffer_size in
+          Buffer.add_char buf '/';
+          (Some(Token.MulOp(lex_op lexer buf)), pos)
+      end
+    end
     | Some(c) ->
       (Some(lex_token lexer pos c), pos)
