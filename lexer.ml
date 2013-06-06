@@ -11,17 +11,17 @@ type t = {
 
 let initial_buffer_size = 16
 
-module StringSet = Set.Make(String)
-let reserved = StringSet.empty
-let reserved = StringSet.add "open" reserved
-let reserved = StringSet.add "type" reserved
-let reserved = StringSet.add "def" reserved
-let reserved = StringSet.add "var" reserved
-let reserved = StringSet.add "if" reserved
-let reserved = StringSet.add "else" reserved
-let reserved = StringSet.add "match" reserved
-let reserved = StringSet.add "case" reserved
-let reserved = StringSet.add "mutable" reserved
+let reserved = [
+  "open";
+  "type";
+  "def";
+  "var";
+  "if";
+  "else";
+  "match";
+  "case";
+  "mutable";
+]
 
 let create source =
   let lexer = {
@@ -142,7 +142,7 @@ let rec lex_char lexer buf =
       failwith (sprintf "%s: error: EOF inside a character literal\n" (Pos.show pos_eof))
 
 let lowid_or_reserved str =
-  if StringSet.mem str reserved then
+  if List.mem str reserved then
     Token.Reserved(str)
   else
     Token.LowId(str)
