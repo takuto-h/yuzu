@@ -448,19 +448,10 @@ and parse_abs parser =
 and parse_params parser =
   if parser.token <> Token.Reserved("(") then
     failwith (expected parser "'('")
-  else
-    parse_val_name_list parser
-
-and parse_val_name_list parser =
-  lookahead parser;
-  let is_terminal = function
-    | Token.Reserved(")") ->
-      true
-    | Token.Reserved(",") ->
-      false
-    | _ -> 
-      failwith (expected parser "')' or ','")
-  in parse_to_list parser is_terminal parse_val_name
+  else begin
+    lookahead parser;
+    parse_pattern_list parser
+  end
 
 and parse_val_name parser =
   match parser.token with

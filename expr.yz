@@ -5,7 +5,7 @@ type t:
   def Con(Literal.t)
   def Var(Names.val_path)
   def Ctor(Names.ctor)
-  def Abs(Names.val_name * t)
+  def Abs(Pattern.t * t)
   def App(t * t)
   def If(t * t * t)
   def Tuple(list(t))
@@ -21,8 +21,8 @@ def show(expr):
     sprintf("Var(%s)", Names.show_val_path(path))
   case Ctor(ctor):
     sprintf("Ctor(%s)", Names.show_ctor(ctor))
-  case Abs(param_name,body_expr):
-    sprintf("Abs(%s,%s)", Names.show_val_name(param_name), show(body_expr))
+  case Abs(param_pat,body_expr):
+    sprintf("Abs(%s,%s)", Pattern.show(param_pat), show(body_expr))
   case App(fun_expr,arg_expr):
     sprintf("App(%s,%s)", show(fun_expr), show(arg_expr))
   case If(cond_expr,then_expr,else_expr):
@@ -36,8 +36,7 @@ def show(expr):
   case Match(target_expr,[]):
     sprintf("Match(%s,[])", show(target_expr))
   case Match(target_expr,c::cs):
-    def show_case(c):
-      var (pat,expr) = c
+    def show_case((pat,expr)):
       sprintf("Case(%s,%s)", Pattern.show(pat), show(expr))
     sprintf("Match(%s,[%s])", show(target_expr), List.fold_left^(acc, elem){
       sprintf("%s;%s", acc, show_case(elem))

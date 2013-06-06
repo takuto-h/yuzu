@@ -4,7 +4,7 @@ type t =
   | Con of Literal.t
   | Var of Names.val_path
   | Ctor of Names.ctor
-  | Abs of (Names.val_name * t)
+  | Abs of (Pattern.t * t)
   | App of (t * t)
   | If of (t * t * t)
   | Tuple of (t) list
@@ -20,8 +20,8 @@ let rec show = begin fun expr ->
       ((sprintf "Var(%s)") (Names.show_val_path path))
     | Ctor(ctor) ->
       ((sprintf "Ctor(%s)") (Names.show_ctor ctor))
-    | Abs(param_name, body_expr) ->
-      (((sprintf "Abs(%s,%s)") (Names.show_val_name param_name)) (show body_expr))
+    | Abs(param_pat, body_expr) ->
+      (((sprintf "Abs(%s,%s)") (Pattern.show param_pat)) (show body_expr))
     | App(fun_expr, arg_expr) ->
       (((sprintf "App(%s,%s)") (show fun_expr)) (show arg_expr))
     | If(cond_expr, then_expr, else_expr) ->
@@ -37,10 +37,8 @@ let rec show = begin fun expr ->
     | Match(target_expr, [](_)) ->
       ((sprintf "Match(%s,[])") (show target_expr))
     | Match(target_expr, ( :: )(c, cs)) ->
-      begin let rec show_case = begin fun c ->
-        begin let (pat, expr) = c in
+      begin let rec show_case = begin fun (pat, expr) ->
         (((sprintf "Case(%s,%s)") (Pattern.show pat)) (show expr))
-        end
       end in
       (((sprintf "Match(%s,[%s])") (show target_expr)) (((List.fold_left begin fun acc ->
         begin fun elem ->

@@ -77,8 +77,8 @@ let rec translate_expr trans = function
     translate_val_path path
   | Expr.Ctor(ctor) ->
     translate_ctor ctor
-  | Expr.Abs(param_name,body_expr) ->
-    let str_param = translate_val_name param_name in
+  | Expr.Abs(param_pat,body_expr) ->
+    let str_param = translate_pattern param_pat in
     let trans_body = {trans with indent_level=trans.indent_level+1} in
     let str_body = translate_expr trans_body body_expr in
     sprintf
