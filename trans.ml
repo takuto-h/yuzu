@@ -262,16 +262,17 @@ let translate_file fname_in fname_out =
           | Some(top) ->
             let result = translate_top trans top in
             fprintf chan_out "%s\n" result;
-      done
+      done;
+      true
     with
-      | Failure(message) ->
-        close_out chan_out;
-        eprintf "%s" message;
-        flush stderr;
-        raise Break
       | Break ->
         close_out chan_out;
         raise Break
+      | Failure(message) as exn ->
+        close_out chan_out;
+        eprintf "%s" message;
+        flush stderr;
+        raise exn
       | exn ->
         close_out_noerr chan_out;
         raise exn
@@ -279,6 +280,10 @@ let translate_file fname_in fname_out =
   with
     | Break ->
       close_in chan_in;
+      true
+    | Failure(_) ->
+      close_in chan_in;
+      false
     | exn ->
       close_in_noerr chan_in;
       raise exn
