@@ -69,10 +69,21 @@ let rec translate_pattern = function
     in sprintf "(%s)" str_pat_list
   | Pattern.Tuple([]) ->
     assert false
+  | Pattern.Record(fields) ->
+    let str_fields = List.fold_left begin fun acc elem ->
+      sprintf "%s%s;" acc (translate_field_def elem)
+    end "" fields
+    in sprintf "{%s}" str_fields
   | Pattern.Or(lhs,rhs) ->
     let str_lhs = translate_pattern lhs in
     let str_rhs = translate_pattern rhs in
     sprintf "(%s | %s)" str_lhs str_rhs
+
+and translate_field_def = function
+  | (path, None) ->
+    sprintf "%s" (translate_val_path path)
+  | (path, Some(pat)) ->
+    sprintf "%s=%s" (translate_val_path path) (translate_pattern pat)
 
 let rec translate_expr trans = function
   | Expr.Con(lit) ->

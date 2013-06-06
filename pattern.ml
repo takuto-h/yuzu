@@ -5,6 +5,7 @@ type t =
   | Var of Names.val_name
   | Variant of (Names.ctor * (t) list)
   | Tuple of (t) list
+  | Record of ((Names.val_path * (t) option)) list
   | Or of (t * t)
 
 let rec show = begin fun pat ->
@@ -17,6 +18,8 @@ let rec show = begin fun pat ->
       ((sprintf "Variant(%s)") (Names.show_ctor ctor))
     | (Tuple(pat_list)) ->
       (sprintf "Tuple()")
+    | (Record(field_list)) ->
+      (sprintf "Record()")
     | (Or(lhs, rhs)) ->
       (((sprintf "Or(%s,%s)") (show lhs)) (show rhs))
   end
