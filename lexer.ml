@@ -21,6 +21,7 @@ let reserved = StringSet.add "if" reserved
 let reserved = StringSet.add "else" reserved
 let reserved = StringSet.add "match" reserved
 let reserved = StringSet.add "case" reserved
+let reserved = StringSet.add "mutable" reserved
 
 let create source =
   let lexer = {

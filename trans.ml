@@ -194,8 +194,11 @@ let translate_ctor_decl = function
     let str_type = translate_type t in
     sprintf "| %s of %s\n" (translate_ctor_name ctor_name) str_type
 
-let translate_field_decl (field_name, t) =
-  sprintf "%s : %s;\n" (translate_val_name field_name) (translate_type t)
+let translate_field_decl (is_mutable, field_name, t) =
+  if is_mutable then
+    sprintf "mutable %s : %s;\n" (translate_val_name field_name) (translate_type t)
+  else
+    sprintf "%s : %s;\n" (translate_val_name field_name) (translate_type t)
 
 let translate_top trans = function
   | Top.Expr(expr) ->

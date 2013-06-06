@@ -226,13 +226,18 @@ and parse_ctor_decl parser =
   end
 
 and parse_field_decl parser =
+  let is_mutable = (parser.token = Token.Reserved("mutable")) in
+  (if is_mutable then
+      lookahead parser
+   else
+      ());
   let field_name = parse_val_name parser in
   if parser.token <> Token.Reserved(":") then
     failwith (expected parser "':'")
   else begin
     lookahead parser;
     let t = parse_type parser in
-    (field_name, t)
+    (is_mutable, field_name, t)
   end
 
 and parse_type parser =
