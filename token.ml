@@ -10,6 +10,7 @@ type t =
   | LowId of string
   | CapId of string
   | Reserved of string
+  | AssignOp of string
   | OrOp of string
   | AndOp of string
   | CmpOp of string
@@ -20,7 +21,7 @@ type t =
 
 let rec get_op = begin fun token ->
   begin match token with
-    | (((((((OrOp(str)) | (AndOp(str))) | (CmpOp(str))) | (ConsOp(str))) | (AddOp(str))) | (MulOp(str))) | (PowOp(str))) ->
+    | ((((((((AssignOp(str)) | (OrOp(str))) | (AndOp(str))) | (CmpOp(str))) | (ConsOp(str))) | (AddOp(str))) | (MulOp(str))) | (PowOp(str))) ->
       (Some (str))
     | _ ->
       None
@@ -45,7 +46,7 @@ let rec show = begin fun token ->
       "lowercase identifier"
     | (CapId(_)) ->
       "capitalized identifier"
-    | ((((((((Reserved(s)) | (OrOp(s))) | (AndOp(s))) | (CmpOp(s))) | (ConsOp(s))) | (AddOp(s))) | (MulOp(s))) | (PowOp(s))) ->
+    | (((((((((Reserved(s)) | (AssignOp(s))) | (OrOp(s))) | (AndOp(s))) | (CmpOp(s))) | (ConsOp(s))) | (AddOp(s))) | (MulOp(s))) | (PowOp(s))) ->
       ((sprintf "'%s'") s)
   end
 end
