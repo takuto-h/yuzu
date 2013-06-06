@@ -125,7 +125,8 @@ let rec translate_expr trans = function
   | Expr.Record(field_defs) ->
     let trans_field_def = {trans with indent_level=trans.indent_level+1} in
     let str_field_defs = List.fold_left begin fun acc elem ->
-      sprintf "%s%s" acc (indent trans_field_def (translate_field_def trans_field_def elem))
+      let str_field_def = translate_field_def trans_field_def elem in
+      sprintf "%s%s;\n" acc (indent trans_field_def str_field_def)
     end "" field_defs in
     sprintf "{\n%s%s" str_field_defs (indent trans "}")
   | Expr.Match(target_expr,cases) ->

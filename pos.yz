@@ -1,0 +1,21 @@
+
+open Printf
+
+type t:
+  fname : string
+  lnum : int
+  cnum : int
+  bol : int
+
+def make(fname, lnum, cnum, bol): {
+  fname = fname;
+  lnum = lnum;
+  cnum = cnum;
+  bol = bol;
+}
+
+var dummy = make("<dummy>", 1, 0, 0)
+
+def show({fname;lnum;cnum;bol}):
+  var offset = cnum - bol
+  sprintf("%s:%d:%d", fname, lnum, offset)

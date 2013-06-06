@@ -714,7 +714,7 @@ and parse_record parser =
 
 and parse_field_def parser =
   let field_name = parse_val_path parser [] in
-  if parser.token <> Token.Reserved("=") then
+  if parser.token <> Token.CmpOp("=") then
     failwith (expected parser "'='")
   else begin
     lookahead parser;
