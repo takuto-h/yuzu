@@ -234,6 +234,13 @@ let translate_field_decl (is_mutable, field_name, t) =
   else
     sprintf "%s : %s;\n" (translate_val_name field_name) (translate_type t)
 
+let translate_exn_decl = function
+  | (ctor_name,None) ->
+    sprintf "%s" (translate_ctor_name ctor_name)
+  | (ctor_name,Some(t)) ->
+    let str_type = translate_type t in
+    sprintf "%s of %s" (translate_ctor_name ctor_name) str_type
+
 let translate_top trans = function
   | Top.Expr(expr) ->
     let str_expr = translate_expr trans expr in
@@ -272,7 +279,7 @@ let translate_top trans = function
     end "" field_decls in
     sprintf "type %s = {\n%s%s\n" name str_field_decls (indent trans "}")
   | Top.Exception(exn_decl) ->
-    let str_exn_decl = translate_ctor_decl exn_decl in
+    let str_exn_decl = translate_exn_decl exn_decl in
     sprintf "exception %s\n" str_exn_decl
 
 exception Break
