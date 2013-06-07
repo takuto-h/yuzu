@@ -12,6 +12,8 @@ type t =
   | Match of (t * ((Pattern.t * (t) option * t)) list)
   | LetVal of (Pattern.t * t * t)
   | LetFun of (((Names.val_name * t)) list * t)
+  | Or of (t * t)
+  | And of (t * t)
   | Seq of (t * t)
   | Field of (t * Names.val_path)
   | Assign of (t * t)

@@ -316,22 +316,24 @@ rec:
         lhs
   
   def parse_or_expr(parser):
-    def get_op(token):
-      match token:
-        case Token.OrOp(str):
-          Some(str)
-        case _:
-          None
-    parse_right_assoc(parser, get_op, parse_and_expr)
+    var lhs = parse_and_expr(parser)
+    match parser.token:
+      case Token.OrOp("||"):
+        lookahead(parser)
+        var rhs = parse_or_expr(parser)
+        Expr.Or(lhs, rhs)
+      case _:
+        lhs
   
   def parse_and_expr(parser):
-    def get_op(token):
-      match token:
-        case Token.AndOp(str):
-          Some(str)
-        case _:
-          None
-    parse_right_assoc(parser, get_op, parse_cmp_expr)
+    var lhs = parse_cmp_expr(parser)
+    match parser.token:
+      case Token.AndOp("&&"):
+        lookahead(parser)
+        var rhs = parse_and_expr(parser)
+        Expr.And(lhs, rhs)
+      case _:
+        lhs
   
   def parse_cmp_expr(parser):
     def get_op(token):

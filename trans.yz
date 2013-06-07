@@ -179,6 +179,14 @@ rec:
         )
       case Expr.LetFun([], cont_expr):
         assert(false)
+      case Expr.Or(lhs,rhs):
+        var str_lhs = translate_expr(trans, lhs)
+        var str_rhs = translate_expr(trans, rhs)
+        sprintf("(%s || %s)", str_lhs, str_rhs)
+      case Expr.And(lhs,rhs):
+        var str_lhs = translate_expr(trans, lhs)
+        var str_rhs = translate_expr(trans, rhs)
+        sprintf("(%s && %s)", str_lhs, str_rhs)
       case Expr.Seq(lhs,rhs):
         var str_lhs = translate_expr(trans, lhs)
         var str_rhs = translate_expr(trans, rhs)

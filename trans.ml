@@ -234,6 +234,18 @@ let rec translate_expr = begin fun trans ->
         end
       | (Expr.LetFun(([](_)), cont_expr)) ->
         (assert false)
+      | (Expr.Or(lhs, rhs)) ->
+        begin let str_lhs = ((translate_expr trans) lhs) in
+        begin let str_rhs = ((translate_expr trans) rhs) in
+        (((sprintf "(%s || %s)") str_lhs) str_rhs)
+        end
+        end
+      | (Expr.And(lhs, rhs)) ->
+        begin let str_lhs = ((translate_expr trans) lhs) in
+        begin let str_rhs = ((translate_expr trans) rhs) in
+        (((sprintf "(%s && %s)") str_lhs) str_rhs)
+        end
+        end
       | (Expr.Seq(lhs, rhs)) ->
         begin let str_lhs = ((translate_expr trans) lhs) in
         begin let str_rhs = ((translate_expr trans) rhs) in

@@ -50,7 +50,7 @@ let rec is_capid_start = begin fun c ->
 end
 
 let rec is_id_part = begin fun c ->
-  ((( || ) (is_lowid_start c)) ((( || ) (is_capid_start c)) (is_digit c)))
+  ((is_lowid_start c) || ((is_capid_start c) || (is_digit c)))
 end
 
 let rec is_op_part = begin fun c ->
@@ -69,16 +69,12 @@ let rec lex_close_paren = begin fun lexer ->
   begin fun pos ->
     begin fun open_paren ->
       begin fun close_paren ->
-        begin if (Stack.is_empty lexer.parens) then
+        begin if ((Stack.is_empty lexer.parens) || ((( <> ) (Stack.top lexer.parens)) open_paren)) then
           (failwith (((sprintf "%s: error: unmatched parentheses: '%s'\n") (Pos.show pos)) close_paren))
         else
-          begin if ((( <> ) (Stack.top lexer.parens)) open_paren) then
-            (failwith (((sprintf "%s: error: unmatched parentheses: '%s'\n") (Pos.show pos)) close_paren))
-          else
-            begin
-            (ignore (Stack.pop lexer.parens));
-            (Token.Reserved (close_paren))
-            end
+          begin
+          (ignore (Stack.pop lexer.parens));
+          (Token.Reserved (close_paren))
           end
         end
       end

@@ -529,28 +529,34 @@ and parse_assign_expr = begin fun parser ->
 end
 
 and parse_or_expr = begin fun parser ->
-  begin let rec get_op = begin fun token ->
-    begin match token with
-      | (Token.OrOp(str)) ->
-        (Some (str))
-      | _ ->
-        None
-    end
-  end in
-  (((parse_right_assoc parser) get_op) parse_and_expr)
+  begin let lhs = (parse_and_expr parser) in
+  begin match parser.token with
+    | (Token.OrOp("||")) ->
+      begin
+      (lookahead parser);
+      begin let rhs = (parse_or_expr parser) in
+      (Expr.Or (lhs, rhs))
+      end
+      end
+    | _ ->
+      lhs
+  end
   end
 end
 
 and parse_and_expr = begin fun parser ->
-  begin let rec get_op = begin fun token ->
-    begin match token with
-      | (Token.AndOp(str)) ->
-        (Some (str))
-      | _ ->
-        None
-    end
-  end in
-  (((parse_right_assoc parser) get_op) parse_cmp_expr)
+  begin let lhs = (parse_cmp_expr parser) in
+  begin match parser.token with
+    | (Token.AndOp("&&")) ->
+      begin
+      (lookahead parser);
+      begin let rhs = (parse_and_expr parser) in
+      (Expr.And (lhs, rhs))
+      end
+      end
+    | _ ->
+      lhs
+  end
   end
 end
 
