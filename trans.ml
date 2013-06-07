@@ -169,11 +169,19 @@ and translate_field_def trans (path,expr) =
   let str_expr = translate_expr trans expr in
   sprintf "%s = %s" str_path str_expr
 
-and translate_case trans (pat,body_expr) =
-  let str_pat = sprintf "| %s ->" (translate_pattern pat) in
-  let trans_body = {trans with indent_level=trans.indent_level+1} in
-  let str_body = translate_expr trans_body body_expr in
-  sprintf "\n%s\n%s" (indent trans str_pat) (indent trans_body str_body)
+and translate_case trans = function
+  | (pat,None,body_expr) ->
+    let str_pat = sprintf "| %s ->" (translate_pattern pat) in
+    let trans_body = {trans with indent_level=trans.indent_level+1} in
+    let str_body = translate_expr trans_body body_expr in
+    sprintf "\n%s\n%s" (indent trans str_pat) (indent trans_body str_body)
+  | (pat,Some(guard),body_expr) ->
+    let str_guard = translate_expr trans guard in
+    let str_pat = sprintf "| %s when %s ->" (translate_pattern pat) str_guard in
+    let trans_body = {trans with indent_level=trans.indent_level+1} in
+    let str_body = translate_expr trans_body body_expr in
+    sprintf "\n%s\n%s" (indent trans str_pat) (indent trans_body str_body)
+ 
 
 let translate_typector = function
   | ([], typector_name) ->

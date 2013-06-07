@@ -20,6 +20,7 @@ let reserved = [
   "else";
   "match";
   "case";
+  "when";
   "mutable";
 ]
 
@@ -100,6 +101,10 @@ let rec lex_string lexer buf =
           Source.junk lexer.source;
           Buffer.add_string buf "\\\"";
           lex_string lexer buf
+        | Some('\\') ->
+          Source.junk lexer.source;
+          Buffer.add_string buf "\\\\";
+          lex_string lexer buf
         | Some(_) | None ->
           Buffer.add_char buf '\\';
           lex_string lexer buf
@@ -126,6 +131,10 @@ let rec lex_char lexer buf =
         | Some('\'') ->
           Source.junk lexer.source;
           Buffer.add_string buf "\\'";
+          lex_char lexer buf
+        | Some('\\') ->
+          Source.junk lexer.source;
+          Buffer.add_string buf "\\\\";
           lex_char lexer buf
         | Some(_) | None ->
           Buffer.add_char buf '\\';

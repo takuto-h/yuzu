@@ -9,7 +9,7 @@ type t =
   | If of (t * t * t)
   | Tuple of (t) list
   | Record of ((Names.val_path * t)) list
-  | Match of (t * ((Pattern.t * t)) list)
+  | Match of (t * ((Pattern.t * (t) option * t)) list)
   | LetVal of (Pattern.t * t * t)
   | LetFun of (Names.val_name * t * t)
   | Seq of (t * t)
@@ -43,8 +43,13 @@ let rec show = begin fun expr ->
     | (Match(target_expr, ([](_)))) ->
       ((sprintf "Match(%s,[])") (show target_expr))
     | (Match(target_expr, (( :: )(c, cs)))) ->
-      begin let rec show_case = begin fun (pat, expr) ->
-        (((sprintf "Case(%s,%s)") (Pattern.show pat)) (show expr))
+      begin let rec show_case = begin fun (pat, opt, expr) ->
+        begin match opt with
+          | (None(_)) ->
+            (((sprintf "Case(%s,%s)") (Pattern.show pat)) (show expr))
+          | (Some(guard)) ->
+            ((((sprintf "Case(%s,%s,%s)") (Pattern.show pat)) (show guard)) (show expr))
+        end
       end in
       (((sprintf "Match(%s,[%s])") (show target_expr)) (((List.fold_left begin fun acc ->
         begin fun elem ->

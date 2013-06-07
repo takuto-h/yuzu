@@ -10,7 +10,7 @@ type t:
   def If(t * t * t)
   def Tuple(list(t))
   def Record(list(Names.val_path * t))
-  def Match(t * list(Pattern.t * t))
+  def Match(t * list(Pattern.t * option(t) * t))
   def LetVal(Pattern.t * t * t)
   def LetFun(Names.val_name * t * t)
   def Seq(t * t)
@@ -42,8 +42,12 @@ def show(expr):
   case Match(target_expr,[]):
     sprintf("Match(%s,[])", show(target_expr))
   case Match(target_expr,c::cs):
-    def show_case((pat,expr)):
-      sprintf("Case(%s,%s)", Pattern.show(pat), show(expr))
+    def show_case((pat,opt,expr)):
+      match(opt)
+      case None:
+        sprintf("Case(%s,%s)", Pattern.show(pat), show(expr))
+      case Some(guard):
+        sprintf("Case(%s,%s,%s)", Pattern.show(pat), show(guard), show(expr))
     sprintf("Match(%s,[%s])", show(target_expr), List.fold_left^(acc, elem){
       sprintf("%s;%s", acc, show_case(elem))
     }(show_case(c), cs))

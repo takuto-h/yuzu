@@ -786,8 +786,15 @@ and parse_cases parser cases =
     | Token.Reserved("case") -> begin
       lookahead parser;
       let pat = parse_pattern parser in
-      let expr = parse_block parser in
-      parse_cases parser ((pat,expr)::cases)
+      if parser.token = Token.Reserved("when") then begin
+        lookahead parser;
+        let guard = parse_expr parser in
+        let expr = parse_block parser in
+        parse_cases parser ((pat,Some(guard),expr)::cases)
+      end
+      else
+        let expr = parse_block parser in
+        parse_cases parser ((pat,None,expr)::cases)
     end
     | _ ->
       List.rev cases
