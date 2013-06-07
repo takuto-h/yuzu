@@ -11,7 +11,7 @@ type t =
   | Record of ((Names.val_path * t)) list
   | Match of (t * ((Pattern.t * (t) option * t)) list)
   | LetVal of (Pattern.t * t * t)
-  | LetFun of ((Names.val_name * t * t)) list
+  | LetFun of (((Names.val_name * t)) list * t)
   | Seq of (t * t)
   | Field of (t * Names.val_path)
   | Assign of (t * t)

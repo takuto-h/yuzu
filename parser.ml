@@ -664,7 +664,7 @@ and parse_let_fun parser =
   let body_expr = parse_block parser in
   parse_block_sep parser;
   let cont_expr = parse_block_elem parser in
-  Expr.LetFun([fun_name, make_abs params body_expr, cont_expr])
+  Expr.LetFun([fun_name, make_abs params body_expr], cont_expr)
 
 and parse_block_sep parser =
   match parser.token with

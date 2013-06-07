@@ -143,14 +143,18 @@ let rec translate_expr trans = function
     sprintf
       "begin let %s = %s in\n%s\n%s"
       str_pat str_val (indent trans str_cont) (indent trans "end")
-  | Expr.LetFun([name,val_expr,cont_expr]) ->
+  | Expr.LetFun((name,val_expr)::defs, cont_expr) ->
     let str_name = Names.show_val_name name in
     let str_val = translate_expr trans val_expr in
+    let str_let_rec = sprintf "let rec %s = %s" str_name str_val in
+    let str_let_rec = List.fold_left begin fun acc (name,val_expr) ->
+      let str_name = translate_val_name name in
+      let str_val = translate_expr trans val_expr in
+      sprintf "%s\nand %s = %s" acc str_name str_val
+    end str_let_rec defs in
     let str_cont = translate_expr trans cont_expr in
-    sprintf
-      "begin let rec %s = %s in\n%s\n%s"
-      str_name str_val (indent trans str_cont) (indent trans "end")
-  | Expr.LetFun(_) ->
+    sprintf "begin %s in\n%s\n%s" str_let_rec (indent trans str_cont) (indent trans "end")
+  | Expr.LetFun([], cont_expr) ->
     assert false
   | Expr.Seq(lhs,rhs) ->
     let str_lhs = translate_expr trans lhs in
@@ -184,7 +188,6 @@ and translate_case trans = function
     let str_body = translate_expr trans_body body_expr in
     sprintf "\n%s\n%s" (indent trans str_pat) (indent trans_body str_body)
  
-
 let translate_typector = function
   | ([], typector_name) ->
     typector_name
@@ -231,11 +234,16 @@ let translate_top trans = function
     let str_pat = translate_pattern pat in
     let str_expr = translate_expr trans expr in
     sprintf "let %s = %s\n" str_pat str_expr
-  | Top.LetFun([name,expr]) ->
+  | Top.LetFun((name,expr)::defs) ->
     let str_name = translate_val_name name in
     let str_expr = translate_expr trans expr in
-    sprintf "let rec %s = %s\n" str_name str_expr
-  | Top.LetFun(_) ->
+    let str_let_rec = sprintf "let rec %s = %s\n" str_name str_expr in
+    List.fold_left begin fun acc (name,expr) ->
+      let str_name = translate_val_name name in
+      let str_expr = translate_expr trans expr in
+      sprintf "%sand %s = %s\n" acc str_name str_expr
+    end str_let_rec defs
+  | Top.LetFun([]) ->
     assert false
   | Top.Open(path) ->
     let str_path = translate_mod_path path in
