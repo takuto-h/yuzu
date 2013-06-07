@@ -681,8 +681,16 @@ and parse_dot_expr = begin fun parser ->
     | (Token.Reserved(".")) ->
       begin
       (lookahead parser);
-      begin let path = ((parse_val_path parser) []) in
-      (Expr.Field (expr, path))
+      begin match parser.token with
+        | (Token.Reserved("{")) ->
+          begin
+          (lookahead parser);
+          (Expr.Update (expr, ((parse_braced_elems parser) parse_field_def)))
+          end
+        | _ ->
+          begin let path = ((parse_val_path parser) []) in
+          (Expr.Field (expr, path))
+          end
       end
       end
     | _ ->

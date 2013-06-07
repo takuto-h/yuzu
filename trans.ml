@@ -5,13 +5,6 @@ type t = {
   indent_level : int;
 }
 
-let rec incr_indent_level = begin fun {basic_offset;indent_level;} ->
-  {
-    basic_offset = basic_offset;
-    indent_level = ((( + ) indent_level) 1);
-  }
-end
-
 let rec create = begin fun basic_offset ->
   {
     basic_offset = basic_offset;
@@ -27,6 +20,13 @@ let rec indent = begin fun {basic_offset;indent_level;} ->
     (((sprintf "%s%s") ((String.make offset) ' ')) str)
     end
   end
+end
+
+let rec incr_indent_level = begin fun trans ->
+  {
+    trans with
+    indent_level = ((( + ) trans.indent_level) 1);
+  }
 end
 
 let rec translate_val_name = begin fun name ->
@@ -190,6 +190,20 @@ let rec translate_expr = begin fun trans ->
           end
         end) "") field_defs) in
         (((sprintf "{\n%s%s") str_field_defs) ((indent trans) "}"))
+        end
+        end
+      | (Expr.Update(expr, field_defs)) ->
+        begin let trans_field_def = (incr_indent_level trans) in
+        begin let str_expr = ((translate_expr trans_field_def) expr) in
+        begin let str_field_defs = (((List.fold_left begin fun acc ->
+          begin fun elem ->
+            begin let str_field_def = ((translate_field_def trans_field_def) elem) in
+            (((sprintf "%s%s;\n") acc) ((indent trans_field_def) str_field_def))
+            end
+          end
+        end) "") field_defs) in
+        ((((sprintf "{\n%s with\n%s%s") ((indent trans_field_def) str_expr)) str_field_defs) ((indent trans) "}"))
+        end
         end
         end
       | (Expr.Match(target_expr, cases)) ->

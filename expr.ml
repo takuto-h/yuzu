@@ -9,6 +9,7 @@ type t =
   | If of (t * t * t)
   | Tuple of (t) list
   | Record of ((Names.val_path * t)) list
+  | Update of (t * ((Names.val_path * t)) list)
   | Match of (t * ((Pattern.t * (t) option * t)) list)
   | LetVal of (Pattern.t * t * t)
   | LetFun of (((Names.val_name * t)) list * t)

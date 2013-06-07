@@ -415,8 +415,13 @@ rec:
     match parser.token:
       case Token.Reserved("."):
         lookahead(parser)
-        var path = parse_val_path(parser, [])
-        Expr.Field(expr, path)
+        match parser.token:
+          case Token.Reserved("{"):
+            lookahead(parser)
+            Expr.Update(expr, parse_braced_elems(parser, parse_field_def))
+          case _:
+            var path = parse_val_path(parser, [])
+            Expr.Field(expr, path)
       case _:
         expr
   

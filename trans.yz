@@ -5,11 +5,6 @@ type t:
   basic_offset : int
   indent_level : int
   
-def incr_indent_level({basic_offset;indent_level}): {
-  basic_offset = basic_offset;
-  indent_level = indent_level + 1;
-}
-
 def create(basic_offset): {
   basic_offset = basic_offset;
   indent_level = 0;
@@ -20,6 +15,10 @@ var ocaml_basic_offset = 2
 def indent({basic_offset;indent_level}, str):
   var offset = basic_offset * indent_level
   sprintf("%s%s", String.make(offset, ' '), str)
+
+def incr_indent_level(trans): trans.{
+  indent_level = trans.indent_level + 1;
+}
 
 def translate_val_name(name):
   match name:
@@ -149,6 +148,17 @@ rec:
           sprintf("%s%s;\n", acc, indent(trans_field_def, str_field_def));
         }("", field_defs)
         sprintf("{\n%s%s", str_field_defs, indent(trans, "}"))
+      case Expr.Update(expr,field_defs):
+        var trans_field_def = incr_indent_level(trans)
+        var str_expr = translate_expr(trans_field_def, expr)
+        var str_field_defs = List.fold_left^(acc, elem){
+          var str_field_def = translate_field_def(trans_field_def, elem);
+          sprintf("%s%s;\n", acc, indent(trans_field_def, str_field_def));
+        }("", field_defs)
+        sprintf(
+          "{\n%s with\n%s%s",
+          indent(trans_field_def, str_expr), str_field_defs, indent(trans, "}")
+        )
       case Expr.Match(target_expr,cases):
         var str_target = translate_expr(trans, target_expr)
         var trans_case = incr_indent_level(trans)
