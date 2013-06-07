@@ -615,20 +615,12 @@ rec:
       case _:
         var lhs = parse_expr(parser)
         match parser.token:
-          case Token.Reserved(";"):
-            lookahead(parser)
-            skip(parser, Token.Newline)
-            var rhs = parse_block_elem(parser)
-            Expr.Seq(lhs, rhs)
-          
-          case Token.Newline:
+          case Token.Reserved(";") | Token.Newline:
             lookahead(parser)
             var rhs = parse_block_elem(parser)
             Expr.Seq(lhs, rhs)
-          
           case _:
             lhs
-        
   
   def parse_let_val(parser):
     lookahead(parser)
@@ -642,7 +634,6 @@ rec:
       var cont_expr = parse_block_elem(parser)
       Expr.LetVal(val_pat,val_expr,cont_expr)
     
-  
   def parse_let_fun(parser):
     if parser.token <> Token.Reserved("def"):
       failwith(expected(parser, "'def'"))
@@ -653,13 +644,9 @@ rec:
       var body_expr = parse_block(parser)
       (fun_name, make_abs(params, body_expr))
     
-  
   def parse_block_sep(parser):
     match parser.token:
-      case Token.Reserved(";"):
-        lookahead(parser)
-        skip(parser, Token.Newline)
-      case Token.Newline:
+      case Token.Reserved(";") | Token.Newline:
         lookahead(parser)
       case _:
         failwith(expected(parser, "';' or newline"))

@@ -995,17 +995,7 @@ and parse_block_elem = begin fun parser ->
     | _ ->
       begin let lhs = (parse_expr parser) in
       begin match parser.token with
-        | (Token.Reserved(";")) ->
-          begin
-          (lookahead parser);
-          begin
-          ((skip parser) Token.Newline);
-          begin let rhs = (parse_block_elem parser) in
-          (Expr.Seq (lhs, rhs))
-          end
-          end
-          end
-        | (Token.Newline(_)) ->
+        | ((Token.Reserved(";")) | (Token.Newline(_))) ->
           begin
           (lookahead parser);
           begin let rhs = (parse_block_elem parser) in
@@ -1061,12 +1051,7 @@ end
 
 and parse_block_sep = begin fun parser ->
   begin match parser.token with
-    | (Token.Reserved(";")) ->
-      begin
-      (lookahead parser);
-      ((skip parser) Token.Newline)
-      end
-    | (Token.Newline(_)) ->
+    | ((Token.Reserved(";")) | (Token.Newline(_))) ->
       (lookahead parser)
     | _ ->
       (failwith ((expected parser) "';' or newline"))
