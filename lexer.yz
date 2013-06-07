@@ -21,6 +21,8 @@ var reserved = [
   "match";
   "case";
   "when";
+  "try";
+  "with";
   "mutable";
 ]
 
