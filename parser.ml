@@ -7,17 +7,6 @@ type t = {
   mutable pos : Pos.t;
 }
 
-let create lexer = {
-  lexer = lexer;
-  token = Token.EOF;
-  pos = Pos.dummy;
-}
-  
-let expected parser str_token =
-  sprintf
-    "%s: error: unexpected %s, expected %s\n"
-    (Pos.show parser.pos) (Token.show parser.token) str_token
-  
 let lookahead parser =
   match Lexer.next parser.lexer with
     | (None, pos) ->
@@ -29,6 +18,20 @@ let lookahead parser =
       parser.token <- token;
       parser.pos <- pos
 
+let create lexer =
+  let parser = {
+    lexer = lexer;
+    token = Token.EOF;
+    pos = Pos.dummy;
+  } in
+  lookahead parser;
+  parser
+  
+let expected parser str_token =
+  sprintf
+    "%s: error: unexpected %s, expected %s\n"
+    (Pos.show parser.pos) (Token.show parser.token) str_token
+  
 let skip parser token =
   if parser.token = token then
     lookahead parser
@@ -941,13 +944,15 @@ and parse_literal parser =
 let parse_stmt parser =
   let expr = parse_top parser in
   match parser.token with
-    | Token.EOF | Token.Newline | Token.Reserved(";") ->
+    | Token.EOF ->
+      expr
+    | Token.Newline | Token.Reserved(";") ->
+      lookahead parser;
       expr
     | _ ->
       failwith (expected parser "newline or ';'")
-  
+
 let parse parser =
-  lookahead parser;
   skip parser Token.Newline;
   match parser.token with
     | Token.EOF ->
