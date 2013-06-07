@@ -708,19 +708,26 @@ and parse_list parser =
     Expr.Var([], (Names.Id("[]")))
   end
   else
-    let is_terminal = function
-      | Token.Reserved("]") ->
-        true
-      | Token.Reserved(";") ->
-        false
-      | _ ->
-        failwith (expected parser "']' or ';'")
-    in
-    let list = parse_to_list parser is_terminal parse_expr in
-    List.fold_right begin fun elem acc ->
-      let ctor = Expr.Var([], (Names.Op("::"))) in
-      Expr.App(ctor, Expr.Tuple([elem;acc]))
-    end list (Expr.Var([], (Names.Id("[]"))))
+    let ctor = Expr.Var([], (Names.Op("::"))) in
+    let rec loop expr =
+      if parser.token = Token.Reserved("]") then begin
+        lookahead parser;
+        expr
+      end
+      else
+        let elem = parse_expr parser in
+        match parser.token with
+          | Token.Reserved("]") -> begin
+            lookahead parser;
+            Expr.App(ctor, Expr.Tuple([elem; expr]))
+          end
+          | Token.Reserved(";") -> begin
+            lookahead parser;
+            Expr.App(ctor, Expr.Tuple([elem; loop expr]))
+          end
+          | _ ->
+            failwith (expected parser "']' or ';'")
+    in loop (Expr.Var([], (Names.Id("[]"))))
 
 and parse_parens parser =
   lookahead parser;

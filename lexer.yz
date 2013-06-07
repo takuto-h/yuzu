@@ -20,7 +20,7 @@ var reserved = [
   "match";
   "case";
   "when";
-  "mutable"
+  "mutable";
 ]
 
 def create(source):
