@@ -342,11 +342,11 @@ def translate_file(fname_in, fname_out):
       case Break:
         close_out(chan_out)
         raise(Break)
-      case Failure(message):// as exn:
+      case Failure(message) as exn:
         close_out(chan_out)
         eprintf("%s", message)
         flush(stderr)
-        failwith(message)//raise(exn)
+        raise(exn)
       case exn:
         close_out_noerr(chan_out)
         raise(exn)

@@ -476,14 +476,14 @@ let rec translate_file = begin fun fname_in ->
           (close_out chan_out);
           (raise Break)
           end
-        | (Failure(message)) ->
+        | ((Failure(message)) as exn) ->
           begin
           (close_out chan_out);
           begin
           ((eprintf "%s") message);
           begin
           (flush stderr);
-          (failwith message)
+          (raise exn)
           end
           end
           end
