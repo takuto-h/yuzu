@@ -12,7 +12,7 @@ type t:
   def Record(list(Names.val_path * t))
   def Match(t * list(Pattern.t * option(t) * t))
   def LetVal(Pattern.t * t * t)
-  def LetFun(Names.val_name * t * t)
+  def LetFun(list(Names.val_name * t * t))
   def Seq(t * t)
   def Field(t * Names.val_path)
   def Assign(t * t)
@@ -56,11 +56,8 @@ def show(expr):
     var str_val = show(val_expr)
     var str_cont = show(cont_expr)
     sprintf("LetVal(%s,%s,%s)", str_pat, str_val, str_cont)
-  case LetFun(name,val_expr,cont_expr):
-    var str_name = Names.show_val_name(name)
-    var str_val = show(val_expr)
-    var str_cont = show(cont_expr)
-    sprintf("LetFun(%s,%s,%s)", str_name, str_val, str_cont)
+  case LetFun(fun_defs):
+    sprintf("LetFun()")
   case Seq(lhs, rhs):
     var str_lhs = show(lhs)
     var str_rhs = show(rhs)

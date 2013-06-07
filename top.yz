@@ -4,7 +4,7 @@ open Printf
 type t:
   def Expr(Expr.t)
   def LetVal(Pattern.t * Expr.t)
-  def LetFun(Names.val_name * Expr.t)
+  def LetFun(list(Names.val_name * Expr.t))
   def Open(Names.mod_path)
   def Abbrev(Names.typector_name * Type.t)
   def Variant(Names.typector_name * list(Names.ctor_name * option(Type.t)))
@@ -19,10 +19,8 @@ def show(top):
     var str_pat = Pattern.show(pat)
     var str_expr = Expr.show(expr)
     sprintf("LetVal(%s,%s)", str_pat, str_expr)
-  case LetFun(name,expr):
-    var str_name = Names.show_val_name(name)
-    var str_expr = Expr.show(expr)
-    sprintf("LetFun(%s,%s)", str_name, str_expr)
+  case LetFun(fun_defs):
+    sprintf("LetFun()")
   case Open(path):
     var str_path = Names.show_mod_path(path)
     sprintf("Open(%s)", str_path)

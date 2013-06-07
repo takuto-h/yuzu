@@ -156,7 +156,7 @@ and parse_top_let_fun parser =
   let fun_name = parse_val_name parser in
   let params = parse_params parser in
   let body_expr = parse_block parser in
-  Top.LetFun(fun_name, make_abs params body_expr)
+  Top.LetFun([fun_name, make_abs params body_expr])
 
 and parse_top_let_val parser =
   lookahead parser;
@@ -664,7 +664,7 @@ and parse_let_fun parser =
   let body_expr = parse_block parser in
   parse_block_sep parser;
   let cont_expr = parse_block_elem parser in
-  Expr.LetFun(fun_name, make_abs params body_expr, cont_expr)
+  Expr.LetFun([fun_name, make_abs params body_expr, cont_expr])
 
 and parse_block_sep parser =
   match parser.token with

@@ -143,13 +143,15 @@ let rec translate_expr trans = function
     sprintf
       "begin let %s = %s in\n%s\n%s"
       str_pat str_val (indent trans str_cont) (indent trans "end")
-  | Expr.LetFun(name,val_expr,cont_expr) ->
+  | Expr.LetFun([name,val_expr,cont_expr]) ->
     let str_name = Names.show_val_name name in
     let str_val = translate_expr trans val_expr in
     let str_cont = translate_expr trans cont_expr in
     sprintf
       "begin let rec %s = %s in\n%s\n%s"
       str_name str_val (indent trans str_cont) (indent trans "end")
+  | Expr.LetFun(_) ->
+    assert false
   | Expr.Seq(lhs,rhs) ->
     let str_lhs = translate_expr trans lhs in
     let str_rhs = translate_expr trans rhs in
@@ -225,14 +227,16 @@ let translate_top trans = function
   | Top.Expr(expr) ->
     let str_expr = translate_expr trans expr in
     sprintf "let () = %s\n" str_expr
-  | Top.LetFun(name,expr) ->
-    let str_name = translate_val_name name in
-    let str_expr = translate_expr trans expr in
-    sprintf "let rec %s = %s\n" str_name str_expr
   | Top.LetVal(pat,expr) ->
     let str_pat = translate_pattern pat in
     let str_expr = translate_expr trans expr in
     sprintf "let %s = %s\n" str_pat str_expr
+  | Top.LetFun([name,expr]) ->
+    let str_name = translate_val_name name in
+    let str_expr = translate_expr trans expr in
+    sprintf "let rec %s = %s\n" str_name str_expr
+  | Top.LetFun(_) ->
+    assert false
   | Top.Open(path) ->
     let str_path = translate_mod_path path in
     sprintf "open %s\n" str_path
