@@ -82,7 +82,7 @@ let parse_left_assoc parser get_op parse_lower =
       end
   in loop lhs
 
-let parse_simple_elems parser sep_or_term parse_elem =
+let parse_elems parser sep_or_term parse_elem =
   let rec loop elems =
     match sep_or_term parser.token with
       | Term -> begin
@@ -105,58 +105,31 @@ let parse_simple_elems parser sep_or_term parse_elem =
         end
   in loop []
 
-let rec parse_indented_elems parser parse_elem elems =
-  if parser.token = Token.Undent then begin
-    lookahead parser;
-    List.rev elems
-  end
-  else
-    let elem = parse_elem parser in
-    match parser.token with
-      | Token.Reserved(";") -> begin
-        lookahead parser;
-        parse_indented_elems parser parse_elem (elem::elems)
-      end
-      | Token.Newline -> begin
-        lookahead parser;
-        parse_indented_elems parser parse_elem (elem::elems)
-      end
-      | Token.Undent -> begin
-        lookahead parser;
-        List.rev (elem::elems)
-      end
-      | _ ->
-        failwith (expected parser "';' or newline or undent")
+let rec parse_indented_elems parser parse_elem =
+  let sep_or_term = function
+    | Token.Reserved(";") -> Sep
+    | Token.Newline -> Sep
+    | Token.Undent -> Term
+    | _ -> Neither
+  in parse_elems parser sep_or_term parse_elem
 
-let rec parse_braced_elems parser parse_elem elems =
-  if parser.token = Token.Reserved("}") then begin
-    lookahead parser;
-    List.rev elems
-  end
-  else
-    let elem = parse_elem parser in
-    match parser.token with
-      | Token.Reserved(";") -> begin
-        lookahead parser;
-        parse_braced_elems parser parse_elem (elem::elems)
-      end
-      | Token.Reserved("}") -> begin
-        lookahead parser;
-        List.rev (elem::elems)
-      end
-      | _ ->
-        failwith (expected parser "';' or '}'")
+let rec parse_braced_elems parser parse_elem =
+  let sep_or_term = function
+    | Token.Reserved(";") -> Sep
+    | Token.Reserved("}") -> Term
+    | _ -> Neither
+  in parse_elems parser sep_or_term parse_elem
 
-let parse_complex_elems parser parse_elem =
+let parse_block_like_elems parser parse_elem =
   match parser.token with
     | Token.Reserved(":") -> begin
       Lexer.indent parser.lexer;
       lookahead parser;
-      parse_indented_elems parser parse_elem []
+      parse_indented_elems parser parse_elem
     end
     | Token.Reserved("{") -> begin
       lookahead parser;
-      parse_braced_elems parser parse_elem []
+      parse_braced_elems parser parse_elem
     end
     | _ ->
       failwith (expected parser "':' or '{'")
@@ -221,17 +194,17 @@ and parse_type_repr parser typector_name =
       lookahead parser;
       begin match parser.token with
         | Token.Reserved("def") ->
-          Top.Variant(typector_name, parse_indented_elems parser parse_ctor_decl [])
+          Top.Variant(typector_name, parse_indented_elems parser parse_ctor_decl)
         | _ ->
-          Top.Record(typector_name, parse_indented_elems parser parse_field_decl [])
+          Top.Record(typector_name, parse_indented_elems parser parse_field_decl)
       end
     | Token.Reserved("{") ->
       lookahead parser;
       begin match parser.token with
         | Token.Reserved("def") ->
-          Top.Variant(typector_name, parse_braced_elems parser parse_ctor_decl [])
+          Top.Variant(typector_name, parse_braced_elems parser parse_ctor_decl)
         | _ ->
-          Top.Record(typector_name, parse_braced_elems parser parse_field_decl [])
+          Top.Record(typector_name, parse_braced_elems parser parse_field_decl)
       end
     | _ ->
       failwith (expected parser "':' or '{'")
@@ -334,7 +307,7 @@ and parse_type_args parser =
     | Token.Reserved(",") -> Sep
     | Token.Reserved(")") -> Term
     | _ -> Neither
-  in parse_simple_elems parser sep_or_term parse_type
+  in parse_elems parser sep_or_term parse_type
 
 and parse_expr parser =
   parse_assign_expr parser
@@ -776,11 +749,11 @@ and parse_expr_list parser =
     | Token.Reserved(",") -> Sep
     | Token.Reserved(")") -> Term
     | _ -> Neither
-  in parse_simple_elems parser sep_or_term parse_expr
+  in parse_elems parser sep_or_term parse_expr
 
 and parse_record parser =
   lookahead parser;
-  Expr.Record(parse_braced_elems parser parse_field_def [])
+  Expr.Record(parse_braced_elems parser parse_field_def)
 
 and parse_field_def parser =
   let field_name = parse_val_path parser [] in
@@ -899,14 +872,14 @@ and parse_list_pattern parser =
       | Token.Reserved("]") -> Term
       | _ -> Neither
     in
-    let list = parse_simple_elems parser sep_or_term parse_pattern in
+    let list = parse_elems parser sep_or_term parse_pattern in
     List.fold_right begin fun elem acc ->
       Pattern.Variant(([], Names.Op("::")), [elem;acc])
     end list (Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))]))
 
 and parse_record_pattern parser =
   lookahead parser;
-  Pattern.Record(parse_braced_elems parser parse_field_pattern [])
+  Pattern.Record(parse_braced_elems parser parse_field_pattern)
 
 and parse_field_pattern parser =
   let field_name = parse_val_path parser [] in
@@ -934,7 +907,7 @@ and parse_pattern_list parser =
     | Token.Reserved(",") -> Sep
     | Token.Reserved(")") -> Term
     | _ -> Neither
-  in parse_simple_elems parser sep_or_term parse_pattern
+  in parse_elems parser sep_or_term parse_pattern
 
 and parse_literal parser =
   match parser.token with
