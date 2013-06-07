@@ -1,0 +1,361 @@
+
+open Printf
+
+type t:
+  basic_offset : int
+  indent_level : int
+  
+def incr_indent_level({basic_offset;indent_level}): {
+  basic_offset = basic_offset;
+  indent_level = indent_level + 1;
+}
+
+def create(basic_offset): {
+  basic_offset = basic_offset;
+  indent_level = 0;
+}
+
+var ocaml_basic_offset = 2
+  
+def indent({basic_offset;indent_level}, str):
+  var offset = basic_offset * indent_level
+  sprintf("%s%s", String.make(offset, ' '), str)
+
+def translate_val_name(name):
+  match name:
+    case Names.Id(str):
+      str
+    case Names.Op(str):
+      sprintf("( %s )", str)
+
+var translate_ctor_name = translate_val_name
+
+def translate_mod_path(path):
+  match path:
+    case []:
+      ""
+    case name::names:
+      List.fold_left^(acc, elem){
+        sprintf("%s.%s", acc, elem)
+      }(name, names)
+
+def translate_val_path(path):
+  match path:
+    case ([], val_name):
+      translate_val_name(val_name)
+    case (mod_path, val_name):
+      sprintf("%s.%s", translate_mod_path(mod_path), translate_val_name(val_name))
+
+var translate_ctor = translate_val_path
+
+def translate_literal(lit):
+  match lit:
+    case Literal.Int(n):
+      sprintf("%d", n)
+    case Literal.String(str):
+      sprintf("\"%s\"", str)
+    case Literal.Char(str):
+      sprintf("'%s'", str)
+
+rec:
+  def translate_pattern(pat):
+    match pat:
+      case Pattern.Con(lit):
+        translate_literal(lit)
+      case Pattern.Var(name):
+        translate_val_name(name)
+      case Pattern.Variant(ctor,pat::pats):
+        var str_ctor = translate_ctor(ctor)
+        var str_pat_list = List.fold_left^(acc, elem){
+          sprintf("%s, %s", acc, translate_pattern(elem))
+        }(translate_pattern(pat), pats)
+        sprintf("(%s(%s))", str_ctor, str_pat_list)
+      case Pattern.Variant(ctor,[]):
+        assert(false)
+      case Pattern.Tuple(pat::pats):
+        var str_pat_list = List.fold_left^(acc, elem){
+          sprintf("%s, %s", acc, translate_pattern(elem))
+        }(translate_pattern(pat), pats)
+        sprintf("(%s)", str_pat_list)
+      case Pattern.Tuple([]):
+        assert(false)
+      case Pattern.Record(fields):
+        var str_fields = List.fold_left^(acc, elem){
+          sprintf("%s%s;", acc, translate_field_def(elem))
+        }("", fields)
+        sprintf("{%s}", str_fields)
+      case Pattern.Or(lhs,rhs):
+        var str_lhs = translate_pattern(lhs)
+        var str_rhs = translate_pattern(rhs)
+        sprintf("(%s | %s)", str_lhs, str_rhs)
+
+  def translate_field_def(field_def):
+    match field_def:
+      case (path, None):
+        sprintf("%s", translate_val_path(path))
+      case (path, Some(pat)):
+        sprintf("%s=%s", translate_val_path(path), translate_pattern(pat))
+
+rec:
+  def translate_expr(trans, expr):
+    match expr:
+      case Expr.Con(lit):
+        translate_literal(lit)
+      case Expr.Var(path):
+        translate_val_path(path)
+      case Expr.Ctor(ctor):
+        translate_ctor(ctor)
+      case Expr.Abs(param_pat,body_expr):
+        var str_param = translate_pattern(param_pat)
+        var trans_body = incr_indent_level(trans)
+        var str_body = translate_expr(trans_body, body_expr)
+        sprintf(
+          "begin fun %s ->\n%s\n%s",
+          str_param, indent(trans_body, str_body), indent(trans, "end")
+        )
+      case Expr.App(fun_expr,arg_expr):
+        var str_fun = translate_expr(trans, fun_expr)
+        var str_arg = translate_expr(trans, arg_expr)
+        sprintf("(%s %s)", str_fun, str_arg)
+      case Expr.If(cond_expr,then_expr,else_expr):
+        var str_cond = translate_expr(trans, cond_expr)
+        var trans_then_else = incr_indent_level(trans)
+        var str_then = translate_expr(trans_then_else, then_expr)
+        var str_else = translate_expr(trans_then_else, else_expr)
+        sprintf(
+          "begin if %s then\n%s\n%s\n%s\n%s",
+          str_cond,
+          indent(trans_then_else, str_then),
+          indent(trans, "else"),
+          indent(trans_then_else, str_else),
+          indent(trans, "end")
+        )
+      case Expr.Tuple(x::xs):
+        var str_x = translate_expr(trans, x)
+        var str_x_xs = List.fold_left^(acc, elem){
+          sprintf("%s, %s", acc, translate_expr(trans, elem))
+        }(str_x, xs)
+        sprintf("(%s)", str_x_xs)
+      case Expr.Tuple([]):
+        assert(false)
+      case Expr.Record(field_defs):
+        var trans_field_def = incr_indent_level(trans)
+        var str_field_defs = List.fold_left^(acc, elem){
+          var str_field_def = translate_field_def(trans_field_def, elem);
+          sprintf("%s%s;\n", acc, indent(trans_field_def, str_field_def))
+        }("", field_defs)
+        sprintf("{\n%s%s", str_field_defs, indent(trans, "}"))
+      case Expr.Match(target_expr,cases):
+        var str_target = translate_expr(trans, target_expr)
+        var trans_case = incr_indent_level(trans)
+        var str_cases = List.fold_left^(acc, elem){
+          sprintf("%s%s", acc, translate_case(trans_case, elem))
+        }("", cases)
+        sprintf("begin match %s with%s\n%s", str_target, str_cases, indent(trans, "end"))
+      case Expr.LetVal(pat,val_expr,cont_expr):
+        var str_pat = translate_pattern(pat)
+        var str_val = translate_expr(trans, val_expr)
+        var str_cont = translate_expr(trans, cont_expr)
+        sprintf(
+          "begin let %s = %s in\n%s\n%s",
+          str_pat, str_val, indent(trans, str_cont), indent(trans, "end")
+        )
+      case Expr.LetFun((name,val_expr)::defs, cont_expr):
+        var str_name = Names.show_val_name(name)
+        var str_val = translate_expr(trans, val_expr)
+        var str_let_rec = sprintf("let rec %s = %s", str_name, str_val)
+        var str_let_rec = List.fold_left^(acc, (name,val_expr)){
+          var str_name = translate_val_name(name);
+          var str_val = translate_expr(trans, val_expr);
+          sprintf("%s\nand %s = %s", acc, str_name, str_val)
+        }(str_let_rec, defs)
+        var str_cont = translate_expr(trans, cont_expr)
+        sprintf(
+          "begin %s in\n%s\n%s", str_let_rec, indent(trans, str_cont), indent(trans, "end")
+        )
+      case Expr.LetFun([], cont_expr):
+        assert(false)
+      case Expr.Seq(lhs,rhs):
+        var str_lhs = translate_expr(trans, lhs)
+        var str_rhs = translate_expr(trans, rhs)
+        sprintf(
+          "begin\n%s;\n%s\n%s",
+          indent(trans, str_lhs), indent(trans, str_rhs), indent(trans, "end")
+        )
+      case Expr.Field(expr,path):
+        var str_expr = translate_expr(trans, expr)
+        var str_path = translate_val_path(path)
+        sprintf("%s.%s", str_expr, str_path)
+      case Expr.Assign(lhs,rhs):
+        var str_lhs = translate_expr(trans, lhs)
+        var str_rhs = translate_expr(trans, rhs)
+        sprintf("(%s <- %s)", str_lhs, str_rhs)
+      case Expr.Try(expr,cases):
+        var trans_expr = incr_indent_level(trans)
+        var str_expr = translate_expr(trans_expr, expr)
+        var str_cases = List.fold_left^(acc, elem){
+          sprintf("%s%s", acc, translate_case(trans_expr, elem))
+        }("", cases)
+        sprintf(
+          "begin try\n%s\n%s\n%s\n%s",
+          indent(trans_expr, str_expr),
+          indent(trans, "with"),
+          str_cases,
+          indent(trans, "end")
+        )
+
+  def translate_field_def(trans, (path,expr)):
+    var str_path = translate_val_path(path)
+    var str_expr = translate_expr(trans, expr)
+    sprintf("%s = %s", str_path, str_expr)
+
+  def translate_case(trans, c):
+    match c:
+      case (pat,None,body_expr):
+        var str_pat = sprintf("| %s ->", translate_pattern(pat))
+        var trans_body = incr_indent_level(trans)
+        var str_body = translate_expr(trans_body, body_expr)
+        sprintf("\n%s\n%s", indent(trans, str_pat), indent(trans_body, str_body))
+      case (pat,Some(guard),body_expr):
+        var str_guard = translate_expr(trans, guard)
+        var str_pat = sprintf("| %s when %s ->", translate_pattern(pat), str_guard)
+        var trans_body = incr_indent_level(trans)
+        var str_body = translate_expr(trans_body, body_expr)
+        sprintf("\n%s\n%s", indent(trans, str_pat), indent(trans_body, str_body))
+
+def translate_typector(typector):
+  match typector:
+    case ([], typector_name):
+      typector_name
+    case (mod_path, typector_name):
+      sprintf("%s.%s", translate_mod_path(mod_path), typector_name)
+
+def translate_type(t):
+  match t:
+    case Type.Con(typector):
+      translate_typector(typector)
+    case Type.App(typector,t::ts):
+      var str_typector = translate_typector(typector)
+      var str_types = List.fold_left^(acc, elem){
+        sprintf("%s, %s", acc, translate_type(elem))
+      }(translate_type(t), ts)
+      sprintf("(%s) %s", str_types, str_typector)
+    case Type.App(typector,[]):
+      assert(false)
+    case Type.Tuple(t::ts):
+      var str_types = List.fold_left^(acc, elem){
+        sprintf("%s * %s", acc, translate_type(elem))
+      }(translate_type(t), ts)
+      sprintf("(%s)", str_types)
+    case Type.Tuple([]):
+      assert(false)
+
+def translate_ctor_decl(ctor_decl):
+  match ctor_decl:
+    case (ctor_name,None):
+      sprintf("| %s\n", translate_ctor_name(ctor_name))
+    case (ctor_name,Some(t)):
+      var str_type = translate_type(t)
+      sprintf("| %s of %s\n", translate_ctor_name(ctor_name), str_type)
+
+def translate_field_decl((is_mutable, field_name, t)):
+  if is_mutable:
+    sprintf("mutable %s : %s;\n", translate_val_name(field_name), translate_type(t))
+  else:
+    sprintf("%s : %s;\n", translate_val_name(field_name), translate_type(t))
+
+def translate_exn_decl(exn_decl):
+  match exn_decl:
+    case (ctor_name,None):
+      sprintf("%s", translate_ctor_name(ctor_name))
+    case (ctor_name,Some(t)):
+      var str_type = translate_type(t)
+      sprintf("%s of %s", translate_ctor_name(ctor_name), str_type)
+
+def translate_top(trans, top):
+  match top:
+    case Top.Expr(expr):
+      var str_expr = translate_expr(trans, expr)
+      sprintf("let () = %s\n", str_expr)
+    case Top.LetVal(pat,expr):
+      var str_pat = translate_pattern(pat)
+      var str_expr = translate_expr(trans, expr)
+      sprintf("let %s = %s\n", str_pat, str_expr)
+    case Top.LetFun((name,expr)::defs):
+      var str_name = translate_val_name(name)
+      var str_expr = translate_expr(trans, expr)
+      var str_let_rec = sprintf("let rec %s = %s\n", str_name, str_expr)
+      List.fold_left^(acc, (name,expr)){
+        var str_name = translate_val_name(name);
+        var str_expr = translate_expr(trans, expr);
+        sprintf("%s\nand %s = %s\n", acc, str_name, str_expr)
+      }(str_let_rec, defs)
+    case Top.LetFun([]):
+      assert(false)
+    case Top.Open(path):
+      var str_path = translate_mod_path(path)
+      sprintf("open %s\n", str_path)
+    case Top.Abbrev(name,t):
+      var str_type = translate_type(t)
+      sprintf("type %s = %s\n", name, str_type)
+    case Top.Variant(name,ctor_decls):
+      var trans_ctor_decl = incr_indent_level(trans)
+      var str_ctor_decls = List.fold_left^(acc, elem){
+        sprintf("%s%s", acc, indent(trans_ctor_decl, translate_ctor_decl(elem)))
+      }("", ctor_decls)
+      sprintf("type %s =\n%s", name, str_ctor_decls)
+    case Top.Record(name,field_decls):
+      var trans_field_decl = incr_indent_level(trans)
+      var str_field_decls = List.fold_left^(acc, elem){
+        sprintf("%s%s", acc, indent(trans_field_decl, translate_field_decl(elem)))
+      }("", field_decls)
+      sprintf("type %s = {\n%s%s\n", name, str_field_decls, indent(trans, "}"))
+    case Top.Exception(exn_decl):
+      var str_exn_decl = translate_exn_decl(exn_decl)
+      sprintf("exception %s\n", str_exn_decl)
+
+exception Break
+
+def translate_file(fname_in, fname_out):
+  var chan_in = open_in(fname_in)
+  try:
+    var chan_out = open_out(fname_out)
+    try:
+      var src = Source.create(fname_in, chan_in)
+      var lexer = Lexer.create(src)
+      var parser = Parser.create(lexer)
+      var trans = create(ocaml_basic_offset)
+      def loop():
+        match Parser.parse(parser):
+          case None:
+            raise(Break)
+          case Some(top):
+            var result = translate_top(trans, top)
+            fprintf(chan_out, "%s\n", result)
+            loop()
+      loop()
+    with:
+      case Break:
+        close_out(chan_out)
+        raise(Break)
+      case Failure(message):// as exn:
+        close_out(chan_out)
+        eprintf("%s", message)
+        flush(stderr)
+        failwith(message)//raise(exn)
+      case exn:
+        close_out_noerr(chan_out)
+        raise(exn)
+  with:
+    case Break:
+      close_in(chan_in)
+      true
+    case Failure(_):
+      close_in(chan_in)
+      false
+    case exn:
+      close_in_noerr(chan_in)
+      raise(exn)
+
+def test():
+  translate_file("test.yz", "test.out")
