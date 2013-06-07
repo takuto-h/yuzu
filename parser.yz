@@ -771,7 +771,16 @@ rec:
         failwith(expected(parser, "'case'"))
   
   def parse_pattern(parser):
-    parse_or_pattern(parser)
+    parse_as_pattern(parser)
+
+  def parse_as_pattern(parser):
+    var pat = parse_or_pattern(parser)
+    if parser.token = Token.Reserved("as"):
+      lookahead(parser)
+      var name = parse_val_name(parser)
+      Pattern.As(pat, name)
+    else:
+      pat
   
   def parse_or_pattern(parser):
     var lhs = parse_cons_pattern(parser)

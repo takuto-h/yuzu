@@ -1256,7 +1256,22 @@ and parse_case = begin fun parser ->
 end
 
 and parse_pattern = begin fun parser ->
-  (parse_or_pattern parser)
+  (parse_as_pattern parser)
+end
+
+and parse_as_pattern = begin fun parser ->
+  begin let pat = (parse_or_pattern parser) in
+  begin if ((( = ) parser.token) (Token.Reserved ("as"))) then
+    begin
+    (lookahead parser);
+    begin let name = (parse_val_name parser) in
+    (Pattern.As (pat, name))
+    end
+    end
+  else
+    pat
+  end
+  end
 end
 
 and parse_or_pattern = begin fun parser ->
