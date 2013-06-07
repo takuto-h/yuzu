@@ -241,7 +241,7 @@ let translate_top trans = function
     List.fold_left begin fun acc (name,expr) ->
       let str_name = translate_val_name name in
       let str_expr = translate_expr trans expr in
-      sprintf "%sand %s = %s\n" acc str_name str_expr
+      sprintf "%s\nand %s = %s\n" acc str_name str_expr
     end str_let_rec defs
   | Top.LetFun([]) ->
     assert false

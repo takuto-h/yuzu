@@ -256,6 +256,7 @@ let rec parse_top = begin fun parser ->
       (Top.Expr ((parse_expr parser)))
   end
 end
+
 and parse_top_let_fun = begin fun parser ->
   begin
   (lookahead parser);
@@ -268,6 +269,7 @@ and parse_top_let_fun = begin fun parser ->
   end
   end
 end
+
 and parse_top_let_val = begin fun parser ->
   begin
   (lookahead parser);
@@ -283,6 +285,7 @@ and parse_top_let_val = begin fun parser ->
   end
   end
 end
+
 and parse_top_open = begin fun parser ->
   begin
   (lookahead parser);
@@ -291,6 +294,7 @@ and parse_top_open = begin fun parser ->
   end
   end
 end
+
 and parse_top_typedef = begin fun parser ->
   begin
   (lookahead parser);
@@ -311,6 +315,7 @@ and parse_top_typedef = begin fun parser ->
   end
   end
 end
+
 and parse_type_repr = begin fun parser ->
   begin fun typector_name ->
     begin match parser.token with
@@ -342,6 +347,7 @@ and parse_type_repr = begin fun parser ->
     end
   end
 end
+
 and parse_ctor_decl = begin fun parser ->
   begin
   (lookahead parser);
@@ -366,6 +372,7 @@ and parse_ctor_decl = begin fun parser ->
   end
   end
 end
+
 and parse_field_decl = begin fun parser ->
   begin let is_mutable = (((( = ) parser.token) (Token.Reserved ("mutable")))) in
   begin
@@ -389,9 +396,11 @@ and parse_field_decl = begin fun parser ->
   end
   end
 end
+
 and parse_type = begin fun parser ->
   (parse_tuple_type parser)
 end
+
 and parse_tuple_type = begin fun parser ->
   begin let t = (parse_atomic_type parser) in
   begin let rec loop = begin fun ts ->
@@ -416,6 +425,7 @@ and parse_tuple_type = begin fun parser ->
   end
   end
 end
+
 and parse_atomic_type = begin fun parser ->
   begin match parser.token with
     | ((Token.LowId(_)) | (Token.CapId(_))) ->
@@ -450,6 +460,7 @@ and parse_atomic_type = begin fun parser ->
       (failwith ((expected parser) "type"))
   end
 end
+
 and parse_typector = begin fun parser ->
   begin fun mod_names ->
     begin match parser.token with
@@ -473,6 +484,7 @@ and parse_typector = begin fun parser ->
     end
   end
 end
+
 and parse_type_args = begin fun parser ->
   begin let rec sep_or_term = begin fun token ->
     begin match token with
@@ -487,9 +499,11 @@ and parse_type_args = begin fun parser ->
   (((parse_elems parser) sep_or_term) parse_type)
   end
 end
+
 and parse_expr = begin fun parser ->
   (parse_assign_expr parser)
 end
+
 and parse_assign_expr = begin fun parser ->
   begin let lhs = (parse_or_expr parser) in
   begin match parser.token with
@@ -505,6 +519,7 @@ and parse_assign_expr = begin fun parser ->
   end
   end
 end
+
 and parse_or_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
@@ -517,6 +532,7 @@ and parse_or_expr = begin fun parser ->
   (((parse_right_assoc parser) get_op) parse_and_expr)
   end
 end
+
 and parse_and_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
@@ -529,6 +545,7 @@ and parse_and_expr = begin fun parser ->
   (((parse_right_assoc parser) get_op) parse_cmp_expr)
   end
 end
+
 and parse_cmp_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
@@ -541,6 +558,7 @@ and parse_cmp_expr = begin fun parser ->
   (((parse_non_assoc parser) get_op) parse_cons_expr)
   end
 end
+
 and parse_cons_expr = begin fun parser ->
   begin let lhs = (parse_add_expr parser) in
   begin match parser.token with
@@ -558,6 +576,7 @@ and parse_cons_expr = begin fun parser ->
   end
   end
 end
+
 and parse_add_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
@@ -570,6 +589,7 @@ and parse_add_expr = begin fun parser ->
   (((parse_left_assoc parser) get_op) parse_mul_expr)
   end
 end
+
 and parse_mul_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
@@ -582,6 +602,7 @@ and parse_mul_expr = begin fun parser ->
   (((parse_left_assoc parser) get_op) parse_pow_expr)
   end
 end
+
 and parse_pow_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
@@ -594,6 +615,7 @@ and parse_pow_expr = begin fun parser ->
   (((parse_right_assoc parser) get_op) parse_unary_expr)
   end
 end
+
 and parse_unary_expr = begin fun parser ->
   begin match parser.token with
     | (Token.AddOp("-")) ->
@@ -614,6 +636,7 @@ and parse_unary_expr = begin fun parser ->
       (parse_prim_expr parser)
   end
 end
+
 and parse_prim_expr = begin fun parser ->
   begin let fun_expr = (parse_dot_expr parser) in
   begin let rec loop = begin fun fun_expr ->
@@ -637,6 +660,7 @@ and parse_prim_expr = begin fun parser ->
   end
   end
 end
+
 and parse_dot_expr = begin fun parser ->
   begin let expr = (parse_atomic_expr parser) in
   begin match parser.token with
@@ -652,6 +676,7 @@ and parse_dot_expr = begin fun parser ->
   end
   end
 end
+
 and parse_atomic_expr = begin fun parser ->
   begin match parser.token with
     | (((Token.Int(_)) | (Token.String(_))) | (Token.Char(_))) ->
@@ -676,6 +701,7 @@ and parse_atomic_expr = begin fun parser ->
       (failwith ((expected parser) "expression"))
   end
 end
+
 and parse_var_or_ctor_app = begin fun parser ->
   begin fun mod_names ->
     begin match parser.token with
@@ -699,6 +725,7 @@ and parse_var_or_ctor_app = begin fun parser ->
     end
   end
 end
+
 and parse_ctor_app = begin fun parser ->
   begin fun ctor ->
     begin match parser.token with
@@ -718,6 +745,7 @@ and parse_ctor_app = begin fun parser ->
     end
   end
 end
+
 and parse_val_path = begin fun parser ->
   begin fun mod_names ->
     begin match parser.token with
@@ -741,6 +769,7 @@ and parse_val_path = begin fun parser ->
     end
   end
 end
+
 and parse_ctor = begin fun parser ->
   begin fun mod_names ->
     begin match parser.token with
@@ -760,6 +789,7 @@ and parse_ctor = begin fun parser ->
     end
   end
 end
+
 and parse_mod_path = begin fun parser ->
   begin fun mod_names ->
     begin let capid = (parse_capid parser) in
@@ -775,6 +805,7 @@ and parse_mod_path = begin fun parser ->
     end
   end
 end
+
 and parse_abs = begin fun parser ->
   begin
   (lookahead parser);
@@ -785,6 +816,7 @@ and parse_abs = begin fun parser ->
   end
   end
 end
+
 and parse_params = begin fun parser ->
   begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
     (failwith ((expected parser) "'('"))
@@ -802,6 +834,7 @@ and parse_params = begin fun parser ->
     end
   end
 end
+
 and parse_val_name = begin fun parser ->
   begin match parser.token with
     | (Token.LowId(_)) ->
@@ -822,6 +855,7 @@ and parse_val_name = begin fun parser ->
       (failwith ((expected parser) "identifier"))
   end
 end
+
 and parse_lowid = begin fun parser ->
   begin match parser.token with
     | (Token.LowId(str)) ->
@@ -833,6 +867,7 @@ and parse_lowid = begin fun parser ->
       (failwith ((expected parser) "lowercase identifier"))
   end
 end
+
 and parse_capid = begin fun parser ->
   begin match parser.token with
     | (Token.CapId(str)) ->
@@ -844,6 +879,7 @@ and parse_capid = begin fun parser ->
       (failwith ((expected parser) "capitalized identifier"))
   end
 end
+
 and parse_op = begin fun parser ->
   begin match (Token.get_op parser.token) with
     | (Some(str)) ->
@@ -862,6 +898,7 @@ and parse_op = begin fun parser ->
       (failwith ((expected parser) "operator"))
   end
 end
+
 and parse_block = begin fun parser ->
   begin match parser.token with
     | (Token.Reserved(":")) ->
@@ -875,6 +912,7 @@ and parse_block = begin fun parser ->
       (failwith ((expected parser) "':' or '{'"))
   end
 end
+
 and parse_indented_block = begin fun parser ->
   begin
   (lookahead parser);
@@ -893,6 +931,7 @@ and parse_indented_block = begin fun parser ->
   end
   end
 end
+
 and parse_braced_block = begin fun parser ->
   begin
   (lookahead parser);
@@ -911,6 +950,7 @@ and parse_braced_block = begin fun parser ->
   end
   end
 end
+
 and parse_block_elem = begin fun parser ->
   begin match parser.token with
     | (Token.Reserved("var")) ->
@@ -962,6 +1002,7 @@ and parse_block_elem = begin fun parser ->
       end
   end
 end
+
 and parse_let_val = begin fun parser ->
   begin
   (lookahead parser);
@@ -984,6 +1025,7 @@ and parse_let_val = begin fun parser ->
   end
   end
 end
+
 and parse_let_fun = begin fun parser ->
   begin if ((( <> ) parser.token) (Token.Reserved ("def"))) then
     (failwith ((expected parser) "'def'"))
@@ -1000,6 +1042,7 @@ and parse_let_fun = begin fun parser ->
     end
   end
 end
+
 and parse_block_sep = begin fun parser ->
   begin match parser.token with
     | (Token.Reserved(";")) ->
@@ -1013,6 +1056,7 @@ and parse_block_sep = begin fun parser ->
       (failwith ((expected parser) "';' or newline"))
   end
 end
+
 and parse_if_expr = begin fun parser ->
   begin
   (lookahead parser);
@@ -1049,6 +1093,7 @@ and parse_if_expr = begin fun parser ->
   end
   end
 end
+
 and parse_list = begin fun parser ->
   begin
   (lookahead parser);
@@ -1090,6 +1135,7 @@ and parse_list = begin fun parser ->
   end
   end
 end
+
 and parse_parens = begin fun parser ->
   begin
   (lookahead parser);
@@ -1105,6 +1151,7 @@ and parse_parens = begin fun parser ->
   end
   end
 end
+
 and parse_args = begin fun parser ->
   begin if ((( = ) parser.token) (Token.Reserved (")"))) then
     begin
@@ -1115,6 +1162,7 @@ and parse_args = begin fun parser ->
     (parse_expr_list parser)
   end
 end
+
 and parse_expr_list = begin fun parser ->
   begin let rec sep_or_term = begin fun token ->
     begin match token with
@@ -1129,12 +1177,14 @@ and parse_expr_list = begin fun parser ->
   (((parse_elems parser) sep_or_term) parse_expr)
   end
 end
+
 and parse_record = begin fun parser ->
   begin
   (lookahead parser);
   (Expr.Record (((parse_braced_elems parser) parse_field_def)))
   end
 end
+
 and parse_field_def = begin fun parser ->
   begin let field_name = ((parse_val_path parser) []) in
   begin if ((( <> ) parser.token) (Token.CmpOp ("="))) then
@@ -1149,6 +1199,7 @@ and parse_field_def = begin fun parser ->
   end
   end
 end
+
 and parse_match_expr = begin fun parser ->
   begin
   (lookahead parser);
@@ -1173,6 +1224,7 @@ and parse_match_expr = begin fun parser ->
   end
   end
 end
+
 and parse_case = begin fun parser ->
   begin match parser.token with
     | (Token.Reserved("case")) ->
@@ -1199,9 +1251,11 @@ and parse_case = begin fun parser ->
       (failwith ((expected parser) "'case'"))
   end
 end
+
 and parse_pattern = begin fun parser ->
   (parse_or_pattern parser)
 end
+
 and parse_or_pattern = begin fun parser ->
   begin let lhs = (parse_cons_pattern parser) in
   begin let rec loop = begin fun lhs ->
@@ -1221,6 +1275,7 @@ and parse_or_pattern = begin fun parser ->
   end
   end
 end
+
 and parse_cons_pattern = begin fun parser ->
   begin let lhs = (parse_atomic_pattern parser) in
   begin match parser.token with
@@ -1236,6 +1291,7 @@ and parse_cons_pattern = begin fun parser ->
   end
   end
 end
+
 and parse_atomic_pattern = begin fun parser ->
   begin match parser.token with
     | (((Token.Int(_)) | (Token.String(_))) | (Token.Char(_))) ->
@@ -1258,6 +1314,7 @@ and parse_atomic_pattern = begin fun parser ->
       (failwith ((expected parser) "pattern"))
   end
 end
+
 and parse_variant_pattern = begin fun parser ->
   begin let ctor = ((parse_ctor parser) []) in
   begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
@@ -1272,6 +1329,7 @@ and parse_variant_pattern = begin fun parser ->
   end
   end
 end
+
 and parse_list_pattern = begin fun parser ->
   begin
   (lookahead parser);
@@ -1302,12 +1360,14 @@ and parse_list_pattern = begin fun parser ->
   end
   end
 end
+
 and parse_record_pattern = begin fun parser ->
   begin
   (lookahead parser);
   (Pattern.Record (((parse_braced_elems parser) parse_field_pattern)))
   end
 end
+
 and parse_field_pattern = begin fun parser ->
   begin let field_name = ((parse_val_path parser) []) in
   begin if ((( <> ) parser.token) (Token.Reserved ("="))) then
@@ -1322,6 +1382,7 @@ and parse_field_pattern = begin fun parser ->
   end
   end
 end
+
 and parse_parens_pattern = begin fun parser ->
   begin
   (lookahead parser);
@@ -1337,6 +1398,7 @@ and parse_parens_pattern = begin fun parser ->
   end
   end
 end
+
 and parse_pattern_list = begin fun parser ->
   begin let rec sep_or_term = begin fun token ->
     begin match token with
@@ -1351,6 +1413,7 @@ and parse_pattern_list = begin fun parser ->
   (((parse_elems parser) sep_or_term) parse_pattern)
   end
 end
+
 and parse_literal = begin fun parser ->
   begin match parser.token with
     | (Token.Int(n)) ->
@@ -1372,7 +1435,8 @@ and parse_literal = begin fun parser ->
       (failwith ((expected parser) "literal"))
   end
 end
-and parse_stmt = begin fun parser ->
+
+let rec parse_stmt = begin fun parser ->
   begin let expr = (parse_top parser) in
   begin match parser.token with
     | (((Token.EOF(_)) | (Token.Newline(_))) | (Token.Reserved(";"))) ->
@@ -1382,7 +1446,8 @@ and parse_stmt = begin fun parser ->
   end
   end
 end
-and parse = begin fun parser ->
+
+let rec parse = begin fun parser ->
   begin
   (lookahead parser);
   begin
