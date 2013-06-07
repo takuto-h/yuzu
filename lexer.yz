@@ -14,7 +14,7 @@ var reserved = [
   "open";
   "type";
   "def";
-  "and";
+  "rec";
   "var";
   "if";
   "else";
