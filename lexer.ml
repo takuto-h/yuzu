@@ -69,12 +69,16 @@ let rec lex_close_paren = begin fun lexer ->
   begin fun pos ->
     begin fun open_paren ->
       begin fun close_paren ->
-        begin if ((( || ) (Stack.is_empty lexer.parens)) ((( <> ) (Stack.top lexer.parens)) open_paren)) then
+        begin if (Stack.is_empty lexer.parens) then
           (failwith (((sprintf "%s: error: unmatched parentheses: '%s'\n") (Pos.show pos)) close_paren))
         else
-          begin
-          (ignore (Stack.pop lexer.parens));
-          (Token.Reserved (close_paren))
+          begin if ((( <> ) (Stack.top lexer.parens)) open_paren) then
+            (failwith (((sprintf "%s: error: unmatched parentheses: '%s'\n") (Pos.show pos)) close_paren))
+          else
+            begin
+            (ignore (Stack.pop lexer.parens));
+            (Token.Reserved (close_paren))
+            end
           end
         end
       end

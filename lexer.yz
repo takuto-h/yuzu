@@ -68,7 +68,12 @@ def int_of_digit(c):
   Char.code(c) - Char.code('0')
 
 def lex_close_paren(lexer, pos, open_paren, close_paren):
-  if Stack.is_empty(lexer.parens) || Stack.top(lexer.parens) <> open_paren:
+  if Stack.is_empty(lexer.parens):
+    failwith(
+      sprintf("%s: error: unmatched parentheses: '%s'\n", Pos.show(pos), close_paren)
+    )
+  else:
+  if Stack.top(lexer.parens) <> open_paren:
     failwith(
       sprintf("%s: error: unmatched parentheses: '%s'\n", Pos.show(pos), close_paren)
     )
