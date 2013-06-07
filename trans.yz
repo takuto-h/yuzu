@@ -36,7 +36,7 @@ def translate_mod_path(path):
       ""
     case name::names:
       List.fold_left^(acc, elem){
-        sprintf("%s.%s", acc, elem)
+        sprintf("%s.%s", acc, elem);
       }(name, names)
 
 def translate_val_path(path):
@@ -67,21 +67,21 @@ rec:
       case Pattern.Variant(ctor,pat::pats):
         var str_ctor = translate_ctor(ctor)
         var str_pat_list = List.fold_left^(acc, elem){
-          sprintf("%s, %s", acc, translate_pattern(elem))
+          sprintf("%s, %s", acc, translate_pattern(elem));
         }(translate_pattern(pat), pats)
         sprintf("(%s(%s))", str_ctor, str_pat_list)
       case Pattern.Variant(ctor,[]):
         assert(false)
       case Pattern.Tuple(pat::pats):
         var str_pat_list = List.fold_left^(acc, elem){
-          sprintf("%s, %s", acc, translate_pattern(elem))
+          sprintf("%s, %s", acc, translate_pattern(elem));
         }(translate_pattern(pat), pats)
         sprintf("(%s)", str_pat_list)
       case Pattern.Tuple([]):
         assert(false)
       case Pattern.Record(fields):
         var str_fields = List.fold_left^(acc, elem){
-          sprintf("%s%s;", acc, translate_field_def(elem))
+          sprintf("%s%s;", acc, translate_field_def(elem));
         }("", fields)
         sprintf("{%s}", str_fields)
       case Pattern.Or(lhs,rhs):
@@ -137,7 +137,7 @@ rec:
       case Expr.Tuple(x::xs):
         var str_x = translate_expr(trans, x)
         var str_x_xs = List.fold_left^(acc, elem){
-          sprintf("%s, %s", acc, translate_expr(trans, elem))
+          sprintf("%s, %s", acc, translate_expr(trans, elem));
         }(str_x, xs)
         sprintf("(%s)", str_x_xs)
       case Expr.Tuple([]):
@@ -146,14 +146,14 @@ rec:
         var trans_field_def = incr_indent_level(trans)
         var str_field_defs = List.fold_left^(acc, elem){
           var str_field_def = translate_field_def(trans_field_def, elem);
-          sprintf("%s%s;\n", acc, indent(trans_field_def, str_field_def))
+          sprintf("%s%s;\n", acc, indent(trans_field_def, str_field_def));
         }("", field_defs)
         sprintf("{\n%s%s", str_field_defs, indent(trans, "}"))
       case Expr.Match(target_expr,cases):
         var str_target = translate_expr(trans, target_expr)
         var trans_case = incr_indent_level(trans)
         var str_cases = List.fold_left^(acc, elem){
-          sprintf("%s%s", acc, translate_case(trans_case, elem))
+          sprintf("%s%s", acc, translate_case(trans_case, elem));
         }("", cases)
         sprintf("begin match %s with%s\n%s", str_target, str_cases, indent(trans, "end"))
       case Expr.LetVal(pat,val_expr,cont_expr):
@@ -171,7 +171,7 @@ rec:
         var str_let_rec = List.fold_left^(acc, (name,val_expr)){
           var str_name = translate_val_name(name);
           var str_val = translate_expr(trans, val_expr);
-          sprintf("%s\nand %s = %s", acc, str_name, str_val)
+          sprintf("%s\nand %s = %s", acc, str_name, str_val);
         }(str_let_rec, defs)
         var str_cont = translate_expr(trans, cont_expr)
         sprintf(
@@ -206,7 +206,7 @@ rec:
         var trans_expr = incr_indent_level(trans)
         var str_expr = translate_expr(trans_expr, expr)
         var str_cases = List.fold_left^(acc, elem){
-          sprintf("%s%s", acc, translate_case(trans_expr, elem))
+          sprintf("%s%s", acc, translate_case(trans_expr, elem));
         }("", cases)
         sprintf(
           "begin try\n%s\n%s\n%s\n%s",
@@ -249,14 +249,14 @@ def translate_type(t):
     case Type.App(typector,t::ts):
       var str_typector = translate_typector(typector)
       var str_types = List.fold_left^(acc, elem){
-        sprintf("%s, %s", acc, translate_type(elem))
+        sprintf("%s, %s", acc, translate_type(elem));
       }(translate_type(t), ts)
       sprintf("(%s) %s", str_types, str_typector)
     case Type.App(typector,[]):
       assert(false)
     case Type.Tuple(t::ts):
       var str_types = List.fold_left^(acc, elem){
-        sprintf("%s * %s", acc, translate_type(elem))
+        sprintf("%s * %s", acc, translate_type(elem));
       }(translate_type(t), ts)
       sprintf("(%s)", str_types)
     case Type.Tuple([]):
@@ -300,7 +300,7 @@ def translate_top(trans, top):
       List.fold_left^(acc, (name,expr)){
         var str_name = translate_val_name(name);
         var str_expr = translate_expr(trans, expr);
-        sprintf("%s\nand %s = %s\n", acc, str_name, str_expr)
+        sprintf("%s\nand %s = %s\n", acc, str_name, str_expr);
       }(str_let_rec, defs)
     case Top.LetFun([]):
       assert(false)
@@ -313,13 +313,13 @@ def translate_top(trans, top):
     case Top.Variant(name,ctor_decls):
       var trans_ctor_decl = incr_indent_level(trans)
       var str_ctor_decls = List.fold_left^(acc, elem){
-        sprintf("%s%s", acc, indent(trans_ctor_decl, translate_ctor_decl(elem)))
+        sprintf("%s%s", acc, indent(trans_ctor_decl, translate_ctor_decl(elem)));
       }("", ctor_decls)
       sprintf("type %s =\n%s", name, str_ctor_decls)
     case Top.Record(name,field_decls):
       var trans_field_decl = incr_indent_level(trans)
       var str_field_decls = List.fold_left^(acc, elem){
-        sprintf("%s%s", acc, indent(trans_field_decl, translate_field_decl(elem)))
+        sprintf("%s%s", acc, indent(trans_field_decl, translate_field_decl(elem)));
       }("", field_decls)
       sprintf("type %s = {\n%s%s\n", name, str_field_decls, indent(trans, "}"))
     case Top.Exception(exn_decl):
