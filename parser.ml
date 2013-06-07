@@ -80,16 +80,16 @@ let parse_left_assoc parser get_op parse_lower =
       end
   in loop lhs
 
-let parse_to_list parser is_terminal parse_elem =
-  let rec loop list =
+let parse_simple_elems parser is_terminal parse_elem =
+  let rec loop elems =
     let elem = parse_elem parser in
     if is_terminal parser.token then begin
       lookahead parser;
-      List.rev (elem::list)
+      List.rev (elem::elems)
     end
     else begin
       lookahead parser;
-      loop (elem::list)
+      loop (elem::elems)
     end
   in loop []
 
@@ -101,13 +101,14 @@ let rec parse_indented_elems parser parse_elem elems =
   else
     let elem = parse_elem parser in
     match parser.token with
-      | Token.Reserved(";") ->
-        lookahead parser;
-        skip parser Token.Newline;
-        parse_indented_elems parser parse_elem (elem::elems)
-      | Token.Newline ->
+      | Token.Reserved(";") -> begin
         lookahead parser;
         parse_indented_elems parser parse_elem (elem::elems)
+      end
+      | Token.Newline -> begin
+        lookahead parser;
+        parse_indented_elems parser parse_elem (elem::elems)
+      end
       | Token.Undent -> begin
         lookahead parser;
         List.rev (elem::elems)
@@ -133,7 +134,21 @@ let rec parse_braced_elems parser parse_elem elems =
       end
       | _ ->
         failwith (expected parser "';' or '}'")
-  
+
+let parse_complex_elems parser parse_elem =
+  match parser.token with
+    | Token.Reserved(":") -> begin
+      Lexer.indent parser.lexer;
+      lookahead parser;
+      parse_indented_elems parser parse_elem []
+    end
+    | Token.Reserved("{") -> begin
+      lookahead parser;
+      parse_braced_elems parser parse_elem []
+    end
+    | _ ->
+      failwith (expected parser "':' or '{'")
+
 let rec parse_top parser =
   match parser.token with
     | Token.Reserved("def") -> begin
@@ -310,7 +325,7 @@ and parse_type_args parser =
       false
     | _ -> 
       failwith (expected parser "')' or ','")
-  in parse_to_list parser is_terminal parse_type
+  in parse_simple_elems parser is_terminal parse_type
 
 and parse_expr parser =
   parse_assign_expr parser
@@ -755,7 +770,7 @@ and parse_expr_list parser =
       false
     | _ -> 
       failwith (expected parser "')' or ','")
-  in parse_to_list parser is_terminal parse_expr
+  in parse_simple_elems parser is_terminal parse_expr
 
 and parse_record parser =
   lookahead parser;
@@ -881,7 +896,7 @@ and parse_list_pattern parser =
       | _ ->
         failwith (expected parser "']' or ';'")
     in
-    let list = parse_to_list parser is_terminal parse_pattern in
+    let list = parse_simple_elems parser is_terminal parse_pattern in
     List.fold_right begin fun elem acc ->
       Pattern.Variant(([], Names.Op("::")), [elem;acc])
     end list (Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))]))
@@ -919,7 +934,7 @@ and parse_pattern_list parser =
       false
     | _ -> 
       failwith (expected parser "')' or ','")
-  in parse_to_list parser is_terminal parse_pattern
+  in parse_simple_elems parser is_terminal parse_pattern
 
 and parse_literal parser =
   match parser.token with
