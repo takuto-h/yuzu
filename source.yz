@@ -21,7 +21,7 @@ def peek({strm}):
   Stream.peek(strm)
 
 def junk(src):
-  match(peek(src)):
+  match peek(src):
     case None:
       ()
     case Some('\n'):

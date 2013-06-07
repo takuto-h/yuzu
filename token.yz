@@ -21,14 +21,14 @@ type t:
   def PowOp(string)
 
 def get_op(token):
-  match(token):
+  match token:
     case AssignOp(str) | OrOp(str) | AndOp(str) | CmpOp(str) | ConsOp(str) | AddOp(str) | MulOp(str) | PowOp(str):
       Some(str)
     case _:
       None
 
 def show(token):
-  match(token):
+  match token:
     case EOF:
       "EOF"
     case Newline:

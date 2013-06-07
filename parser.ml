@@ -1060,36 +1060,22 @@ end
 and parse_if_expr = begin fun parser ->
   begin
   (lookahead parser);
-  begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
-    (failwith ((expected parser) "'('"))
+  begin let cond_expr = (parse_expr parser) in
+  begin let then_expr = (parse_block parser) in
+  begin
+  ((skip parser) Token.Newline);
+  begin if ((( <> ) parser.token) (Token.Reserved ("else"))) then
+    (failwith ((expected parser) "'else'"))
   else
     begin
     (lookahead parser);
-    begin let cond_expr = (parse_expr parser) in
-    begin if ((( <> ) parser.token) (Token.Reserved (")"))) then
-      (failwith ((expected parser) "')'"))
-    else
-      begin
-      (lookahead parser);
-      begin let then_expr = (parse_block parser) in
-      begin
-      ((skip parser) Token.Newline);
-      begin if ((( <> ) parser.token) (Token.Reserved ("else"))) then
-        (failwith ((expected parser) "'else'"))
-      else
-        begin
-        (lookahead parser);
-        begin let else_expr = (parse_block parser) in
-        (Expr.If (cond_expr, then_expr, else_expr))
-        end
-        end
-      end
-      end
-      end
-      end
+    begin let else_expr = (parse_block parser) in
+    (Expr.If (cond_expr, then_expr, else_expr))
     end
     end
-    end
+  end
+  end
+  end
   end
   end
 end
@@ -1203,24 +1189,10 @@ end
 and parse_match_expr = begin fun parser ->
   begin
   (lookahead parser);
-  begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
-    (failwith ((expected parser) "'('"))
-  else
-    begin
-    (lookahead parser);
-    begin let target_expr = (parse_expr parser) in
-    begin if ((( <> ) parser.token) (Token.Reserved (")"))) then
-      (failwith ((expected parser) "')'"))
-    else
-      begin
-      (lookahead parser);
-      begin let cases = ((parse_block_like_elems parser) parse_case) in
-      (Expr.Match (target_expr, cases))
-      end
-      end
-    end
-    end
-    end
+  begin let target_expr = (parse_expr parser) in
+  begin let cases = ((parse_block_like_elems parser) parse_case) in
+  (Expr.Match (target_expr, cases))
+  end
   end
   end
 end

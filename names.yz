@@ -14,7 +14,7 @@ type typector = mod_path * typector_name
 type ctor = mod_path * ctor_name
 
 def show_val_name(name):
-  match(name):
+  match name:
     case Id(str):
       str
     case Op(str):
@@ -23,7 +23,7 @@ def show_val_name(name):
 var show_ctor_name = show_val_name
 
 def show_mod_path(path):
-  match(path):
+  match path:
     case []:
       ""
     case (name::names):
@@ -32,7 +32,7 @@ def show_mod_path(path):
       }(name, names)
 
 def show_val_path(path):
-  match(path):
+  match path:
     case ([], val_name):
       show_val_name(val_name)
     case (mod_path, val_name):

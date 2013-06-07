@@ -36,7 +36,7 @@ def create(source):
   lexer
 
 def indent(lexer):
-  if(Stack.is_empty(lexer.parens)):
+  if Stack.is_empty(lexer.parens):
     lexer.is_bob <- true
   else:
     var pos = Source.pos(lexer.source)
@@ -64,7 +64,7 @@ def int_of_digit(c):
   Char.code(c) - Char.code('0')
 
 def lex_close_paren(lexer, pos, open_paren, close_paren):
-  if(Stack.is_empty(lexer.parens) || Stack.top(lexer.parens) <> open_paren):
+  if Stack.is_empty(lexer.parens) || Stack.top(lexer.parens) <> open_paren:
     failwith(
       sprintf("%s: error: unmatched parentheses: '%s'\n", Pos.show(pos), close_paren)
     )
@@ -73,7 +73,7 @@ def lex_close_paren(lexer, pos, open_paren, close_paren):
     Token.Reserved(close_paren)
 
 def lex_op(lexer, buf):
-  match(Source.peek(lexer.source)):
+  match Source.peek(lexer.source):
     case Some(c) when is_op_part(c): 
       Buffer.add_char(buf, c)
       Source.junk(lexer.source)
@@ -82,7 +82,7 @@ def lex_op(lexer, buf):
       Buffer.contents(buf)
 
 def lex_int(lexer, n):
-  match(Source.peek(lexer.source)):
+  match Source.peek(lexer.source):
     case Some(c) when is_digit(c):
       Source.junk(lexer.source)
       lex_int(lexer, n * 10 + int_of_digit(c))
@@ -90,13 +90,13 @@ def lex_int(lexer, n):
       Token.Int(n)
 
 def lex_string(lexer, buf):
-  match(Source.peek(lexer.source)):
+  match Source.peek(lexer.source):
     case Some('"'):
       Source.junk(lexer.source)
       Token.String(Buffer.contents(buf))
     case Some('\\'):
       Source.junk(lexer.source)
-      match(Source.peek(lexer.source)):
+      match Source.peek(lexer.source):
         case Some('"'):
           Source.junk(lexer.source)
           Buffer.add_string(buf, "\\\"")
@@ -118,13 +118,13 @@ def lex_string(lexer, buf):
       failwith(sprintf("%s: error: EOF inside a string literal\n", Pos.show(pos_eof)))
 
 def lex_char(lexer, buf):
-  match(Source.peek(lexer.source)):
+  match Source.peek(lexer.source):
     case Some('\''):
       Source.junk(lexer.source)
       Token.Char(Buffer.contents(buf))
     case Some('\\'):
       Source.junk(lexer.source)
-      match(Source.peek(lexer.source)):
+      match Source.peek(lexer.source):
         case Some('\''):
           Source.junk(lexer.source)
           Buffer.add_string(buf, "\\'")
@@ -146,13 +146,13 @@ def lex_char(lexer, buf):
       failwith(sprintf("%s: error: EOF inside a character literal\n", Pos.show(pos_eof)))
 
 def lowid_or_reserved(str):
-  if(List.mem(str, reserved)):
+  if List.mem(str, reserved):
     Token.Reserved(str)
   else:
     Token.LowId(str)
 
 def lex_lowid(lexer, buf):
-  match(Source.peek(lexer.source)):
+  match Source.peek(lexer.source):
     case Some(c) when is_id_part(c):
       Buffer.add_char(buf, c)
       Source.junk(lexer.source)
@@ -161,7 +161,7 @@ def lex_lowid(lexer, buf):
       lowid_or_reserved(Buffer.contents(buf))
 
 def lex_capid(lexer, buf):
-  match(Source.peek(lexer.source)):
+  match Source.peek(lexer.source):
     case Some(c) when is_id_part(c):
       Buffer.add_char(buf, c)
       Source.junk(lexer.source)
@@ -171,7 +171,7 @@ def lex_capid(lexer, buf):
 
 def lex_visible_token(lexer, pos, c):
   Source.junk(lexer.source)
-  match(c):
+  match c:
     case ';' | ',' | '^' | '.' | '$':
       Token.Reserved(sprintf("%c", c))
     case '(' | '{' | '[':
@@ -184,7 +184,7 @@ def lex_visible_token(lexer, pos, c):
     case ']':
       lex_close_paren(lexer, pos, "[", "]")
     case '<':
-      match(Source.peek(lexer.source)):
+      match Source.peek(lexer.source):
         case Some('-'):
           Source.junk(lexer.source)
           Token.AssignOp("<-")
@@ -193,7 +193,7 @@ def lex_visible_token(lexer, pos, c):
           Buffer.add_char(buf, c)
           Token.CmpOp(lex_op(lexer, buf))
     case '|':
-      match(Source.peek(lexer.source)):
+      match Source.peek(lexer.source):
         case Some('|'):
           Source.junk(lexer.source)
           Token.OrOp("||")
@@ -202,7 +202,7 @@ def lex_visible_token(lexer, pos, c):
           Buffer.add_char(buf, c)
           Token.CmpOp(lex_op(lexer, buf))
     case '&':
-      match(Source.peek(lexer.source)):
+      match Source.peek(lexer.source):
         case Some('&'):
           Source.junk(lexer.source)
           Token.AndOp("&&")
@@ -223,7 +223,7 @@ def lex_visible_token(lexer, pos, c):
       Buffer.add_char(buf, c)
       Token.MulOp(lex_op(lexer, buf))
     case '*':
-      match(Source.peek(lexer.source)):
+      match Source.peek(lexer.source):
         case Some('*'):
           Source.junk(lexer.source)
           Token.PowOp("**")
@@ -232,7 +232,7 @@ def lex_visible_token(lexer, pos, c):
           Buffer.add_char(buf, c)
           Token.MulOp(lex_op(lexer, buf))
     case ':':
-      match(Source.peek(lexer.source)):
+      match Source.peek(lexer.source):
         case Some(':'):
           Source.junk(lexer.source)
           Token.ConsOp("::")
@@ -259,19 +259,19 @@ def lex_visible_token(lexer, pos, c):
 
 def lex_token(lexer, pos, c):
   var offset = pos.Pos.cnum - pos.Pos.bol
-  if(lexer.is_bob):
+  if lexer.is_bob:
     lexer.is_bob <- false
     lexer.is_bol <- false
     Stack.push(offset, lexer.offside_lines)
     lex_visible_token(lexer, pos, c)
   else:
-  if(lexer.is_bol):
+  if lexer.is_bol:
     var offside_line = Stack.top(lexer.offside_lines)
-    if(offset < offside_line):
+    if offset < offside_line:
       ignore(Stack.pop(lexer.offside_lines))
       Token.Undent
     else:
-    if(offset = offside_line):
+    if offset = offside_line:
       lexer.is_bol <- false
       Token.Newline
     else:
@@ -281,7 +281,7 @@ def lex_token(lexer, pos, c):
     lex_visible_token(lexer, pos, c)
 
 def skip_single_line_comment(lexer):
-  match(Source.peek(lexer.source)):
+  match Source.peek(lexer.source):
     case None | Some('\n'):
       ()
     case Some(_):
@@ -290,7 +290,7 @@ def skip_single_line_comment(lexer):
 
 def next(lexer):
   var pos = Source.pos(lexer.source)
-  match(Source.peek(lexer.source)):
+  match Source.peek(lexer.source):
     case None when Stack.length(lexer.offside_lines) = 1:
       (None, pos)
     case None:
@@ -305,7 +305,7 @@ def next(lexer):
       next(lexer)
     case Some('/'):
       Source.junk(lexer.source)
-      match(Source.peek(lexer.source)):
+      match Source.peek(lexer.source):
         case Some('/'):
           Source.junk(lexer.source)
           skip_single_line_comment(lexer)
