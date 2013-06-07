@@ -7,6 +7,8 @@ type t = {
   mutable pos : Pos.t;
 }
 
+type sep_or_term = Sep | Term | Neither
+
 let create lexer = {
   lexer = lexer;
   token = Token.EOF;
@@ -80,17 +82,27 @@ let parse_left_assoc parser get_op parse_lower =
       end
   in loop lhs
 
-let parse_simple_elems parser is_terminal parse_elem =
+let parse_simple_elems parser sep_or_term parse_elem =
   let rec loop elems =
-    let elem = parse_elem parser in
-    if is_terminal parser.token then begin
-      lookahead parser;
-      List.rev (elem::elems)
-    end
-    else begin
-      lookahead parser;
-      loop (elem::elems)
-    end
+    match sep_or_term parser.token with
+      | Term -> begin
+        lookahead parser;
+        List.rev elems
+      end
+      | _ ->
+        let elem = parse_elem parser in
+        begin match sep_or_term parser.token with
+          | Term -> begin
+            lookahead parser;
+            List.rev (elem::elems)
+          end
+          | Sep -> begin
+            lookahead parser;
+            loop (elem::elems)
+          end
+          | Neither ->
+            failwith (expected parser "separator or terminator")
+        end
   in loop []
 
 let rec parse_indented_elems parser parse_elem elems =
@@ -318,14 +330,11 @@ and parse_typector parser mod_names =
       failwith (expected parser "identifier")
 
 and parse_type_args parser =
-  let is_terminal = function
-    | Token.Reserved(")") ->
-      true
-    | Token.Reserved(",") ->
-      false
-    | _ -> 
-      failwith (expected parser "')' or ','")
-  in parse_simple_elems parser is_terminal parse_type
+  let sep_or_term = function
+    | Token.Reserved(",") -> Sep
+    | Token.Reserved(")") -> Term
+    | _ -> Neither
+  in parse_simple_elems parser sep_or_term parse_type
 
 and parse_expr parser =
   parse_assign_expr parser
@@ -763,14 +772,11 @@ and parse_args parser =
     parse_expr_list parser
 
 and parse_expr_list parser =
-  let is_terminal = function
-    | Token.Reserved(")") ->
-      true
-    | Token.Reserved(",") ->
-      false
-    | _ -> 
-      failwith (expected parser "')' or ','")
-  in parse_simple_elems parser is_terminal parse_expr
+  let sep_or_term = function
+    | Token.Reserved(",") -> Sep
+    | Token.Reserved(")") -> Term
+    | _ -> Neither
+  in parse_simple_elems parser sep_or_term parse_expr
 
 and parse_record parser =
   lookahead parser;
@@ -888,15 +894,12 @@ and parse_list_pattern parser =
     Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))])
   end
   else
-    let is_terminal = function
-      | Token.Reserved("]") ->
-        true
-      | Token.Reserved(";") ->
-        false
-      | _ ->
-        failwith (expected parser "']' or ';'")
+    let sep_or_term = function
+      | Token.Reserved(";") -> Sep
+      | Token.Reserved("]") -> Term
+      | _ -> Neither
     in
-    let list = parse_simple_elems parser is_terminal parse_pattern in
+    let list = parse_simple_elems parser sep_or_term parse_pattern in
     List.fold_right begin fun elem acc ->
       Pattern.Variant(([], Names.Op("::")), [elem;acc])
     end list (Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))]))
@@ -927,14 +930,11 @@ and parse_parens_pattern parser =
     Pattern.Tuple(list)
 
 and parse_pattern_list parser =
-  let is_terminal = function
-    | Token.Reserved(")") ->
-      true
-    | Token.Reserved(",") ->
-      false
-    | _ -> 
-      failwith (expected parser "')' or ','")
-  in parse_simple_elems parser is_terminal parse_pattern
+  let sep_or_term = function
+    | Token.Reserved(",") -> Sep
+    | Token.Reserved(")") -> Term
+    | _ -> Neither
+  in parse_simple_elems parser sep_or_term parse_pattern
 
 and parse_literal parser =
   match parser.token with
