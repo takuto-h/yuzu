@@ -8,13 +8,14 @@
 (define-derived-mode yuzu-mode fundamental-mode "Yuzu"
   (make-local-variable 'font-lock-defaults)
   (let ((yuzu-mode-font-lock-keywords
-         '(("\\<\\(open\\|type\\|exception\\|def\\|rec\\|var\\)\\>" . (1 font-lock-function-name-face))
-           ("\\<\\(if\\|else\\|match\\|case\\|when\\|try\\|with\\|mutable\\)\\>" . (1 font-lock-keyword-face))
+         '(("\\<\\(open\\|type\\|def\\|rec\\|var\\)\\>" . (1 font-lock-function-name-face))
+           ("\\<\\(if\\|else\\|match\\|case\\|when\\|try\\|with\\|mutable\\|exception\\)\\>" . (1 font-lock-keyword-face))
            ("type\\s +\\(\\sw+\\)" . (1 font-lock-type-face))
            ("open\\s +\\(\\sw+\\)" . (1 font-lock-string-face))
            ("def\\s +\\(\\sw+\\)" . (1 font-lock-variable-name-face))
            ("var\\s +\\(\\sw+\\)" . (1 font-lock-variable-name-face))
            ("case\\s +\\(\\sw+\\)" . (1 font-lock-constant-face))
+           ("exception\\s +\\(\\sw+\\)" . (1 font-lock-variable-name-face))
            ("\\([][!%&()---=~^|`@{+;*:}<,>.?/]\\)" . (1 font-lock-comment-face))
            ("\\<\\([ABCDEFGHIJKLMNOPQRSTUVWXYZ]\\sw*\\)\\>\\." . (1 font-lock-type-face t))
            ("\\(\"\\(\\\\[\\\"]\\|[^\"\n]\\)*\"\\)" . (1 font-lock-string-face t))
