@@ -101,13 +101,14 @@ let rec lex_string lexer buf =
           Source.junk lexer.source;
           Buffer.add_string buf "\\\"";
           lex_string lexer buf
-        | Some('\\') ->
+        | Some(c) ->
           Source.junk lexer.source;
-          Buffer.add_string buf "\\\\";
-          lex_string lexer buf
-        | Some(_) | None ->
           Buffer.add_char buf '\\';
+          Buffer.add_char buf c;
           lex_string lexer buf
+        | None ->
+          let pos_eof = Source.pos lexer.source in
+          failwith (sprintf "%s: error: EOF inside a string literal\n" (Pos.show pos_eof))
       end
     end
     | Some(c) -> begin
@@ -132,13 +133,14 @@ let rec lex_char lexer buf =
           Source.junk lexer.source;
           Buffer.add_string buf "\\'";
           lex_char lexer buf
-        | Some('\\') ->
+        | Some(c) ->
           Source.junk lexer.source;
-          Buffer.add_string buf "\\\\";
-          lex_char lexer buf
-        | Some(_) | None ->
           Buffer.add_char buf '\\';
+          Buffer.add_char buf c;
           lex_char lexer buf
+        | None ->
+          let pos_eof = Source.pos lexer.source in
+          failwith (sprintf "%s: error: EOF inside a character literal\n" (Pos.show pos_eof))
       end
     end
     | Some(c) -> begin
