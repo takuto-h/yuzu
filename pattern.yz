@@ -8,18 +8,3 @@ type t:
   def Tuple(list(t))
   def Record(list(Names.val_path * option(t)))
   def Or(t * t)
-
-def show(pat):
-  match(pat)
-  case Con(lit):
-    sprintf("Con(%s)", Literal.show(lit))
-  case Var(name):
-    sprintf("Var(%s)", Names.show_val_name(name))
-  case Variant(ctor,pat_list):
-    sprintf("Variant(%s)", Names.show_ctor(ctor))
-  case Tuple(pat_list):
-    sprintf("Tuple()")
-  case Record(field_list):
-    sprintf("Record()")
-  case Or(lhs,rhs):
-    sprintf("Or(%s,%s)", show(lhs), show(rhs))
