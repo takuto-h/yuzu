@@ -15,4 +15,5 @@ type t =
   | Seq of (t * t)
   | Field of (t * Names.val_path)
   | Assign of (t * t)
+  | Try of (t * ((Pattern.t * (t) option * t)) list)
 

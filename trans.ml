@@ -169,6 +169,14 @@ let rec translate_expr trans = function
     let str_lhs = translate_expr trans lhs in
     let str_rhs = translate_expr trans rhs in
     sprintf "(%s <- %s)" str_lhs str_rhs
+  | Expr.Try(expr,cases) ->
+    let trans_expr = {trans with indent_level=trans.indent_level+1} in
+    let str_expr = translate_expr trans_expr expr in
+    let str_cases = List.fold_left begin fun acc elem ->
+      sprintf "%s%s" acc (translate_case trans_expr elem)
+    end "" cases in
+    sprintf "begin try\n%s\n%s\n%s\n%s"
+      (indent trans_expr str_expr) (indent trans "with") str_cases (indent trans "end")
 
 and translate_field_def trans (path,expr) =
   let str_path = translate_val_path path in

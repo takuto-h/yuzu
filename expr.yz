@@ -16,3 +16,4 @@ type t:
   def Seq(t * t)
   def Field(t * Names.val_path)
   def Assign(t * t)
+  def Try(t * list(Pattern.t * option(t) * t))
