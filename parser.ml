@@ -137,10 +137,14 @@ let parse_block_like_elems parser parse_elem =
 let rec parse_top parser =
   match parser.token with
     | Token.Reserved("def") -> begin
-      parse_top_let_fun parser
+      Top.LetFun([parse_top_let_fun parser])
     end
     | Token.Reserved("var") -> begin
       parse_top_let_val parser
+    end
+    | Token.Reserved("rec") -> begin
+      lookahead parser;
+      Top.LetFun(parse_block_like_elems parser parse_top_let_fun)
     end
     | Token.Reserved("open") -> begin
       parse_top_open parser
@@ -156,7 +160,7 @@ and parse_top_let_fun parser =
   let fun_name = parse_val_name parser in
   let params = parse_params parser in
   let body_expr = parse_block parser in
-  Top.LetFun([fun_name, make_abs params body_expr])
+  (fun_name, make_abs params body_expr)
 
 and parse_top_let_val parser =
   lookahead parser;
@@ -621,7 +625,17 @@ and parse_block_elem parser =
       parse_let_val parser
     end
     | Token.Reserved("def") -> begin
-      parse_let_fun parser
+      let defs = [parse_let_fun parser] in
+      parse_block_sep parser;
+      let cont_expr = parse_block_elem parser in
+      Expr.LetFun(defs, cont_expr)
+    end
+    | Token.Reserved("rec") -> begin
+      lookahead parser;
+      let defs = parse_block_like_elems parser parse_let_fun in
+      parse_block_sep parser;
+      let cont_expr = parse_block_elem parser in
+      Expr.LetFun(defs, cont_expr)
     end
     | _ ->
       let lhs = parse_expr parser in
@@ -655,13 +669,15 @@ and parse_let_val parser =
   end
 
 and parse_let_fun parser =
-  lookahead parser;
-  let fun_name = parse_val_name parser in
-  let params = parse_params parser in
-  let body_expr = parse_block parser in
-  parse_block_sep parser;
-  let cont_expr = parse_block_elem parser in
-  Expr.LetFun([fun_name, make_abs params body_expr], cont_expr)
+  if parser.token <> Token.Reserved("def") then
+    failwith (expected parser "'def'")
+  else begin
+    lookahead parser;
+    let fun_name = parse_val_name parser in
+    let params = parse_params parser in
+    let body_expr = parse_block parser in
+    (fun_name, make_abs params body_expr)
+  end
 
 and parse_block_sep parser =
   match parser.token with
