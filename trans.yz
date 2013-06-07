@@ -336,12 +336,31 @@ def translate_top(trans, top):
       var str_exn_decl = translate_exn_decl(exn_decl)
       sprintf("exception %s\n", str_exn_decl)
 
-exception Break
-
-def translate_file(fname_in, fname_out):
+def with_open_in(fname_in, func):
   var chan_in = open_in(fname_in)
   try:
-    var chan_out = open_out(fname_out)
+    var x = func(chan_in)
+    close_in(chan_in)
+    x
+  with:
+    case exn:
+      close_in_noerr(chan_in)
+      raise(exn)
+
+def with_open_out(fname_out, func):
+  var chan_out = open_out(fname_out)
+  try:
+    var x = func(chan_out)
+    close_out(chan_out)
+    x
+  with:
+    case exn:
+      close_out_noerr(chan_out)
+      raise(exn)
+
+def translate_file(fname_in, fname_out):
+  with_open_in(fname_in)^(chan_in):
+  with_open_out(fname_out)^(chan_out):
     try:
       var src = Source.create(fname_in, chan_in)
       var lexer = Lexer.create(src)
@@ -350,34 +369,17 @@ def translate_file(fname_in, fname_out):
       def loop():
         match Parser.parse(parser):
           case None:
-            raise(Break)
+            true
           case Some(top):
             var result = translate_top(trans, top)
             fprintf(chan_out, "%s\n", result)
             loop()
       loop()
     with:
-      case Break:
-        close_out(chan_out)
-        raise(Break)
-      case Failure(message) as exn:
-        close_out(chan_out)
+      case Failure(message):
         eprintf("%s", message)
         flush(stderr)
-        raise(exn)
-      case exn:
-        close_out_noerr(chan_out)
-        raise(exn)
-  with:
-    case Break:
-      close_in(chan_in)
-      true
-    case Failure(_):
-      close_in(chan_in)
-      false
-    case exn:
-      close_in_noerr(chan_in)
-      raise(exn)
+        false
 
 def test():
   translate_file("test.yz", "test.out")

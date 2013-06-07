@@ -464,74 +464,18 @@ let rec translate_top = begin fun trans ->
   end
 end
 
-exception Break
-
-let rec translate_file = begin fun fname_in ->
-  begin fun fname_out ->
+let rec with_open_in = begin fun fname_in ->
+  begin fun func ->
     begin let chan_in = (open_in fname_in) in
     begin try
-      begin let chan_out = (open_out fname_out) in
-      begin try
-        begin let src = ((Source.create fname_in) chan_in) in
-        begin let lexer = (Lexer.create src) in
-        begin let parser = (Parser.create lexer) in
-        begin let trans = (create ocaml_basic_offset) in
-        begin let rec loop = begin fun (()(_)) ->
-          begin match (Parser.parse parser) with
-            | (None(_)) ->
-              (raise Break)
-            | (Some(top)) ->
-              begin let result = ((translate_top trans) top) in
-              begin
-              (((fprintf chan_out) "%s\n") result);
-              (loop ())
-              end
-              end
-          end
-        end in
-        (loop ())
-        end
-        end
-        end
-        end
-        end
-      with
-
-        | (Break(_)) ->
-          begin
-          (close_out chan_out);
-          (raise Break)
-          end
-        | ((Failure(message)) as exn) ->
-          begin
-          (close_out chan_out);
-          begin
-          ((eprintf "%s") message);
-          begin
-          (flush stderr);
-          (raise exn)
-          end
-          end
-          end
-        | exn ->
-          begin
-          (close_out_noerr chan_out);
-          (raise exn)
-          end
+      begin let x = (func chan_in) in
+      begin
+      (close_in chan_in);
+      x
       end
       end
     with
 
-      | (Break(_)) ->
-        begin
-        (close_in chan_in);
-        true
-        end
-      | (Failure(_)) ->
-        begin
-        (close_in chan_in);
-        false
-        end
       | exn ->
         begin
         (close_in_noerr chan_in);
@@ -539,6 +483,72 @@ let rec translate_file = begin fun fname_in ->
         end
     end
     end
+  end
+end
+
+let rec with_open_out = begin fun fname_out ->
+  begin fun func ->
+    begin let chan_out = (open_out fname_out) in
+    begin try
+      begin let x = (func chan_out) in
+      begin
+      (close_out chan_out);
+      x
+      end
+      end
+    with
+
+      | exn ->
+        begin
+        (close_out_noerr chan_out);
+        (raise exn)
+        end
+    end
+    end
+  end
+end
+
+let rec translate_file = begin fun fname_in ->
+  begin fun fname_out ->
+    ((with_open_in fname_in) begin fun chan_in ->
+      ((with_open_out fname_out) begin fun chan_out ->
+        begin try
+          begin let src = ((Source.create fname_in) chan_in) in
+          begin let lexer = (Lexer.create src) in
+          begin let parser = (Parser.create lexer) in
+          begin let trans = (create ocaml_basic_offset) in
+          begin let rec loop = begin fun (()(_)) ->
+            begin match (Parser.parse parser) with
+              | (None(_)) ->
+                true
+              | (Some(top)) ->
+                begin let result = ((translate_top trans) top) in
+                begin
+                (((fprintf chan_out) "%s\n") result);
+                (loop ())
+                end
+                end
+            end
+          end in
+          (loop ())
+          end
+          end
+          end
+          end
+          end
+        with
+
+          | (Failure(message)) ->
+            begin
+            ((eprintf "%s") message);
+            begin
+            (flush stderr);
+            false
+            end
+            end
+        end
+      end)
+    end)
   end
 end
 
