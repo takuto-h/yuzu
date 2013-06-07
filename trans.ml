@@ -271,6 +271,9 @@ let translate_top trans = function
       sprintf "%s%s" acc (indent trans_field_decl (translate_field_decl elem))
     end "" field_decls in
     sprintf "type %s = {\n%s%s\n" name str_field_decls (indent trans "}")
+  | Top.Exception(exn_decl) ->
+    let str_exn_decl = translate_ctor_decl exn_decl in
+    sprintf "exception %s\n" str_exn_decl
 
 exception Break
       

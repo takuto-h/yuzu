@@ -9,3 +9,4 @@ type t:
   def Abbrev(Names.typector_name * Type.t)
   def Variant(Names.typector_name * list(Names.ctor_name * option(Type.t)))
   def Record(Names.typector_name * list(bool * Names.val_name * Type.t))
+  def Exception(Names.ctor_name * option(Type.t))

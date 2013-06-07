@@ -13,6 +13,7 @@ var initial_buffer_size = 16
 var reserved = [
   "open";
   "type";
+  "exception";
   "def";
   "rec";
   "var";

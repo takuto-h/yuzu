@@ -147,6 +147,8 @@ rec:
         parse_top_open(parser)
       case Token.Reserved("type"):
         parse_top_typedef(parser)
+      case Token.Reserved("exception"):
+        parse_top_exn_decl(parser)
       case _:
         Top.Expr(parse_expr(parser))
   
@@ -183,6 +185,10 @@ rec:
         parse_type_repr(parser, typector_name)
       case _:
         failwith(expected(parser, "'=' or ':' or '{'"))
+  
+  def parse_top_exn_decl(parser):
+    var exn_decl = parse_ctor_decl(parser)
+    Top.Exception(exn_decl)
   
   def parse_type_repr(parser, typector_name):
     match parser.token:

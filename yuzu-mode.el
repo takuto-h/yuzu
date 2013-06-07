@@ -8,7 +8,7 @@
 (define-derived-mode yuzu-mode fundamental-mode "Yuzu"
   (make-local-variable 'font-lock-defaults)
   (let ((yuzu-mode-font-lock-keywords
-         '(("\\<\\(open\\|type\\|def\\|rec\\|var\\)\\>" . (1 font-lock-function-name-face))
+         '(("\\<\\(open\\|type\\|exception\\|def\\|rec\\|var\\)\\>" . (1 font-lock-function-name-face))
            ("\\<\\(if\\|else\\|match\\|case\\|when\\|try\\|with\\|mutable\\)\\>" . (1 font-lock-keyword-face))
            ("type\\s +\\(\\sw+\\)" . (1 font-lock-type-face))
            ("open\\s +\\(\\sw+\\)" . (1 font-lock-string-face))

@@ -252,6 +252,8 @@ let rec parse_top = begin fun parser ->
       (parse_top_open parser)
     | (Token.Reserved("type")) ->
       (parse_top_typedef parser)
+    | (Token.Reserved("exception")) ->
+      (parse_top_exn_decl parser)
     | _ ->
       (Top.Expr ((parse_expr parser)))
   end
@@ -313,6 +315,12 @@ and parse_top_typedef = begin fun parser ->
       (failwith ((expected parser) "'=' or ':' or '{'"))
   end
   end
+  end
+end
+
+and parse_top_exn_decl = begin fun parser ->
+  begin let exn_decl = (parse_ctor_decl parser) in
+  (Top.Exception (exn_decl))
   end
 end
 
