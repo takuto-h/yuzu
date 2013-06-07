@@ -10,7 +10,7 @@ type t = {
 
 let initial_buffer_size = 16
 
-let reserved = (( :: ) ("open", (( :: ) ("type", (( :: ) ("exception", (( :: ) ("def", (( :: ) ("rec", (( :: ) ("var", (( :: ) ("if", (( :: ) ("else", (( :: ) ("match", (( :: ) ("case", (( :: ) ("when", (( :: ) ("try", (( :: ) ("with", (( :: ) ("mutable", []))))))))))))))))))))))))))))
+let reserved = (( :: ) ("open", (( :: ) ("type", (( :: ) ("exception", (( :: ) ("def", (( :: ) ("rec", (( :: ) ("var", (( :: ) ("if", (( :: ) ("else", (( :: ) ("match", (( :: ) ("case", (( :: ) ("when", (( :: ) ("as", (( :: ) ("try", (( :: ) ("with", (( :: ) ("mutable", []))))))))))))))))))))))))))))))
 
 let rec create = begin fun source ->
   begin let lexer = {

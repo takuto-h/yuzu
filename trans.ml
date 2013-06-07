@@ -117,6 +117,12 @@ let rec translate_pattern = begin fun pat ->
       (((sprintf "(%s | %s)") str_lhs) str_rhs)
       end
       end
+    | (Pattern.As(pat, name)) ->
+      begin let str_pat = (translate_pattern pat) in
+      begin let str_name = (translate_val_name name) in
+      (((sprintf "(%s as %s)") str_pat) str_name)
+      end
+      end
   end
 end
 

@@ -8,3 +8,4 @@ type t:
   def Tuple(list(t))
   def Record(list(Names.val_path * option(t)))
   def Or(t * t)
+  def As(t * Names.val_name)

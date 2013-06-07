@@ -88,6 +88,10 @@ rec:
         var str_lhs = translate_pattern(lhs)
         var str_rhs = translate_pattern(rhs)
         sprintf("(%s | %s)", str_lhs, str_rhs)
+      case Pattern.As(pat,name):
+        var str_pat = translate_pattern(pat)
+        var str_name = translate_val_name(name)
+        sprintf("(%s as %s)", str_pat, str_name)
 
   def translate_field_def(field_def):
     match field_def:

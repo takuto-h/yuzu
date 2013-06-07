@@ -7,4 +7,5 @@ type t =
   | Tuple of (t) list
   | Record of ((Names.val_path * (t) option)) list
   | Or of (t * t)
+  | As of (t * Names.val_name)
 
