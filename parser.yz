@@ -577,9 +577,14 @@ rec:
         failwith(expected(parser, "':' or '{'"))
   
   def parse_indented_block(parser):
+    def is_term(token):
+      match token:
+        case Token.Undent:
+          true
+        case _:
+          false
     lookahead(parser)
-    var expr = parse_block_elem(parser)
-    skip(parser, Token.Reserved(";"))
+    var expr = parse_block_elem(parser, is_term)
     if parser.token <> Token.Undent:
       failwith(expected(parser, "undent"))
     else:
@@ -587,38 +592,48 @@ rec:
       expr
   
   def parse_braced_block(parser):
+    def is_term(token):
+      match token:
+        case Token.Reserved("}"):
+          true
+        case _:
+          false
     lookahead(parser)
-    var expr = parse_block_elem(parser)
-    skip(parser, Token.Reserved(";"))
+    var expr = parse_block_elem(parser, is_term)
     if parser.token <> Token.Reserved("}"):
       failwith(expected(parser, "'}'"))
     else:
       lookahead(parser)
       expr
     
-  
-  def parse_block_elem(parser):
+  def parse_block_elem(parser, is_term):
     match parser.token:
       case Token.Reserved("var"):
-        parse_let_val(parser)
+        var (val_name,val_expr) = parse_let_val(parser)
+        parse_block_sep(parser)
+        var cont_expr = parse_block_elem(parser, is_term)
+        Expr.LetVal(val_name, val_expr, cont_expr)
       case Token.Reserved("def"):
         var defs = [parse_let_fun(parser)]
         parse_block_sep(parser)
-        var cont_expr = parse_block_elem(parser)
+        var cont_expr = parse_block_elem(parser, is_term)
         Expr.LetFun(defs, cont_expr)
       case Token.Reserved("rec"):
         lookahead(parser)
         var defs = parse_block_like_elems(parser, parse_let_fun)
         parse_block_sep(parser)
-        var cont_expr = parse_block_elem(parser)
+        var cont_expr = parse_block_elem(parser, is_term)
         Expr.LetFun(defs, cont_expr)
       case _:
         var lhs = parse_expr(parser)
         match parser.token:
           case Token.Reserved(";") | Token.Newline:
             lookahead(parser)
-            var rhs = parse_block_elem(parser)
-            Expr.Seq(lhs, rhs)
+            if is_term(parser.token):
+              lhs
+            else:
+              var rhs = parse_block_elem(parser, is_term)
+              Expr.Seq(lhs, rhs)
           case _:
             lhs
   
@@ -630,9 +645,7 @@ rec:
     else:
       lookahead(parser)
       var val_expr = parse_expr(parser)
-      parse_block_sep(parser)
-      var cont_expr = parse_block_elem(parser)
-      Expr.LetVal(val_pat,val_expr,cont_expr)
+      (val_pat,val_expr)
     
   def parse_let_fun(parser):
     if parser.token <> Token.Reserved("def"):

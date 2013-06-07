@@ -930,11 +930,17 @@ and parse_block = begin fun parser ->
 end
 
 and parse_indented_block = begin fun parser ->
+  begin let rec is_term = begin fun token ->
+    begin match token with
+      | (Token.Undent(_)) ->
+        true
+      | _ ->
+        false
+    end
+  end in
   begin
   (lookahead parser);
-  begin let expr = (parse_block_elem parser) in
-  begin
-  ((skip parser) (Token.Reserved (";")));
+  begin let expr = ((parse_block_elem parser) is_term) in
   begin if ((( <> ) parser.token) Token.Undent) then
     (failwith ((expected parser) "undent"))
   else
@@ -949,11 +955,17 @@ and parse_indented_block = begin fun parser ->
 end
 
 and parse_braced_block = begin fun parser ->
+  begin let rec is_term = begin fun token ->
+    begin match token with
+      | (Token.Reserved("}")) ->
+        true
+      | _ ->
+        false
+    end
+  end in
   begin
   (lookahead parser);
-  begin let expr = (parse_block_elem parser) in
-  begin
-  ((skip parser) (Token.Reserved (";")));
+  begin let expr = ((parse_block_elem parser) is_term) in
   begin if ((( <> ) parser.token) (Token.Reserved ("}"))) then
     (failwith ((expected parser) "'}'"))
   else
@@ -968,44 +980,57 @@ and parse_braced_block = begin fun parser ->
 end
 
 and parse_block_elem = begin fun parser ->
-  begin match parser.token with
-    | (Token.Reserved("var")) ->
-      (parse_let_val parser)
-    | (Token.Reserved("def")) ->
-      begin let defs = (( :: ) ((parse_let_fun parser), [])) in
-      begin
-      (parse_block_sep parser);
-      begin let cont_expr = (parse_block_elem parser) in
-      (Expr.LetFun (defs, cont_expr))
-      end
-      end
-      end
-    | (Token.Reserved("rec")) ->
-      begin
-      (lookahead parser);
-      begin let defs = ((parse_block_like_elems parser) parse_let_fun) in
-      begin
-      (parse_block_sep parser);
-      begin let cont_expr = (parse_block_elem parser) in
-      (Expr.LetFun (defs, cont_expr))
-      end
-      end
-      end
-      end
-    | _ ->
-      begin let lhs = (parse_expr parser) in
-      begin match parser.token with
-        | ((Token.Reserved(";")) | (Token.Newline(_))) ->
-          begin
-          (lookahead parser);
-          begin let rhs = (parse_block_elem parser) in
-          (Expr.Seq (lhs, rhs))
-          end
-          end
-        | _ ->
-          lhs
-      end
-      end
+  begin fun is_term ->
+    begin match parser.token with
+      | (Token.Reserved("var")) ->
+        begin let (val_name, val_expr) = (parse_let_val parser) in
+        begin
+        (parse_block_sep parser);
+        begin let cont_expr = ((parse_block_elem parser) is_term) in
+        (Expr.LetVal (val_name, val_expr, cont_expr))
+        end
+        end
+        end
+      | (Token.Reserved("def")) ->
+        begin let defs = (( :: ) ((parse_let_fun parser), [])) in
+        begin
+        (parse_block_sep parser);
+        begin let cont_expr = ((parse_block_elem parser) is_term) in
+        (Expr.LetFun (defs, cont_expr))
+        end
+        end
+        end
+      | (Token.Reserved("rec")) ->
+        begin
+        (lookahead parser);
+        begin let defs = ((parse_block_like_elems parser) parse_let_fun) in
+        begin
+        (parse_block_sep parser);
+        begin let cont_expr = ((parse_block_elem parser) is_term) in
+        (Expr.LetFun (defs, cont_expr))
+        end
+        end
+        end
+        end
+      | _ ->
+        begin let lhs = (parse_expr parser) in
+        begin match parser.token with
+          | ((Token.Reserved(";")) | (Token.Newline(_))) ->
+            begin
+            (lookahead parser);
+            begin if (is_term parser.token) then
+              lhs
+            else
+              begin let rhs = ((parse_block_elem parser) is_term) in
+              (Expr.Seq (lhs, rhs))
+              end
+            end
+            end
+          | _ ->
+            lhs
+        end
+        end
+    end
   end
 end
 
@@ -1019,12 +1044,7 @@ and parse_let_val = begin fun parser ->
     begin
     (lookahead parser);
     begin let val_expr = (parse_expr parser) in
-    begin
-    (parse_block_sep parser);
-    begin let cont_expr = (parse_block_elem parser) in
-    (Expr.LetVal (val_pat, val_expr, cont_expr))
-    end
-    end
+    (val_pat, val_expr)
     end
     end
   end
