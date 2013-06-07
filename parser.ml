@@ -776,13 +776,12 @@ and parse_match_expr parser =
       failwith (expected parser "')'")
     else begin
       lookahead parser;
-      let cases = parse_cases parser [] in
+      let cases = parse_block_like_elems parser parse_case in
       Expr.Match(target_expr, cases)
     end
   end
 
-and parse_cases parser cases =
-  skip parser Token.Newline;
+and parse_case parser =
   match parser.token with
     | Token.Reserved("case") -> begin
       lookahead parser;
@@ -791,14 +790,14 @@ and parse_cases parser cases =
         lookahead parser;
         let guard = parse_expr parser in
         let expr = parse_block parser in
-        parse_cases parser ((pat,Some(guard),expr)::cases)
+        (pat,Some(guard),expr)
       end
       else
         let expr = parse_block parser in
-        parse_cases parser ((pat,None,expr)::cases)
+        (pat,None,expr)
     end
     | _ ->
-      List.rev cases
+      failwith (expected parser "'case'")
 
 and parse_pattern parser =
   parse_or_pattern parser

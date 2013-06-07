@@ -73,77 +73,77 @@ def lex_close_paren(lexer, pos, open_paren, close_paren):
     Token.Reserved(close_paren)
 
 def lex_op(lexer, buf):
-  match(Source.peek(lexer.source))
-  case Some(c) when is_op_part(c): 
-    Buffer.add_char(buf, c)
-    Source.junk(lexer.source)
-    lex_op(lexer, buf)
-  case Some(_) | None:
-    Buffer.contents(buf)
+  match(Source.peek(lexer.source)):
+    case Some(c) when is_op_part(c): 
+      Buffer.add_char(buf, c)
+      Source.junk(lexer.source)
+      lex_op(lexer, buf)
+    case Some(_) | None:
+      Buffer.contents(buf)
 
 def lex_int(lexer, n):
-  match(Source.peek(lexer.source))
-  case Some(c) when is_digit(c):
-    Source.junk(lexer.source)
-    lex_int(lexer, n * 10 + int_of_digit(c))
-  case Some(_) | None:
-    Token.Int(n)
+  match(Source.peek(lexer.source)):
+    case Some(c) when is_digit(c):
+      Source.junk(lexer.source)
+      lex_int(lexer, n * 10 + int_of_digit(c))
+    case Some(_) | None:
+      Token.Int(n)
 
 def lex_string(lexer, buf):
-  match(Source.peek(lexer.source))
-  case Some('"'):
-    Source.junk(lexer.source)
-    Token.String(Buffer.contents(buf))
-  case Some('\\'):
-    Source.junk(lexer.source)
-    match(Source.peek(lexer.source))
+  match(Source.peek(lexer.source)):
     case Some('"'):
       Source.junk(lexer.source)
-      Buffer.add_string(buf, "\\\"")
-      lex_string(lexer, buf)
+      Token.String(Buffer.contents(buf))
+    case Some('\\'):
+      Source.junk(lexer.source)
+      match(Source.peek(lexer.source)):
+        case Some('"'):
+          Source.junk(lexer.source)
+          Buffer.add_string(buf, "\\\"")
+          lex_string(lexer, buf)
+        case Some(c):
+          Source.junk(lexer.source)
+          Buffer.add_char(buf, '\\')
+          Buffer.add_char(buf, c)
+          lex_string(lexer, buf)
+        case None:
+          var pos_eof = Source.pos(lexer.source)
+          failwith(sprintf("%s: error: EOF inside a string literal\n", Pos.show(pos_eof)))
     case Some(c):
       Source.junk(lexer.source)
-      Buffer.add_char(buf, '\\')
       Buffer.add_char(buf, c)
       lex_string(lexer, buf)
     case None:
       var pos_eof = Source.pos(lexer.source)
       failwith(sprintf("%s: error: EOF inside a string literal\n", Pos.show(pos_eof)))
-  case Some(c):
-    Source.junk(lexer.source)
-    Buffer.add_char(buf, c)
-    lex_string(lexer, buf)
-  case None:
-    var pos_eof = Source.pos(lexer.source)
-    failwith(sprintf("%s: error: EOF inside a string literal\n", Pos.show(pos_eof)))
 
 def lex_char(lexer, buf):
-  match(Source.peek(lexer.source))
-  case Some('\''):
-    Source.junk(lexer.source)
-    Token.Char(Buffer.contents(buf))
-  case Some('\\'):
-    Source.junk(lexer.source)
-    match(Source.peek(lexer.source))
+  match(Source.peek(lexer.source)):
     case Some('\''):
       Source.junk(lexer.source)
-      Buffer.add_string(buf, "\\'")
-      lex_char(lexer, buf)
+      Token.Char(Buffer.contents(buf))
+    case Some('\\'):
+      Source.junk(lexer.source)
+      match(Source.peek(lexer.source)):
+        case Some('\''):
+          Source.junk(lexer.source)
+          Buffer.add_string(buf, "\\'")
+          lex_char(lexer, buf)
+        case Some(c):
+          Source.junk(lexer.source)
+          Buffer.add_char(buf, '\\')
+          Buffer.add_char(buf, c)
+          lex_char(lexer, buf)
+        case None:
+          var pos_eof = Source.pos(lexer.source)
+          failwith(sprintf("%s: error: EOF inside a string literal\n", Pos.show(pos_eof)))
     case Some(c):
       Source.junk(lexer.source)
-      Buffer.add_char(buf, '\\')
       Buffer.add_char(buf, c)
       lex_char(lexer, buf)
     case None:
       var pos_eof = Source.pos(lexer.source)
-      failwith(sprintf("%s: error: EOF inside a string literal\n", Pos.show(pos_eof)))
-  case Some(c):
-    Source.junk(lexer.source)
-    Buffer.add_char(buf, c)
-    lex_char(lexer, buf)
-  case None:
-    var pos_eof = Source.pos(lexer.source)
-    failwith(sprintf("%s: error: EOF inside a character literal\n", Pos.show(pos_eof)))
+      failwith(sprintf("%s: error: EOF inside a character literal\n", Pos.show(pos_eof)))
 
 def lowid_or_reserved(str):
   if(List.mem(str, reserved)):
@@ -152,110 +152,110 @@ def lowid_or_reserved(str):
     Token.LowId(str)
 
 def lex_lowid(lexer, buf):
-  match(Source.peek(lexer.source))
-  case Some(c) when is_id_part(c):
-    Buffer.add_char(buf, c)
-    Source.junk(lexer.source)
-    lex_lowid(lexer, buf)
-  case Some(_) | None:
-    lowid_or_reserved(Buffer.contents(buf))
+  match(Source.peek(lexer.source)):
+    case Some(c) when is_id_part(c):
+      Buffer.add_char(buf, c)
+      Source.junk(lexer.source)
+      lex_lowid(lexer, buf)
+    case Some(_) | None:
+      lowid_or_reserved(Buffer.contents(buf))
 
 def lex_capid(lexer, buf):
-  match(Source.peek(lexer.source))
-  case Some(c) when is_id_part(c):
-    Buffer.add_char(buf, c)
-    Source.junk(lexer.source)
-    lex_capid(lexer, buf)
-  case Some(_) | None:
-    Token.CapId(Buffer.contents(buf))
+  match(Source.peek(lexer.source)):
+    case Some(c) when is_id_part(c):
+      Buffer.add_char(buf, c)
+      Source.junk(lexer.source)
+      lex_capid(lexer, buf)
+    case Some(_) | None:
+      Token.CapId(Buffer.contents(buf))
 
 def lex_visible_token(lexer, pos, c):
   Source.junk(lexer.source)
-  match(c)
-  case ';' | ',' | '^' | '.' | '$':
-    Token.Reserved(sprintf("%c", c))
-  case '(' | '{' | '[':
-    Stack.push(sprintf("%c", c), lexer.parens)
-    Token.Reserved(sprintf("%c", c))
-  case ')':
-    lex_close_paren(lexer, pos, "(", ")")
-  case '}':
-    lex_close_paren(lexer, pos, "{", "}")
-  case ']':
-    lex_close_paren(lexer, pos, "[", "]")
-  case '<':
-    match(Source.peek(lexer.source))
-    case Some('-'):
-      Source.junk(lexer.source)
-      Token.AssignOp("<-")
-    case Some(_) | None:
+  match(c):
+    case ';' | ',' | '^' | '.' | '$':
+      Token.Reserved(sprintf("%c", c))
+    case '(' | '{' | '[':
+      Stack.push(sprintf("%c", c), lexer.parens)
+      Token.Reserved(sprintf("%c", c))
+    case ')':
+      lex_close_paren(lexer, pos, "(", ")")
+    case '}':
+      lex_close_paren(lexer, pos, "{", "}")
+    case ']':
+      lex_close_paren(lexer, pos, "[", "]")
+    case '<':
+      match(Source.peek(lexer.source)):
+        case Some('-'):
+          Source.junk(lexer.source)
+          Token.AssignOp("<-")
+        case Some(_) | None:
+          var buf = Buffer.create(initial_buffer_size)
+          Buffer.add_char(buf, c)
+          Token.CmpOp(lex_op(lexer, buf))
+    case '|':
+      match(Source.peek(lexer.source)):
+        case Some('|'):
+          Source.junk(lexer.source)
+          Token.OrOp("||")
+        case Some(_) | None:
+          var buf = Buffer.create(initial_buffer_size)
+          Buffer.add_char(buf, c)
+          Token.CmpOp(lex_op(lexer, buf))
+    case '&':
+      match(Source.peek(lexer.source)):
+        case Some('&'):
+          Source.junk(lexer.source)
+          Token.AndOp("&&")
+        case Some(_) | None:
+          var buf = Buffer.create(initial_buffer_size)
+          Buffer.add_char(buf, c)
+          Token.CmpOp(lex_op(lexer, buf))
+    case '=' | '>':
       var buf = Buffer.create(initial_buffer_size)
       Buffer.add_char(buf, c)
       Token.CmpOp(lex_op(lexer, buf))
-  case '|':
-    match(Source.peek(lexer.source))
-    case Some('|'):
-      Source.junk(lexer.source)
-      Token.OrOp("||")
-    case Some(_) | None:
+    case '+' | '-':
       var buf = Buffer.create(initial_buffer_size)
       Buffer.add_char(buf, c)
-      Token.CmpOp(lex_op(lexer, buf))
-  case '&':
-    match(Source.peek(lexer.source))
-    case Some('&'):
-      Source.junk(lexer.source)
-      Token.AndOp("&&")
-    case Some(_) | None:
-      var buf = Buffer.create(initial_buffer_size)
-      Buffer.add_char(buf, c)
-      Token.CmpOp(lex_op(lexer, buf))
-  case '=' | '>':
-    var buf = Buffer.create(initial_buffer_size)
-    Buffer.add_char(buf, c)
-    Token.CmpOp(lex_op(lexer, buf))
-  case '+' | '-':
-    var buf = Buffer.create(initial_buffer_size)
-    Buffer.add_char(buf, c)
-    Token.AddOp(lex_op(lexer, buf))
-  case '%':
-    var buf = Buffer.create(initial_buffer_size)
-    Buffer.add_char(buf, c)
-    Token.MulOp(lex_op(lexer, buf))
-  case '*':
-    match(Source.peek(lexer.source))
-    case Some('*'):
-      Source.junk(lexer.source)
-      Token.PowOp("**")
-    case Some(_) | None:
+      Token.AddOp(lex_op(lexer, buf))
+    case '%':
       var buf = Buffer.create(initial_buffer_size)
       Buffer.add_char(buf, c)
       Token.MulOp(lex_op(lexer, buf))
-  case ':':
-    match(Source.peek(lexer.source))
-    case Some(':'):
-      Source.junk(lexer.source)
-      Token.ConsOp("::")
-    case Some(_) | None:
-      Token.Reserved(":")
-  case '"':
-    var buf = Buffer.create(initial_buffer_size)
-    lex_string(lexer, buf)
-  case '\'':
-    var buf = Buffer.create(initial_buffer_size)
-    lex_char(lexer, buf)
-  case _ when is_digit(c):
-    lex_int(lexer, int_of_digit(c))
-  case _ when is_lowid_start(c):
-    var buf = Buffer.create(initial_buffer_size)
-    Buffer.add_char(buf, c)
-    lex_lowid(lexer, buf)
-  case _ when is_capid_start(c):
-    var buf = Buffer.create(initial_buffer_size)
-    Buffer.add_char(buf, c)
-    lex_capid(lexer, buf)
-  case _:
-    failwith(sprintf("%s: error: unknown character: '%c'\n", Pos.show(pos), c))
+    case '*':
+      match(Source.peek(lexer.source)):
+        case Some('*'):
+          Source.junk(lexer.source)
+          Token.PowOp("**")
+        case Some(_) | None:
+          var buf = Buffer.create(initial_buffer_size)
+          Buffer.add_char(buf, c)
+          Token.MulOp(lex_op(lexer, buf))
+    case ':':
+      match(Source.peek(lexer.source)):
+        case Some(':'):
+          Source.junk(lexer.source)
+          Token.ConsOp("::")
+        case Some(_) | None:
+          Token.Reserved(":")
+    case '"':
+      var buf = Buffer.create(initial_buffer_size)
+      lex_string(lexer, buf)
+    case '\'':
+      var buf = Buffer.create(initial_buffer_size)
+      lex_char(lexer, buf)
+    case _ when is_digit(c):
+      lex_int(lexer, int_of_digit(c))
+    case _ when is_lowid_start(c):
+      var buf = Buffer.create(initial_buffer_size)
+      Buffer.add_char(buf, c)
+      lex_lowid(lexer, buf)
+    case _ when is_capid_start(c):
+      var buf = Buffer.create(initial_buffer_size)
+      Buffer.add_char(buf, c)
+      lex_capid(lexer, buf)
+    case _:
+      failwith(sprintf("%s: error: unknown character: '%c'\n", Pos.show(pos), c))
 
 def lex_token(lexer, pos, c):
   var offset = pos.Pos.cnum - pos.Pos.bol
@@ -281,38 +281,38 @@ def lex_token(lexer, pos, c):
     lex_visible_token(lexer, pos, c)
 
 def skip_single_line_comment(lexer):
-  match(Source.peek(lexer.source))
-  case None | Some('\n'):
-    ()
-  case Some(_):
-    Source.junk(lexer.source)
-    skip_single_line_comment(lexer)
+  match(Source.peek(lexer.source)):
+    case None | Some('\n'):
+      ()
+    case Some(_):
+      Source.junk(lexer.source)
+      skip_single_line_comment(lexer)
 
 def next(lexer):
   var pos = Source.pos(lexer.source)
-  match(Source.peek(lexer.source))
-  case None when Stack.length(lexer.offside_lines) = 1:
-    (None, pos)
-  case None:
-    ignore(Stack.pop(lexer.offside_lines))
-    (Some(Token.Undent), pos)
-  case Some('\n') when Stack.is_empty(lexer.parens):
-    lexer.is_bol <- true
-    Source.junk(lexer.source)
-    next(lexer)
-  case Some(c) when is_whitespace(c):
-    Source.junk(lexer.source)
-    next(lexer)
-  case Some('/'):
-    Source.junk(lexer.source)
-    match(Source.peek(lexer.source))
+  match(Source.peek(lexer.source)):
+    case None when Stack.length(lexer.offside_lines) = 1:
+      (None, pos)
+    case None:
+      ignore(Stack.pop(lexer.offside_lines))
+      (Some(Token.Undent), pos)
+    case Some('\n') when Stack.is_empty(lexer.parens):
+      lexer.is_bol <- true
+      Source.junk(lexer.source)
+      next(lexer)
+    case Some(c) when is_whitespace(c):
+      Source.junk(lexer.source)
+      next(lexer)
     case Some('/'):
       Source.junk(lexer.source)
-      skip_single_line_comment(lexer)
-      next(lexer)
-    case Some(_) | None:
-      var buf = Buffer.create(initial_buffer_size)
-      Buffer.add_char(buf, '/')
-      (Some(Token.MulOp(lex_op(lexer, buf))), pos)
-  case Some(c):
-    (Some(lex_token(lexer, pos, c)), pos)
+      match(Source.peek(lexer.source)):
+        case Some('/'):
+          Source.junk(lexer.source)
+          skip_single_line_comment(lexer)
+          next(lexer)
+        case Some(_) | None:
+          var buf = Buffer.create(initial_buffer_size)
+          Buffer.add_char(buf, '/')
+          (Some(Token.MulOp(lex_op(lexer, buf))), pos)
+    case Some(c):
+      (Some(lex_token(lexer, pos, c)), pos)

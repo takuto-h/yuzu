@@ -21,29 +21,29 @@ type t:
   def PowOp(string)
 
 def get_op(token):
-  match(token)
-  case AssignOp(str) | OrOp(str) | AndOp(str) | CmpOp(str) | ConsOp(str) | AddOp(str) | MulOp(str) | PowOp(str):
-    Some(str)
-  case _:
-    None
+  match(token):
+    case AssignOp(str) | OrOp(str) | AndOp(str) | CmpOp(str) | ConsOp(str) | AddOp(str) | MulOp(str) | PowOp(str):
+      Some(str)
+    case _:
+      None
 
 def show(token):
-  match(token)
-  case EOF:
-    "EOF"
-  case Newline:
-    "newline"
-  case Undent:
-    "undent"
-  case Int(_):
-    "integer"
-  case String(_):
-    "string"
-  case Char(_):
-    "character"
-  case LowId(_):
-    "lowercase identifier"
-  case CapId(_):
-    "capitalized identifier"
-  case Reserved(s) | AssignOp(s) | OrOp(s) | AndOp(s) | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) | PowOp(s):
-    sprintf("'%s'", s)
+  match(token):
+    case EOF:
+      "EOF"
+    case Newline:
+      "newline"
+    case Undent:
+      "undent"
+    case Int(_):
+      "integer"
+    case String(_):
+      "string"
+    case Char(_):
+      "character"
+    case LowId(_):
+      "lowercase identifier"
+    case CapId(_):
+      "capitalized identifier"
+    case Reserved(s) | AssignOp(s) | OrOp(s) | AndOp(s) | CmpOp(s) | ConsOp(s) | AddOp(s) | MulOp(s) | PowOp(s):
+      sprintf("'%s'", s)
