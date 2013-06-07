@@ -1,0 +1,898 @@
+
+open Printf
+
+type t:
+  lexer : Lexer.t
+  mutable token : Token.t
+  mutable pos : Pos.t
+
+type sep_or_term:
+  def Sep
+  def Term
+  def Neither
+
+def create(lexer): {
+  lexer = lexer;
+  token = Token.EOF;
+  pos = Pos.dummy;
+}
+
+def expected(parser, str_token):
+  sprintf(
+    "%s: error: unexpected %s, expected %s\n",
+    Pos.show(parser.pos), Token.show(parser.token), str_token
+  )
+
+def lookahead(parser):
+  match(Lexer.next(parser.lexer)):
+    case (None, pos):
+      // printf("%s: EOF\n", Pos.show(pos))
+      parser.token <- Token.EOF
+      parser.pos <- pos
+    case (Some(token), pos):
+      // printf("%s: %s\n", Pos.show(pos), Token.show(token))
+      parser.token <- token
+      parser.pos <- pos
+
+def skip(parser, token):
+  if(parser.token = token):
+    lookahead(parser)
+  else:
+    ()
+
+def make_abs(params, body_expr):
+  def mk_abs(param, expr){ Expr.Abs(param, expr) }
+  List.fold_right(mk_abs, params, body_expr)
+
+def make_app(fun_expr, arg_exprs):
+  def mk_app(e1, e2){ Expr.App(e1, e2) }
+  List.fold_left(mk_app, fun_expr, arg_exprs)
+
+def parse_non_assoc(parser, get_op, parse_lower):
+  var lhs = parse_lower(parser)
+  match(get_op(parser.token)):
+    case None:
+      lhs
+    case Some(str):
+      lookahead(parser)
+      var op = Expr.Var([], Names.Op(str))
+      var rhs = parse_lower(parser)
+      Expr.App(Expr.App(op,lhs),rhs)
+
+def parse_right_assoc(parser, get_op, parse_lower):
+  var lhs = parse_lower(parser)
+  match(get_op(parser.token)):
+    case None:
+      lhs
+    case Some(str):
+      lookahead(parser)
+      var op = Expr.Var([], (Names.Op(str)))
+      var rhs = parse_right_assoc(parser, get_op, parse_lower)
+      Expr.App(Expr.App(op,lhs),rhs)
+
+def parse_left_assoc(parser, get_op, parse_lower):
+  var lhs = parse_lower(parser)
+  def loop(lhs):
+    match(get_op(parser.token)):
+      case None:
+        lhs
+      case Some(str):
+        lookahead(parser)
+        var op = Expr.Var([], (Names.Op(str)))
+        var rhs = parse_lower(parser)
+        loop(Expr.App(Expr.App(op,lhs),rhs))
+  loop(lhs)
+
+def parse_elems(parser, sep_or_term, parse_elem):
+  def loop(elems):
+    match(sep_or_term(parser.token)):
+      case Term:
+        lookahead(parser)
+        List.rev(elems)
+      case _:
+        var elem = parse_elem(parser)
+        match(sep_or_term(parser.token)):
+          case Term:
+            lookahead(parser)
+            List.rev(elem::elems)
+          case Sep:
+            lookahead(parser)
+            loop(elem::elems)
+          case Neither:
+            failwith(expected(parser, "separator or terminator"))
+  loop([])
+
+def parse_indented_elems(parser, parse_elem):
+  def sep_or_term(token):
+    match(token):
+      case Token.Reserved(";"): Sep
+      case Token.Newline: Sep
+      case Token.Undent: Term
+      case _: Neither
+  parse_elems(parser, sep_or_term, parse_elem)
+
+def parse_braced_elems(parser, parse_elem):
+  def sep_or_term(token):
+    match(token):
+      case Token.Reserved(";"): Sep
+      case Token.Reserved("}"): Term
+      case _: Neither
+  parse_elems(parser, sep_or_term, parse_elem)
+
+def parse_block_like_elems(parser, parse_elem):
+  match(parser.token):
+    case Token.Reserved(":"):
+      Lexer.indent(parser.lexer)
+      lookahead(parser)
+      parse_indented_elems(parser, parse_elem)
+    case Token.Reserved("{"):
+      lookahead(parser)
+      parse_braced_elems(parser, parse_elem)
+    case _:
+      failwith(expected(parser, "':' or '{'"))
+
+rec:
+def parse_top(parser):
+  match(parser.token):
+    case Token.Reserved("def"):
+      Top.LetFun([parse_top_let_fun(parser)])
+    case Token.Reserved("var"):
+      parse_top_let_val(parser)
+    case Token.Reserved("rec"):
+      lookahead(parser)
+      Top.LetFun(parse_block_like_elems(parser, parse_top_let_fun))
+    case Token.Reserved("open"):
+      parse_top_open(parser)
+    case Token.Reserved("type"):
+      parse_top_typedef(parser)
+    case _:
+      Top.Expr(parse_expr(parser))
+
+def parse_top_let_fun(parser):
+  lookahead(parser)
+  var fun_name = parse_val_name(parser)
+  var params = parse_params(parser)
+  var body_expr = parse_block(parser)
+  (fun_name, make_abs(params, body_expr))
+
+def parse_top_let_val(parser):
+  lookahead(parser)
+  var val_pat = parse_pattern(parser)
+  if(parser.token <> Token.CmpOp("=")):
+    failwith(expected(parser, "'='"))
+  else:
+    lookahead(parser)
+    Top.LetVal(val_pat, parse_expr(parser))
+
+def parse_top_open(parser):
+  lookahead(parser)
+  var mod_path = parse_mod_path(parser, [])
+  Top.Open(mod_path)
+
+def parse_top_typedef(parser):
+  lookahead(parser)
+  var typector_name = parse_lowid(parser)
+  match(parser.token):
+    case Token.CmpOp("="):
+      lookahead(parser)
+      var t = parse_type(parser)
+      Top.Abbrev(typector_name,t)
+    case Token.Reserved(":") | Token.Reserved("{"):
+      parse_type_repr(parser, typector_name)
+    case _:
+      failwith(expected(parser, "'=' or ':' or '{'"))
+
+def parse_type_repr(parser, typector_name):
+  match(parser.token):
+    case Token.Reserved(":"):
+      Lexer.indent(parser.lexer)
+      lookahead(parser)
+      match(parser.token):
+        case Token.Reserved("def"):
+          Top.Variant(typector_name, parse_indented_elems(parser, parse_ctor_decl))
+        case _:
+          Top.Record(typector_name, parse_indented_elems(parser, parse_field_decl))
+    case Token.Reserved("{"):
+      lookahead(parser)
+      match(parser.token):
+        case Token.Reserved("def"):
+          Top.Variant(typector_name, parse_braced_elems(parser, parse_ctor_decl))
+        case _:
+          Top.Record(typector_name, parse_braced_elems(parser, parse_field_decl))
+    case _:
+      failwith(expected(parser, "':' or '{'"))
+
+def parse_ctor_decl(parser):
+  lookahead(parser)
+  var ctor_name = Names.Id(parse_capid(parser))
+  if(parser.token <> Token.Reserved("(")):
+    (ctor_name, None)
+  else:
+    lookahead(parser)
+    var t = parse_type(parser)
+    if(parser.token <> Token.Reserved(")")):
+      failwith(expected(parser, "')'"))
+    else:
+      lookahead(parser)
+      (ctor_name, Some(t))
+
+def parse_field_decl(parser):
+  var is_mutable = (parser.token = Token.Reserved("mutable"))
+  if(is_mutable):
+    lookahead(parser)
+  else:
+    ()
+  var field_name = parse_val_name(parser)
+  if(parser.token <> Token.Reserved(":")):
+    failwith(expected(parser, "':'"))
+  else:
+    lookahead(parser)
+    var t = parse_type(parser)
+    (is_mutable, field_name, t)
+
+def parse_type(parser):
+  parse_tuple_type(parser)
+
+def parse_tuple_type(parser):
+  var t = parse_atomic_type(parser)
+  def loop(ts):
+    match(parser.token):
+      case Token.MulOp("*"):
+        lookahead(parser)
+        var t = parse_atomic_type(parser)
+        loop(t::ts)
+      case _:
+        List.rev(ts)
+  match(parser.token):
+    case Token.MulOp("*"):
+      Type.Tuple(loop([t]))
+    case _:
+      t
+
+def parse_atomic_type(parser):
+  match(parser.token):
+    case Token.LowId(_) | Token.CapId(_):
+      var typector = parse_typector(parser, [])
+      match(parser.token):
+        case Token.Reserved("("):
+          lookahead(parser)
+          var args = parse_type_args(parser)
+          Type.App(typector, args)
+        case _:
+          Type.Con(typector)
+    case Token.Reserved("("):
+      lookahead(parser)
+      var t = parse_type(parser)
+      if(parser.token <> Token.Reserved(")")):
+        failwith(expected(parser, "')'"))
+      else:
+        lookahead(parser)
+        t
+    case _:
+      failwith(expected(parser, "type"))
+
+def parse_typector(parser, mod_names):
+  match(parser.token):
+    case Token.LowId(_):
+      var typector_name = parse_lowid(parser)
+      (List.rev(mod_names), typector_name)
+    case Token.CapId(_):
+      var capid = parse_capid(parser)
+      if(parser.token <> Token.Reserved(".")):
+        failwith(expected(parser, "'.'"))
+      else:
+        lookahead(parser)
+        parse_typector(parser, capid::mod_names)
+    case _:
+      failwith(expected(parser, "identifier"))
+
+def parse_type_args(parser):
+  def sep_or_term(token):
+    match(token):
+      case Token.Reserved(","): Sep
+      case Token.Reserved(")"): Term
+      case _: Neither
+  parse_elems(parser, sep_or_term, parse_type)
+
+def parse_expr(parser):
+  parse_assign_expr(parser)
+
+def parse_assign_expr(parser):
+  var lhs = parse_or_expr(parser)
+  match(parser.token):
+    case Token.AssignOp("<-"):
+      lookahead(parser)
+      var rhs = parse_assign_expr(parser)
+      Expr.Assign(lhs, rhs)
+    case _:
+      lhs
+
+def parse_or_expr(parser):
+  def get_op(token):
+    match(token):
+      case Token.OrOp(str):
+        Some(str)
+      case _:
+        None
+  parse_right_assoc(parser, get_op, parse_and_expr)
+
+def parse_and_expr(parser):
+  def get_op(token):
+    match(token):
+      case Token.AndOp(str):
+        Some(str)
+      case _:
+        None
+  parse_right_assoc(parser, get_op, parse_cmp_expr)
+
+def parse_cmp_expr(parser):
+  def get_op(token):
+    match(token):
+      case Token.CmpOp(str):
+        Some(str)
+      case _:
+        None
+  parse_non_assoc(parser, get_op, parse_cons_expr)
+
+def parse_cons_expr(parser):
+  var lhs = parse_add_expr(parser)
+  match(parser.token):
+    case Token.ConsOp(str):
+      lookahead(parser)
+      var op = Expr.Var([], (Names.Op(str)))
+      var rhs = parse_cons_expr(parser)
+      Expr.App(op,Expr.Tuple([lhs;rhs]))
+    case _:
+      lhs
+
+def parse_add_expr(parser):
+  def get_op(token):
+    match(token):
+      case Token.AddOp(str):
+        Some(str)
+      case _:
+        None
+  parse_left_assoc(parser, get_op, parse_mul_expr)
+
+def parse_mul_expr(parser):
+  def get_op(token):
+    match(token):
+      case Token.MulOp(str):
+        Some(str)
+      case _:
+        None
+  parse_left_assoc(parser, get_op, parse_pow_expr)
+
+def parse_pow_expr(parser):
+  def get_op(token):
+    match(token):
+      case Token.PowOp(str):
+        Some(str)
+      case _:
+        None
+  parse_right_assoc(parser, get_op, parse_unary_expr)
+
+def parse_unary_expr(parser):
+  match(parser.token):
+    case Token.AddOp("-"):
+      lookahead(parser)
+      var expr = parse_unary_expr(parser)
+      Expr.App(Expr.Var([],(Names.Op("~-"))),expr)
+    case Token.AddOp("+"):
+      lookahead(parser)
+      var expr = parse_unary_expr(parser)
+      Expr.App(Expr.Var([],(Names.Op("~+"))),expr)
+    case _:
+      parse_prim_expr(parser)
+
+def parse_prim_expr(parser):
+  var fun_expr = parse_dot_expr(parser)
+  def loop(fun_expr):
+    match(parser.token):
+      case Token.Reserved("("):
+        lookahead(parser)
+        var arg_exprs = parse_args(parser)
+        loop(make_app(fun_expr, arg_exprs))
+      case Token.Reserved("^"):
+        var arg_expr = parse_abs(parser)
+        loop(Expr.App(fun_expr, arg_expr))
+      case _:
+        fun_expr
+  loop(fun_expr)
+    
+def parse_dot_expr(parser):
+  var expr = parse_atomic_expr(parser)
+  match(parser.token):
+    case Token.Reserved("."):
+      lookahead(parser)
+      var path = parse_val_path(parser, [])
+      Expr.Field(expr, path)
+    case _:
+      expr
+
+def parse_atomic_expr(parser):
+  match(parser.token):
+    case Token.Int(_) | Token.String(_) | Token.Char(_):
+      var lit = parse_literal(parser)
+      Expr.Con(lit)
+    case Token.LowId(_) | Token.CapId(_) | Token.Reserved("$"):
+      parse_var_or_ctor_app(parser, [])
+    case Token.Reserved("^"):
+      parse_abs(parser)
+    case Token.Reserved("if"):
+      parse_if_expr(parser)
+    case Token.Reserved("["):
+      parse_list(parser)
+    case Token.Reserved("{"):
+      parse_record(parser)
+    case Token.Reserved("("):
+      parse_parens(parser)
+    case Token.Reserved("match"):
+      parse_match_expr(parser)
+    case _:
+      failwith(expected(parser, "expression"))
+
+def parse_var_or_ctor_app(parser, mod_names):
+  match(parser.token):
+    case Token.LowId(_) | Token.Reserved("$"):
+      var val_name = parse_val_name(parser)
+      Expr.Var(List.rev(mod_names), val_name)
+    case Token.CapId(_):
+      var capid = parse_capid(parser)
+      if(parser.token <> Token.Reserved(".")):
+        parse_ctor_app(parser, Expr.Ctor(List.rev(mod_names), Names.Id(capid)))
+      else:
+        lookahead(parser)
+        parse_var_or_ctor_app(parser, capid::mod_names)
+    case _:
+      failwith(expected(parser, "identifier"))
+
+def parse_ctor_app(parser, ctor):
+  match(parser.token):
+    case Token.Reserved("("):
+      lookahead(parser)
+      var arg_exprs = parse_args(parser)
+      Expr.App(ctor, Expr.Tuple(arg_exprs))
+    case Token.Reserved("^"):
+      var arg_expr = parse_abs(parser)
+      Expr.App(ctor, arg_expr)
+    case _:
+      ctor
+
+def parse_val_path(parser, mod_names):
+  match(parser.token):
+    case Token.LowId(_) | Token.Reserved("$"):
+      var val_name = parse_val_name(parser)
+      (List.rev(mod_names), val_name)
+    case Token.CapId(_):
+      var capid = parse_capid(parser)
+      if(parser.token <> Token.Reserved(".")):
+        failwith (expected(parser, "'.'"))
+      else:
+        lookahead(parser)
+        parse_val_path(parser, capid::mod_names)
+    case _:
+      failwith(expected(parser, "identifier"))
+
+def parse_ctor(parser, mod_names):
+  match(parser.token):
+    case Token.CapId(_):
+      var capid = parse_capid(parser)
+      if(parser.token <> Token.Reserved(".")):
+        (List.rev(mod_names), Names.Id(capid))
+      else:
+        lookahead(parser)
+        parse_ctor(parser, capid::mod_names)
+    case _:
+      failwith(expected(parser, "capitalized identifier"))
+
+def parse_mod_path(parser, mod_names):
+  var capid = parse_capid(parser)
+  match(parser.token):
+    case Token.Reserved("."):
+      lookahead(parser)
+      parse_mod_path(parser, capid::mod_names)
+    case _:
+      List.rev(capid::mod_names)
+
+def parse_abs(parser):
+  lookahead(parser)
+  var params = parse_params(parser)
+  var body_expr = parse_block(parser)
+  make_abs(params, body_expr)
+
+def parse_params(parser):
+  if(parser.token <> Token.Reserved("(")):
+    failwith(expected(parser, "'('"))
+  else:
+    lookahead(parser)
+    if(parser.token = Token.Reserved(")")):
+      lookahead(parser)
+      [Pattern.Variant(([], Names.Id("()")), [Pattern.Var(Names.Id("_"))])]
+    else:
+      parse_pattern_list(parser)
+
+def parse_val_name(parser):
+  match(parser.token):
+    case Token.LowId(_):
+      Names.Id(parse_lowid(parser))
+    case Token.Reserved("$"):
+      lookahead(parser)
+      if(parser.token <> Token.Reserved("(")):
+        failwith(expected(parser, "'('"))
+      else:
+        lookahead(parser)
+        Names.Op(parse_op(parser))
+    case _:
+      failwith(expected(parser, "identifier"))
+
+def parse_lowid(parser):
+  match(parser.token):
+    case Token.LowId(str):
+      lookahead(parser)
+      str
+    case _:
+      failwith(expected(parser, "lowercase identifier"))
+
+def parse_capid(parser):
+  match(parser.token):
+    case Token.CapId(str):
+      lookahead(parser)
+      str
+    case _:
+      failwith(expected(parser, "capitalized identifier"))
+
+def parse_op(parser):
+  match(Token.get_op(parser.token)):
+    case Some(str):
+      lookahead(parser)
+      if(parser.token <> Token.Reserved(")")):
+        failwith(expected(parser, "')'"))
+      else:
+        lookahead(parser)
+        str
+    case None:
+      failwith(expected(parser, "operator"))
+
+def parse_block(parser):
+  match(parser.token):
+    case Token.Reserved(":"):
+      Lexer.indent(parser.lexer)
+      parse_indented_block(parser)
+    case Token.Reserved("{"):
+      parse_braced_block(parser)
+    case _:
+      failwith(expected(parser, "':' or '{'"))
+
+def parse_indented_block(parser):
+  lookahead(parser)
+  var expr = parse_block_elem(parser)
+  skip(parser, Token.Reserved(";"))
+  if(parser.token <> Token.Undent):
+    failwith(expected(parser, "undent"))
+  else:
+    lookahead(parser)
+    expr
+
+def parse_braced_block(parser):
+  lookahead(parser)
+  var expr = parse_block_elem(parser)
+  skip(parser, Token.Reserved(";"))
+  if(parser.token <> Token.Reserved("}")):
+    failwith(expected(parser, "'}'"))
+  else:
+    lookahead(parser)
+    expr
+  
+
+def parse_block_elem(parser):
+  match(parser.token):
+    case Token.Reserved("var"):
+      parse_let_val(parser)
+    case Token.Reserved("def"):
+      var defs = [parse_let_fun(parser)]
+      parse_block_sep(parser)
+      var cont_expr = parse_block_elem(parser)
+      Expr.LetFun(defs, cont_expr)
+    case Token.Reserved("rec"):
+      lookahead(parser)
+      var defs = parse_block_like_elems(parser, parse_let_fun)
+      parse_block_sep(parser)
+      var cont_expr = parse_block_elem(parser)
+      Expr.LetFun(defs, cont_expr)
+    case _:
+      var lhs = parse_expr(parser)
+      match(parser.token):
+        case Token.Reserved(";"):
+          lookahead(parser)
+          skip(parser, Token.Newline)
+          var rhs = parse_block_elem(parser)
+          Expr.Seq(lhs, rhs)
+        
+        case Token.Newline:
+          lookahead(parser)
+          var rhs = parse_block_elem(parser)
+          Expr.Seq(lhs, rhs)
+        
+        case _:
+          lhs
+      
+
+def parse_let_val(parser):
+  lookahead(parser)
+  var val_pat = parse_pattern(parser)
+  if(parser.token <> Token.CmpOp("=")):
+    failwith(expected(parser, "'='"))
+  else:
+    lookahead(parser)
+    var val_expr = parse_expr(parser)
+    parse_block_sep(parser)
+    var cont_expr = parse_block_elem(parser)
+    Expr.LetVal(val_pat,val_expr,cont_expr)
+  
+
+def parse_let_fun(parser):
+  if(parser.token <> Token.Reserved("def")):
+    failwith(expected(parser, "'def'"))
+  else:
+    lookahead(parser)
+    var fun_name = parse_val_name(parser)
+    var params = parse_params(parser)
+    var body_expr = parse_block(parser)
+    (fun_name, make_abs(params, body_expr))
+  
+
+def parse_block_sep(parser):
+  match(parser.token):
+    case Token.Reserved(";"):
+      lookahead(parser)
+      skip(parser, Token.Newline)
+    case Token.Newline:
+      lookahead(parser)
+    case _:
+      failwith(expected(parser, "';' or newline"))
+
+def parse_if_expr(parser):
+  lookahead(parser)
+  if(parser.token <> Token.Reserved("(")):
+    failwith(expected(parser, "'('"))
+  else:
+    lookahead(parser)
+    var cond_expr = parse_expr(parser)
+    if(parser.token <> Token.Reserved(")")):
+      failwith(expected(parser, "')'"))
+    else:
+      lookahead(parser)
+      var then_expr = parse_block(parser)
+      skip(parser, Token.Newline)
+      if(parser.token <> Token.Reserved("else")):
+        failwith(expected(parser, "'else'"))
+      else:
+        lookahead(parser)
+        var else_expr = parse_block(parser)
+        Expr.If(cond_expr,then_expr,else_expr)
+
+def parse_list(parser):
+  lookahead(parser)
+  if(parser.token = Token.Reserved("]")):
+    lookahead(parser)
+    Expr.Var([], (Names.Id("[]")))
+  else:
+    var ctor = Expr.Var([], (Names.Op("::")))
+    def loop(expr):
+      if(parser.token = Token.Reserved("]")):
+        lookahead(parser)
+        expr
+      else:
+        var elem = parse_expr(parser)
+        match(parser.token):
+          case Token.Reserved("]"):
+            lookahead(parser)
+            Expr.App(ctor, Expr.Tuple([elem; expr]))
+          case Token.Reserved(";"):
+            lookahead(parser)
+            Expr.App(ctor, Expr.Tuple([elem; loop(expr)]))
+          case _:
+            failwith(expected(parser, "']' or ';'"))
+    loop(Expr.Var([], (Names.Id("[]"))))
+
+def parse_parens(parser):
+  lookahead(parser)
+  if(parser.token = Token.Reserved(")")):
+    lookahead(parser)
+    Expr.Var([], (Names.Id("()")))
+  else:
+    var list = parse_expr_list(parser)
+    Expr.Tuple(list)
+
+def parse_args(parser):
+  if(parser.token = Token.Reserved(")")):
+    lookahead(parser)
+    [Expr.Var([], Names.Id("()"))]
+  else:
+    parse_expr_list(parser)
+
+def parse_expr_list(parser):
+  def sep_or_term(token):
+    match(token):
+      case Token.Reserved(","): Sep
+      case Token.Reserved(")"): Term
+      case _: Neither
+  parse_elems(parser, sep_or_term, parse_expr)
+
+def parse_record(parser):
+  lookahead(parser)
+  Expr.Record(parse_braced_elems(parser, parse_field_def))
+
+def parse_field_def(parser):
+  var field_name = parse_val_path(parser, [])
+  if(parser.token <> Token.CmpOp("=")):
+    failwith(expected(parser, "'='"))
+  else:
+    lookahead(parser)
+    var expr = parse_expr(parser)
+    (field_name, expr)
+  
+def parse_match_expr(parser):
+  lookahead(parser)
+  if(parser.token <> Token.Reserved("(")):
+    failwith(expected(parser, "'('"))
+  else:
+    lookahead(parser)
+    var target_expr = parse_expr(parser)
+    if(parser.token <> Token.Reserved(")")):
+      failwith(expected(parser, "')'"))
+    else:
+      lookahead(parser)
+      var cases = parse_block_like_elems(parser, parse_case)
+      Expr.Match(target_expr, cases)
+
+def parse_case(parser):
+  match(parser.token):
+    case Token.Reserved("case"):
+      lookahead(parser)
+      var pat = parse_pattern(parser)
+      if(parser.token = Token.Reserved("when")):
+        lookahead(parser)
+        var guard = parse_expr(parser)
+        var expr = parse_block(parser)
+        (pat,Some(guard),expr)
+      
+      else:
+        var expr = parse_block(parser)
+        (pat,None,expr)
+    
+    case _:
+      failwith(expected(parser, "'case'"))
+
+def parse_pattern(parser):
+  parse_or_pattern(parser)
+
+def parse_or_pattern(parser):
+  var lhs = parse_cons_pattern(parser)
+  def loop(lhs):
+    match(parser.token):
+      case Token.CmpOp("|"):
+        lookahead(parser)
+        var rhs = parse_cons_pattern(parser)
+        loop(Pattern.Or(lhs, rhs))
+      case _:
+        lhs
+  loop(lhs)
+
+def parse_cons_pattern(parser):
+  var lhs = parse_atomic_pattern(parser)
+  match(parser.token):
+    case Token.ConsOp("::"):
+      lookahead(parser)
+      var rhs = parse_cons_pattern(parser)
+      Pattern.Variant(([], Names.Op("::")), [lhs;rhs])
+    case _:
+      lhs
+
+def parse_atomic_pattern(parser):
+  match(parser.token):
+    case Token.Int(_) | Token.String(_) | Token.Char(_):
+      var lit = parse_literal(parser)
+      Pattern.Con(lit)
+    case Token.LowId(_):
+      var name = parse_val_name(parser)
+      Pattern.Var(name)
+    case Token.CapId(_):
+      parse_variant_pattern(parser)
+    case Token.Reserved("["):
+      parse_list_pattern(parser)
+    case Token.Reserved("{"):
+      parse_record_pattern(parser)
+    case Token.Reserved("("):
+      parse_parens_pattern(parser)
+    case _:
+      failwith(expected(parser, "pattern"))
+
+def parse_variant_pattern(parser):
+  var ctor = parse_ctor(parser, [])
+  if(parser.token <> Token.Reserved("(")):
+    Pattern.Variant(ctor, [Pattern.Var(Names.Id("_"))])
+  else:
+    lookahead(parser)
+    var pat_list = parse_pattern_list(parser)
+    Pattern.Variant(ctor, pat_list)
+  
+
+def parse_list_pattern(parser):
+  lookahead(parser)
+  if(parser.token = Token.Reserved("]")):
+    lookahead(parser)
+    Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))])
+  else:
+    def sep_or_term(token):
+      match(token):
+        case Token.Reserved(";"): Sep
+        case Token.Reserved("]"): Term
+        case _: Neither
+    var list = parse_elems(parser, sep_or_term, parse_pattern)
+    List.fold_right^(elem, acc){
+      Pattern.Variant(([], Names.Op("::")), [elem;acc])
+    }(list, Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))]))
+
+def parse_record_pattern(parser):
+  lookahead(parser)
+  Pattern.Record(parse_braced_elems(parser, parse_field_pattern))
+
+def parse_field_pattern(parser):
+  var field_name = parse_val_path(parser, [])
+  if(parser.token <> Token.Reserved("=")):
+    (field_name, None)
+  else:
+    lookahead(parser)
+    var pattern = parse_pattern(parser)
+    (field_name, Some(pattern))
+
+def parse_parens_pattern(parser):
+  lookahead(parser)
+  if(parser.token = Token.Reserved(")")):
+    lookahead(parser)
+    Pattern.Variant(([], Names.Id("()")), [Pattern.Var(Names.Id("_"))])
+  
+  else:
+    var list = parse_pattern_list(parser)
+    Pattern.Tuple(list)
+
+def parse_pattern_list(parser):
+  def sep_or_term(token):
+    match(token):
+      case Token.Reserved(","): Sep
+      case Token.Reserved(")"): Term
+      case _: Neither
+  parse_elems(parser, sep_or_term, parse_pattern)
+
+def parse_literal(parser):
+  match(parser.token):
+    case Token.Int(n):
+      lookahead(parser)
+      Literal.Int(n)
+    case Token.String(str):
+      lookahead(parser)
+      Literal.String(str)
+    case Token.Char(str):
+      lookahead(parser)
+      Literal.Char(str)
+    case _:
+      failwith(expected(parser, "literal"))
+
+def parse_stmt(parser):
+  var expr = parse_top(parser)
+  match(parser.token):
+    case Token.EOF | Token.Newline | Token.Reserved(";"):
+      expr
+    case _:
+      failwith(expected(parser, "newline or ';'"))
+  
+def parse(parser):
+  lookahead(parser)
+  skip(parser, Token.Newline)
+  match(parser.token):
+    case Token.EOF:
+      None
+    case _:
+      Some(parse_stmt(parser))
