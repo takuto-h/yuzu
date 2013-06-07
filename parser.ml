@@ -697,6 +697,8 @@ and parse_atomic_expr = begin fun parser ->
       (parse_parens parser)
     | (Token.Reserved("match")) ->
       (parse_match_expr parser)
+    | (Token.Reserved("try")) ->
+      (parse_try_expr parser)
     | _ ->
       (failwith ((expected parser) "expression"))
   end
@@ -1192,6 +1194,27 @@ and parse_match_expr = begin fun parser ->
   begin let target_expr = (parse_expr parser) in
   begin let cases = ((parse_block_like_elems parser) parse_case) in
   (Expr.Match (target_expr, cases))
+  end
+  end
+  end
+end
+
+and parse_try_expr = begin fun parser ->
+  begin
+  (lookahead parser);
+  begin let expr = (parse_block parser) in
+  begin
+  ((skip parser) Token.Newline);
+  begin if ((( <> ) parser.token) (Token.Reserved ("with"))) then
+    (failwith ((expected parser) "'with'"))
+  else
+    begin
+    (lookahead parser);
+    begin let cases = ((parse_block_like_elems parser) parse_case) in
+    (Expr.Try (expr, cases))
+    end
+    end
+  end
   end
   end
   end

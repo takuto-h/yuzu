@@ -431,6 +431,8 @@ rec:
         parse_parens(parser)
       case Token.Reserved("match"):
         parse_match_expr(parser)
+      case Token.Reserved("try"):
+        parse_try_expr(parser)
       case _:
         failwith(expected(parser, "expression"))
   
@@ -733,6 +735,17 @@ rec:
     var cases = parse_block_like_elems(parser, parse_case)
     Expr.Match(target_expr, cases)
   
+  def parse_try_expr(parser):
+    lookahead(parser)
+    var expr = parse_block(parser)
+    skip(parser, Token.Newline)
+    if parser.token <> Token.Reserved("with"):
+      failwith(expected(parser, "'with'"))
+    else:
+      lookahead(parser)
+      var cases = parse_block_like_elems(parser, parse_case)
+      Expr.Try(expr, cases)
+
   def parse_case(parser):
     match parser.token:
       case Token.Reserved("case"):
