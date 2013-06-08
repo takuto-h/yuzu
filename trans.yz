@@ -11,14 +11,14 @@ def create(basic_offset): {
 }
 
 var ocaml_basic_offset = 2
-  
-def indent({basic_offset;indent_level}, str):
-  var offset = basic_offset * indent_level
-  sprintf("%s%s", String.make(offset, ' '), str)
 
 def incr_indent_level(trans): trans.{
   indent_level = trans.indent_level + 1;
 }
+
+def indent({basic_offset;indent_level}, str):
+  var offset = basic_offset * indent_level
+  sprintf("%s%s", String.make(offset, ' '), str)
 
 def translate_val_name(name):
   match name:
@@ -80,7 +80,7 @@ rec:
         assert(false)
       case Pattern.Record(fields):
         var str_fields = List.fold_left^(acc, elem){
-          sprintf("%s%s;", acc, translate_field_def(elem));
+          sprintf("%s%s;", acc, translate_field_pattern(elem));
         }("", fields)
         sprintf("{%s}", str_fields)
       case Pattern.Or(lhs,rhs):
@@ -92,8 +92,8 @@ rec:
         var str_name = translate_val_name(name)
         sprintf("(%s as %s)", str_pat, str_name)
 
-  def translate_field_def(field_def):
-    match field_def:
+  def translate_field_pattern(field_pat):
+    match field_pat:
       case (path, None):
         sprintf("%s", translate_val_path(path))
       case (path, Some(pat)):

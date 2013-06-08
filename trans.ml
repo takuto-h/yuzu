@@ -14,19 +14,19 @@ end
 
 let ocaml_basic_offset = 2
 
+let rec incr_indent_level = begin fun trans ->
+  {
+    trans with
+    indent_level = ((( + ) trans.indent_level) 1);
+  }
+end
+
 let rec indent = begin fun {basic_offset;indent_level;} ->
   begin fun str ->
     begin let offset = ((( * ) basic_offset) indent_level) in
     (((sprintf "%s%s") ((String.make offset) ' ')) str)
     end
   end
-end
-
-let rec incr_indent_level = begin fun trans ->
-  {
-    trans with
-    indent_level = ((( + ) trans.indent_level) 1);
-  }
 end
 
 let rec translate_val_name = begin fun name ->
@@ -106,7 +106,7 @@ let rec translate_pattern = begin fun pat ->
     | (Pattern.Record(fields)) ->
       begin let str_fields = (((List.fold_left begin fun acc ->
         begin fun elem ->
-          (((sprintf "%s%s;") acc) (translate_field_def elem))
+          (((sprintf "%s%s;") acc) (translate_field_pattern elem))
         end
       end) "") fields) in
       ((sprintf "{%s}") str_fields)
@@ -126,8 +126,8 @@ let rec translate_pattern = begin fun pat ->
   end
 end
 
-and translate_field_def = begin fun field_def ->
-  begin match field_def with
+and translate_field_pattern = begin fun field_pat ->
+  begin match field_pat with
     | (path, (None(_))) ->
       ((sprintf "%s") (translate_val_path path))
     | (path, (Some(pat))) ->
