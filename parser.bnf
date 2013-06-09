@@ -2,23 +2,19 @@
 [elems sep term elem] = term | elem (term | sep [elems sep term elem])
 [indented_elems elem] = [elems (';' | <newline>) <undent> elem]
 [braced_elems elem] = [elems ';' '}' elem]
-[block_like_elems elem] =
-  | ':' [indented_elems elem]
-  | '{' [braced_elems elem]
+[block_like_elems elem] = ':' [indented_elems elem] | '{' [braced_elems elem]
 
 literal = <int> | <string> | <char>
-lowid = <lowid>
-capid = <capid>
 op = '(' <op> ')'
-val_name = lowid | '$' op
-val_path = val_name | capid '.' val_path
-ctor = capid ('.' ctor)?
-mod_path = capid ('.' mod_path)?
+val_name = <lowid> | '$' op
+val_path = val_name | <capid> '.' val_path
+ctor = <capid> ('.' ctor)?
+mod_path = <capid> ('.' mod_path)?
 
 type = tuple_type
 tuple_type = atomic_type ('*' atomic_type)*
 atomic_type = typector ('(' type_args)? | '(' type ')'
-typector = lowid | capid '.' typector
+typector = <lowid> | <capid> '.' typector
 type_args = [elems ',' ')' type]
 
 pattern = as_pattern
@@ -61,7 +57,7 @@ atomic_expr =
   | 'if' if_expr
   | 'match' match_expr
   | 'try' try_expr
-var_or_ctor_app = val_name | capid ('.' var_or_ctor_app | ctor_app)
+var_or_ctor_app = val_name | <capid> ('.' var_or_ctor_app | ctor_app)
 ctor_app = '(' args | '^' abs | <empty>
 abs = params block
 params = '(' (')' | pattern_list)
@@ -99,12 +95,13 @@ top_open = mod_path
 top_let_fun = 'def' val_name params block
 top_let_val = 'var' pattern '=' expr
 top_exn_decl = ctor_decl
-top_typedef = lowid ('=' type | type_repr)
+top_typedef = <lowid> ('=' type | type_repr)
 type_repr =
   | ':' ([indented_elems ctor_decl] | [indented_elems field_decl])
   | '{' ([indented_elems ctor_decl] | [indented_elems field_decl])
-ctor_decl = 'def' capid ('(' type ')')?
+ctor_decl = 'def' <capid> ('(' type ')')?
 field_decl = 'mutable'? val_name ':' type
 
 stmt = top (<eof> | <newline> | ';')
-<> = <*> newline? (<eof> | stmt)
+
+entrypoint = <*> (<eof> | stmt)

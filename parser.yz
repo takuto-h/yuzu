@@ -108,22 +108,36 @@ def parse_elems(parser, sep_or_term, parse_elem):
             failwith(expected(parser, "separator or terminator"))
   loop([])
 
+def comma_or_rparen(token):
+  match token:
+    case Token.Reserved(","): Sep
+    case Token.Reserved(")"): Term
+    case _: Neither
+
+def semi_or_rbracket(token):
+  match token:
+    case Token.Reserved(";"): Sep
+    case Token.Reserved("]"): Term
+    case _: Neither
+
+def semi_or_rbrace(token):
+  match token:
+    case Token.Reserved(";"): Sep
+    case Token.Reserved("}"): Term
+    case _: Neither
+
+def semi_or_newline_or_undent(token):
+  match token:
+    case Token.Reserved(";"): Sep
+    case Token.Newline: Sep
+    case Token.Undent: Term
+    case _: Neither
+
 def parse_indented_elems(parser, parse_elem):
-  def sep_or_term(token):
-    match token:
-      case Token.Reserved(";"): Sep
-      case Token.Newline: Sep
-      case Token.Undent: Term
-      case _: Neither
-  parse_elems(parser, sep_or_term, parse_elem)
+  parse_elems(parser, semi_or_newline_or_undent, parse_elem)
 
 def parse_braced_elems(parser, parse_elem):
-  def sep_or_term(token):
-    match token:
-      case Token.Reserved(";"): Sep
-      case Token.Reserved("}"): Term
-      case _: Neither
-  parse_elems(parser, sep_or_term, parse_elem)
+  parse_elems(parser, semi_or_rbrace, parse_elem)
 
 def parse_block_like_elems(parser, parse_elem):
   match parser.token:
@@ -272,12 +286,7 @@ rec:
         failwith(expected(parser, "identifier"))
   
   def parse_type_args(parser):
-    def sep_or_term(token):
-      match token:
-        case Token.Reserved(","): Sep
-        case Token.Reserved(")"): Term
-        case _: Neither
-    parse_elems(parser, sep_or_term, parse_type)
+    parse_elems(parser, comma_or_rparen, parse_type)
 
 // END rec: def parse_type
 
@@ -348,12 +357,7 @@ rec:
       Pattern.Variant(ctor, [Pattern.Var(Names.Id("_"))])
     
   def parse_list_pattern(parser):
-    def sep_or_term(token):
-      match token:
-        case Token.Reserved(";"): Sep
-        case Token.Reserved("]"): Term
-        case _: Neither
-    var list = parse_elems(parser, sep_or_term, parse_pattern)
+    var list = parse_elems(parser, semi_or_rbracket, parse_pattern)
     List.fold_right^(elem, acc){
       Pattern.Variant(([], Names.Op("::")), [elem;acc])
     }(list, Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))]))
@@ -379,12 +383,7 @@ rec:
       Pattern.Tuple(list)
   
   def parse_pattern_list(parser):
-    def sep_or_term(token):
-      match token:
-        case Token.Reserved(","): Sep
-        case Token.Reserved(")"): Term
-        case _: Neither
-    parse_elems(parser, sep_or_term, parse_pattern)
+    parse_elems(parser, comma_or_rparen, parse_pattern)
 
 // END rec: def parse_pattern
 
@@ -674,12 +673,7 @@ rec:
         failwith(expected(parser, "';' or newline"))
   
   def parse_list(parser):
-    def sep_or_term(token):
-      match token:
-        case Token.Reserved(";"): Sep
-        case Token.Reserved("]"): Term
-        case _: Neither
-    var list = parse_elems(parser, sep_or_term, parse_expr)
+    var list = parse_elems(parser, semi_or_rbracket, parse_expr)
     var ctor = Expr.Var([], (Names.Op("::")))
     List.fold_right^(elem, acc){
       Expr.App(ctor, Expr.Tuple([elem; acc]))
@@ -701,12 +695,7 @@ rec:
       parse_expr_list(parser)
   
   def parse_expr_list(parser):
-    def sep_or_term(token):
-      match token:
-        case Token.Reserved(","): Sep
-        case Token.Reserved(")"): Term
-        case _: Neither
-    parse_elems(parser, sep_or_term, parse_expr)
+    parse_elems(parser, comma_or_rparen, parse_expr)
   
   def parse_record(parser):
     Expr.Record(parse_braced_elems(parser, parse_field_def))

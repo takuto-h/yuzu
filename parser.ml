@@ -189,39 +189,61 @@ let rec parse_elems = begin fun parser ->
   end
 end
 
+let rec comma_or_rparen = begin fun token ->
+  begin match token with
+    | (Token.Reserved(",")) ->
+      Sep
+    | (Token.Reserved(")")) ->
+      Term
+    | _ ->
+      Neither
+  end
+end
+
+let rec semi_or_rbracket = begin fun token ->
+  begin match token with
+    | (Token.Reserved(";")) ->
+      Sep
+    | (Token.Reserved("]")) ->
+      Term
+    | _ ->
+      Neither
+  end
+end
+
+let rec semi_or_rbrace = begin fun token ->
+  begin match token with
+    | (Token.Reserved(";")) ->
+      Sep
+    | (Token.Reserved("}")) ->
+      Term
+    | _ ->
+      Neither
+  end
+end
+
+let rec semi_or_newline_or_undent = begin fun token ->
+  begin match token with
+    | (Token.Reserved(";")) ->
+      Sep
+    | (Token.Newline(_)) ->
+      Sep
+    | (Token.Undent(_)) ->
+      Term
+    | _ ->
+      Neither
+  end
+end
+
 let rec parse_indented_elems = begin fun parser ->
   begin fun parse_elem ->
-    begin let rec sep_or_term = begin fun token ->
-      begin match token with
-        | (Token.Reserved(";")) ->
-          Sep
-        | (Token.Newline(_)) ->
-          Sep
-        | (Token.Undent(_)) ->
-          Term
-        | _ ->
-          Neither
-      end
-    end in
-    (((parse_elems parser) sep_or_term) parse_elem)
-    end
+    (((parse_elems parser) semi_or_newline_or_undent) parse_elem)
   end
 end
 
 let rec parse_braced_elems = begin fun parser ->
   begin fun parse_elem ->
-    begin let rec sep_or_term = begin fun token ->
-      begin match token with
-        | (Token.Reserved(";")) ->
-          Sep
-        | (Token.Reserved("}")) ->
-          Term
-        | _ ->
-          Neither
-      end
-    end in
-    (((parse_elems parser) sep_or_term) parse_elem)
-    end
+    (((parse_elems parser) semi_or_rbrace) parse_elem)
   end
 end
 
@@ -460,18 +482,7 @@ and parse_typector = begin fun parser ->
 end
 
 and parse_type_args = begin fun parser ->
-  begin let rec sep_or_term = begin fun token ->
-    begin match token with
-      | (Token.Reserved(",")) ->
-        Sep
-      | (Token.Reserved(")")) ->
-        Term
-      | _ ->
-        Neither
-    end
-  end in
-  (((parse_elems parser) sep_or_term) parse_type)
-  end
+  (((parse_elems parser) comma_or_rparen) parse_type)
 end
 
 let rec parse_pattern = begin fun parser ->
@@ -575,23 +586,12 @@ and parse_variant_pattern = begin fun parser ->
 end
 
 and parse_list_pattern = begin fun parser ->
-  begin let rec sep_or_term = begin fun token ->
-    begin match token with
-      | (Token.Reserved(";")) ->
-        Sep
-      | (Token.Reserved("]")) ->
-        Term
-      | _ ->
-        Neither
-    end
-  end in
-  begin let list = (((parse_elems parser) sep_or_term) parse_pattern) in
+  begin let list = (((parse_elems parser) semi_or_rbracket) parse_pattern) in
   (((List.fold_right begin fun elem ->
     begin fun acc ->
       (Pattern.Variant (([], (Names.Op ("::"))), (( :: ) (elem, (( :: ) (acc, []))))))
     end
   end) list) (Pattern.Variant (([], (Names.Id ("[]"))), (( :: ) ((Pattern.Var ((Names.Id ("_")))), [])))))
-  end
   end
 end
 
@@ -628,18 +628,7 @@ and parse_parens_pattern = begin fun parser ->
 end
 
 and parse_pattern_list = begin fun parser ->
-  begin let rec sep_or_term = begin fun token ->
-    begin match token with
-      | (Token.Reserved(",")) ->
-        Sep
-      | (Token.Reserved(")")) ->
-        Term
-      | _ ->
-        Neither
-    end
-  end in
-  (((parse_elems parser) sep_or_term) parse_pattern)
-  end
+  (((parse_elems parser) comma_or_rparen) parse_pattern)
 end
 
 let rec parse_expr = begin fun parser ->
@@ -1101,24 +1090,13 @@ and parse_block_sep = begin fun parser ->
 end
 
 and parse_list = begin fun parser ->
-  begin let rec sep_or_term = begin fun token ->
-    begin match token with
-      | (Token.Reserved(";")) ->
-        Sep
-      | (Token.Reserved("]")) ->
-        Term
-      | _ ->
-        Neither
-    end
-  end in
-  begin let list = (((parse_elems parser) sep_or_term) parse_expr) in
+  begin let list = (((parse_elems parser) semi_or_rbracket) parse_expr) in
   begin let ctor = (Expr.Var ([], ((Names.Op ("::"))))) in
   (((List.fold_right begin fun elem ->
     begin fun acc ->
       (Expr.App (ctor, (Expr.Tuple ((( :: ) (elem, (( :: ) (acc, []))))))))
     end
   end) list) (Expr.Var ([], ((Names.Id ("[]"))))))
-  end
   end
   end
 end
@@ -1148,18 +1126,7 @@ and parse_args = begin fun parser ->
 end
 
 and parse_expr_list = begin fun parser ->
-  begin let rec sep_or_term = begin fun token ->
-    begin match token with
-      | (Token.Reserved(",")) ->
-        Sep
-      | (Token.Reserved(")")) ->
-        Term
-      | _ ->
-        Neither
-    end
-  end in
-  (((parse_elems parser) sep_or_term) parse_expr)
-  end
+  (((parse_elems parser) comma_or_rparen) parse_expr)
 end
 
 and parse_record = begin fun parser ->
