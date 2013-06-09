@@ -84,16 +84,16 @@ try_expr = block newline? 'with' [block_like_elems case]
 case = 'case' pattern ('when' expr)? block
 
 top =
-  | 'open' top_open
   | top_let_fun
   | top_let_val
   | 'rec' [block_like_elems top_let_fun]
+  | 'open' top_open
   | 'exception' top_exn_decl
   | 'type' top_typedef
   | expr
-top_open = mod_path
 top_let_fun = 'def' val_name params block
 top_let_val = 'var' pattern '=' expr
+top_open = mod_path
 top_exn_decl = <capid> ('(' type ')')?
 top_typedef = <lowid> ('=' type | type_repr)
 type_repr =

@@ -740,9 +740,6 @@ rec:
 rec:
   def parse_top(parser):
     match parser.token:
-      case Token.Reserved("open"):
-        lookahead(parser)
-        parse_top_open(parser)
       case Token.Reserved("def"):
         Top.LetFun([parse_top_let_fun(parser)])
       case Token.Reserved("var"):
@@ -750,6 +747,9 @@ rec:
       case Token.Reserved("rec"):
         lookahead(parser)
         Top.LetFun(parse_block_like_elems(parser, parse_top_let_fun))
+      case Token.Reserved("open"):
+        lookahead(parser)
+        parse_top_open(parser)
       case Token.Reserved("exception"):
         lookahead(parser)
         parse_top_exn_decl(parser)
@@ -758,10 +758,6 @@ rec:
         parse_top_typedef(parser)
       case _:
         Top.Expr(parse_expr(parser))
-  
-  def parse_top_open(parser):
-    var mod_path = parse_mod_path(parser, [])
-    Top.Open(mod_path)
 
   def parse_top_let_fun(parser):
     parse_token(parser, Token.Reserved("def"))
@@ -776,6 +772,10 @@ rec:
     parse_token(parser, Token.CmpOp("="))
     Top.LetVal(val_pat, parse_expr(parser))
   
+  def parse_top_open(parser):
+    var mod_path = parse_mod_path(parser, [])
+    Top.Open(mod_path)
+
   def parse_top_exn_decl(parser):
     var exn_name = Names.Id(parse_capid(parser))
     if parser.token = Token.Reserved("("):

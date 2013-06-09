@@ -1202,11 +1202,6 @@ end
 
 let rec parse_top = begin fun parser ->
   begin match parser.token with
-    | (Token.Reserved("open")) ->
-      begin
-      (lookahead parser);
-      (parse_top_open parser)
-      end
     | (Token.Reserved("def")) ->
       (Top.LetFun ((( :: ) ((parse_top_let_fun parser), []))))
     | (Token.Reserved("var")) ->
@@ -1215,6 +1210,11 @@ let rec parse_top = begin fun parser ->
       begin
       (lookahead parser);
       (Top.LetFun (((parse_block_like_elems parser) parse_top_let_fun)))
+      end
+    | (Token.Reserved("open")) ->
+      begin
+      (lookahead parser);
+      (parse_top_open parser)
       end
     | (Token.Reserved("exception")) ->
       begin
@@ -1228,12 +1228,6 @@ let rec parse_top = begin fun parser ->
       end
     | _ ->
       (Top.Expr ((parse_expr parser)))
-  end
-end
-
-and parse_top_open = begin fun parser ->
-  begin let mod_path = ((parse_mod_path parser) []) in
-  (Top.Open (mod_path))
   end
 end
 
@@ -1259,6 +1253,12 @@ and parse_top_let_val = begin fun parser ->
   (Top.LetVal (val_pat, (parse_expr parser)))
   end
   end
+  end
+end
+
+and parse_top_open = begin fun parser ->
+  begin let mod_path = ((parse_mod_path parser) []) in
+  (Top.Open (mod_path))
   end
 end
 
