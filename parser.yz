@@ -530,14 +530,14 @@ rec:
         parse_var_or_ctor_app(parser, [])
       case Token.Reserved("^"):
         parse_abs(parser)
-      case Token.Reserved("if"):
-        parse_if_expr(parser)
       case Token.Reserved("["):
         parse_list(parser)
       case Token.Reserved("{"):
         parse_record(parser)
       case Token.Reserved("("):
         parse_parens(parser)
+      case Token.Reserved("if"):
+        parse_if_expr(parser)
       case Token.Reserved("match"):
         parse_match_expr(parser)
       case Token.Reserved("try"):

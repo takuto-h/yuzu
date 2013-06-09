@@ -853,14 +853,14 @@ and parse_atomic_expr = begin fun parser ->
       ((parse_var_or_ctor_app parser) [])
     | (Token.Reserved("^")) ->
       (parse_abs parser)
-    | (Token.Reserved("if")) ->
-      (parse_if_expr parser)
     | (Token.Reserved("[")) ->
       (parse_list parser)
     | (Token.Reserved("{")) ->
       (parse_record parser)
     | (Token.Reserved("(")) ->
       (parse_parens parser)
+    | (Token.Reserved("if")) ->
+      (parse_if_expr parser)
     | (Token.Reserved("match")) ->
       (parse_match_expr parser)
     | (Token.Reserved("try")) ->
