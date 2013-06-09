@@ -368,14 +368,13 @@ end
 let rec parse_mod_path = begin fun parser ->
   begin fun mod_names ->
     begin let capid = (parse_capid parser) in
-    begin match parser.token with
-      | (Token.Reserved(".")) ->
-        begin
-        (lookahead parser);
-        ((parse_mod_path parser) (( :: ) (capid, mod_names)))
-        end
-      | _ ->
-        (List.rev (( :: ) (capid, mod_names)))
+    begin if ((( <> ) parser.token) (Token.Reserved ("."))) then
+      (List.rev (( :: ) (capid, mod_names)))
+    else
+      begin
+      (lookahead parser);
+      ((parse_mod_path parser) (( :: ) (capid, mod_names)))
+      end
     end
     end
   end

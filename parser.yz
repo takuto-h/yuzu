@@ -213,12 +213,11 @@ def parse_ctor(parser, mod_names):
   
 def parse_mod_path(parser, mod_names):
   var capid = parse_capid(parser)
-  match parser.token:
-    case Token.Reserved("."):
-      lookahead(parser)
-      parse_mod_path(parser, capid::mod_names)
-    case _:
-      List.rev(capid::mod_names)
+  if parser.token <> Token.Reserved("."):
+    List.rev(capid::mod_names)
+  else:
+    lookahead(parser)
+    parse_mod_path(parser, capid::mod_names)
 
 // BEGIN rec: def parse_type
 
