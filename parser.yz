@@ -168,6 +168,7 @@ def parse_lowid(parser):
       failwith(expected(parser, "lowercase identifier"))
 
 def parse_op(parser):
+  parse_token(parser, Token.Reserved("("))
   match Token.get_op(parser.token):
     case Some(str):
       lookahead(parser)
@@ -182,7 +183,6 @@ def parse_val_name(parser):
       Names.Id(parse_lowid(parser))
     case Token.Reserved("$"):
       lookahead(parser)
-      parse_token(parser, Token.Reserved("("))
       Names.Op(parse_op(parser))
     case _:
       failwith(expected(parser, "identifier"))

@@ -294,6 +294,8 @@ let rec parse_lowid = begin fun parser ->
 end
 
 let rec parse_op = begin fun parser ->
+  begin
+  ((parse_token parser) (Token.Reserved ("(")));
   begin match (Token.get_op parser.token) with
     | (Some(str)) ->
       begin
@@ -306,6 +308,7 @@ let rec parse_op = begin fun parser ->
     | (None(_)) ->
       (failwith ((expected parser) "operator"))
   end
+  end
 end
 
 let rec parse_val_name = begin fun parser ->
@@ -315,10 +318,7 @@ let rec parse_val_name = begin fun parser ->
     | (Token.Reserved("$")) ->
       begin
       (lookahead parser);
-      begin
-      ((parse_token parser) (Token.Reserved ("(")));
       (Names.Op ((parse_op parser)))
-      end
       end
     | _ ->
       (failwith ((expected parser) "identifier"))
