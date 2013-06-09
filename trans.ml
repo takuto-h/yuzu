@@ -45,11 +45,11 @@ let rec translate_mod_path = begin fun path ->
     | ([](_)) ->
       ""
     | (( :: )(name, names)) ->
-      (((List.fold_left begin fun acc ->
+      (((YzList.fold_left name) names) begin fun acc ->
         begin fun elem ->
           (((sprintf "%s.%s") acc) elem)
         end
-      end) name) names)
+      end)
   end
 end
 
@@ -83,32 +83,32 @@ let rec translate_pattern = begin fun pat ->
       (translate_val_name name)
     | (Pattern.Variant(ctor, (( :: )(pat, pats)))) ->
       begin let str_ctor = (translate_ctor ctor) in
-      begin let str_pat_list = (((List.fold_left begin fun acc ->
+      begin let str_pat_list = (((YzList.fold_left (translate_pattern pat)) pats) begin fun acc ->
         begin fun elem ->
           (((sprintf "%s, %s") acc) (translate_pattern elem))
         end
-      end) (translate_pattern pat)) pats) in
+      end) in
       (((sprintf "(%s(%s))") str_ctor) str_pat_list)
       end
       end
     | (Pattern.Variant(ctor, ([](_)))) ->
       (assert false)
     | (Pattern.Tuple((( :: )(pat, pats)))) ->
-      begin let str_pat_list = (((List.fold_left begin fun acc ->
+      begin let str_pat_list = (((YzList.fold_left (translate_pattern pat)) pats) begin fun acc ->
         begin fun elem ->
           (((sprintf "%s, %s") acc) (translate_pattern elem))
         end
-      end) (translate_pattern pat)) pats) in
+      end) in
       ((sprintf "(%s)") str_pat_list)
       end
     | (Pattern.Tuple(([](_)))) ->
       (assert false)
     | (Pattern.Record(fields)) ->
-      begin let str_fields = (((List.fold_left begin fun acc ->
+      begin let str_fields = (((YzList.fold_left "") fields) begin fun acc ->
         begin fun elem ->
           (((sprintf "%s%s;") acc) (translate_field_pattern elem))
         end
-      end) "") fields) in
+      end) in
       ((sprintf "{%s}") str_fields)
       end
     | (Pattern.Or(lhs, rhs)) ->
@@ -170,11 +170,11 @@ let rec translate_expr = begin fun trans ->
         end
       | (Expr.Tuple((( :: )(x, xs)))) ->
         begin let str_x = ((translate_expr trans) x) in
-        begin let str_x_xs = (((List.fold_left begin fun acc ->
+        begin let str_x_xs = (((YzList.fold_left str_x) xs) begin fun acc ->
           begin fun elem ->
             (((sprintf "%s, %s") acc) ((translate_expr trans) elem))
           end
-        end) str_x) xs) in
+        end) in
         ((sprintf "(%s)") str_x_xs)
         end
         end
@@ -182,26 +182,26 @@ let rec translate_expr = begin fun trans ->
         (assert false)
       | (Expr.Record(field_defs)) ->
         begin let trans_field_def = (incr_indent_level trans) in
-        begin let str_field_defs = (((List.fold_left begin fun acc ->
+        begin let str_field_defs = (((YzList.fold_left "") field_defs) begin fun acc ->
           begin fun elem ->
             begin let str_field_def = ((translate_field_def trans_field_def) elem) in
             (((sprintf "%s%s;\n") acc) ((indent trans_field_def) str_field_def))
             end
           end
-        end) "") field_defs) in
+        end) in
         (((sprintf "{\n%s%s") str_field_defs) ((indent trans) "}"))
         end
         end
       | (Expr.Update(expr, field_defs)) ->
         begin let trans_field_def = (incr_indent_level trans) in
         begin let str_expr = ((translate_expr trans_field_def) expr) in
-        begin let str_field_defs = (((List.fold_left begin fun acc ->
+        begin let str_field_defs = (((YzList.fold_left "") field_defs) begin fun acc ->
           begin fun elem ->
             begin let str_field_def = ((translate_field_def trans_field_def) elem) in
             (((sprintf "%s%s;\n") acc) ((indent trans_field_def) str_field_def))
             end
           end
-        end) "") field_defs) in
+        end) in
         ((((sprintf "{\n%s with\n%s%s") ((indent trans_field_def) str_expr)) str_field_defs) ((indent trans) "}"))
         end
         end
@@ -209,11 +209,11 @@ let rec translate_expr = begin fun trans ->
       | (Expr.Match(target_expr, cases)) ->
         begin let str_target = ((translate_expr trans) target_expr) in
         begin let trans_case = (incr_indent_level trans) in
-        begin let str_cases = (((List.fold_left begin fun acc ->
+        begin let str_cases = (((YzList.fold_left "") cases) begin fun acc ->
           begin fun elem ->
             (((sprintf "%s%s") acc) ((translate_case trans_case) elem))
           end
-        end) "") cases) in
+        end) in
         ((((sprintf "begin match %s with%s\n%s") str_target) str_cases) ((indent trans) "end"))
         end
         end
@@ -227,10 +227,10 @@ let rec translate_expr = begin fun trans ->
         end
         end
       | (Expr.LetFun((( :: )((name, val_expr), defs)), cont_expr)) ->
-        begin let str_name = (Names.show_val_name name) in
+        begin let str_name = (translate_val_name name) in
         begin let str_val = ((translate_expr trans) val_expr) in
         begin let str_let_rec = (((sprintf "let rec %s = %s") str_name) str_val) in
-        begin let str_let_rec = (((List.fold_left begin fun acc ->
+        begin let str_let_rec = (((YzList.fold_left str_let_rec) defs) begin fun acc ->
           begin fun (name, val_expr) ->
             begin let str_name = (translate_val_name name) in
             begin let str_val = ((translate_expr trans) val_expr) in
@@ -238,7 +238,7 @@ let rec translate_expr = begin fun trans ->
             end
             end
           end
-        end) str_let_rec) defs) in
+        end) in
         begin let str_cont = ((translate_expr trans) cont_expr) in
         ((((sprintf "begin %s in\n%s\n%s") str_let_rec) ((indent trans) str_cont)) ((indent trans) "end"))
         end
@@ -281,11 +281,11 @@ let rec translate_expr = begin fun trans ->
       | (Expr.Try(expr, cases)) ->
         begin let trans_expr = (incr_indent_level trans) in
         begin let str_expr = ((translate_expr trans_expr) expr) in
-        begin let str_cases = (((List.fold_left begin fun acc ->
+        begin let str_cases = (((YzList.fold_left "") cases) begin fun acc ->
           begin fun elem ->
             (((sprintf "%s%s") acc) ((translate_case trans_expr) elem))
           end
-        end) "") cases) in
+        end) in
         (((((sprintf "begin try\n%s\n%s\n%s\n%s") ((indent trans_expr) str_expr)) ((indent trans) "with")) str_cases) ((indent trans) "end"))
         end
         end
@@ -344,22 +344,22 @@ let rec translate_type = begin fun t ->
       (translate_typector typector)
     | (Type.App(typector, (( :: )(t, ts)))) ->
       begin let str_typector = (translate_typector typector) in
-      begin let str_types = (((List.fold_left begin fun acc ->
+      begin let str_types = (((YzList.fold_left (translate_type t)) ts) begin fun acc ->
         begin fun elem ->
           (((sprintf "%s, %s") acc) (translate_type elem))
         end
-      end) (translate_type t)) ts) in
+      end) in
       (((sprintf "(%s) %s") str_types) str_typector)
       end
       end
     | (Type.App(typector, ([](_)))) ->
       (assert false)
     | (Type.Tuple((( :: )(t, ts)))) ->
-      begin let str_types = (((List.fold_left begin fun acc ->
+      begin let str_types = (((YzList.fold_left (translate_type t)) ts) begin fun acc ->
         begin fun elem ->
           (((sprintf "%s * %s") acc) (translate_type elem))
         end
-      end) (translate_type t)) ts) in
+      end) in
       ((sprintf "(%s)") str_types)
       end
     | (Type.Tuple(([](_)))) ->
@@ -414,7 +414,7 @@ let rec translate_top = begin fun trans ->
         begin let str_name = (translate_val_name name) in
         begin let str_expr = ((translate_expr trans) expr) in
         begin let str_let_rec = (((sprintf "let rec %s = %s\n") str_name) str_expr) in
-        (((List.fold_left begin fun acc ->
+        (((YzList.fold_left str_let_rec) defs) begin fun acc ->
           begin fun (name, expr) ->
             begin let str_name = (translate_val_name name) in
             begin let str_expr = ((translate_expr trans) expr) in
@@ -422,7 +422,7 @@ let rec translate_top = begin fun trans ->
             end
             end
           end
-        end) str_let_rec) defs)
+        end)
         end
         end
         end
@@ -438,21 +438,21 @@ let rec translate_top = begin fun trans ->
         end
       | (Top.Variant(name, ctor_decls)) ->
         begin let trans_ctor_decl = (incr_indent_level trans) in
-        begin let str_ctor_decls = (((List.fold_left begin fun acc ->
+        begin let str_ctor_decls = (((YzList.fold_left "") ctor_decls) begin fun acc ->
           begin fun elem ->
             (((sprintf "%s%s") acc) ((indent trans_ctor_decl) (translate_ctor_decl elem)))
           end
-        end) "") ctor_decls) in
+        end) in
         (((sprintf "type %s =\n%s") name) str_ctor_decls)
         end
         end
       | (Top.Record(name, field_decls)) ->
         begin let trans_field_decl = (incr_indent_level trans) in
-        begin let str_field_decls = (((List.fold_left begin fun acc ->
+        begin let str_field_decls = (((YzList.fold_left "") field_decls) begin fun acc ->
           begin fun elem ->
             (((sprintf "%s%s") acc) ((indent trans_field_decl) (translate_field_decl elem)))
           end
-        end) "") field_decls) in
+        end) in
         ((((sprintf "type %s = {\n%s%s\n") name) str_field_decls) ((indent trans) "}"))
         end
         end

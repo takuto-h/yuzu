@@ -34,9 +34,8 @@ def translate_mod_path(path):
     case []:
       ""
     case name::names:
-      List.fold_left^(acc, elem){
-        sprintf("%s.%s", acc, elem);
-      }(name, names)
+      YzList.fold_left(name, names)^(acc, elem):
+        sprintf("%s.%s", acc, elem)
 
 def translate_val_path(path):
   match path:
@@ -65,23 +64,20 @@ rec:
         translate_val_name(name)
       case Pattern.Variant(ctor,pat::pats):
         var str_ctor = translate_ctor(ctor)
-        var str_pat_list = List.fold_left^(acc, elem){
-          sprintf("%s, %s", acc, translate_pattern(elem));
-        }(translate_pattern(pat), pats)
+        var str_pat_list = YzList.fold_left(translate_pattern(pat), pats)^(acc, elem):
+          sprintf("%s, %s", acc, translate_pattern(elem))
         sprintf("(%s(%s))", str_ctor, str_pat_list)
       case Pattern.Variant(ctor,[]):
         assert(false)
       case Pattern.Tuple(pat::pats):
-        var str_pat_list = List.fold_left^(acc, elem){
-          sprintf("%s, %s", acc, translate_pattern(elem));
-        }(translate_pattern(pat), pats)
+        var str_pat_list = YzList.fold_left(translate_pattern(pat), pats)^(acc, elem):
+          sprintf("%s, %s", acc, translate_pattern(elem))
         sprintf("(%s)", str_pat_list)
       case Pattern.Tuple([]):
         assert(false)
       case Pattern.Record(fields):
-        var str_fields = List.fold_left^(acc, elem){
-          sprintf("%s%s;", acc, translate_field_pattern(elem));
-        }("", fields)
+        var str_fields = YzList.fold_left("", fields)^(acc, elem):
+          sprintf("%s%s;", acc, translate_field_pattern(elem))
         sprintf("{%s}", str_fields)
       case Pattern.Or(lhs,rhs):
         var str_lhs = translate_pattern(lhs)
@@ -135,26 +131,23 @@ rec:
         )
       case Expr.Tuple(x::xs):
         var str_x = translate_expr(trans, x)
-        var str_x_xs = List.fold_left^(acc, elem){
-          sprintf("%s, %s", acc, translate_expr(trans, elem));
-        }(str_x, xs)
+        var str_x_xs = YzList.fold_left(str_x, xs)^(acc, elem):
+          sprintf("%s, %s", acc, translate_expr(trans, elem))
         sprintf("(%s)", str_x_xs)
       case Expr.Tuple([]):
         assert(false)
       case Expr.Record(field_defs):
         var trans_field_def = incr_indent_level(trans)
-        var str_field_defs = List.fold_left^(acc, elem){
-          var str_field_def = translate_field_def(trans_field_def, elem);
-          sprintf("%s%s;\n", acc, indent(trans_field_def, str_field_def));
-        }("", field_defs)
+        var str_field_defs = YzList.fold_left("", field_defs)^(acc, elem):
+          var str_field_def = translate_field_def(trans_field_def, elem)
+          sprintf("%s%s;\n", acc, indent(trans_field_def, str_field_def))
         sprintf("{\n%s%s", str_field_defs, indent(trans, "}"))
       case Expr.Update(expr,field_defs):
         var trans_field_def = incr_indent_level(trans)
         var str_expr = translate_expr(trans_field_def, expr)
-        var str_field_defs = List.fold_left^(acc, elem){
-          var str_field_def = translate_field_def(trans_field_def, elem);
-          sprintf("%s%s;\n", acc, indent(trans_field_def, str_field_def));
-        }("", field_defs)
+        var str_field_defs = YzList.fold_left("", field_defs)^(acc, elem):
+          var str_field_def = translate_field_def(trans_field_def, elem)
+          sprintf("%s%s;\n", acc, indent(trans_field_def, str_field_def))
         sprintf(
           "{\n%s with\n%s%s",
           indent(trans_field_def, str_expr), str_field_defs, indent(trans, "}")
@@ -162,9 +155,8 @@ rec:
       case Expr.Match(target_expr,cases):
         var str_target = translate_expr(trans, target_expr)
         var trans_case = incr_indent_level(trans)
-        var str_cases = List.fold_left^(acc, elem){
-          sprintf("%s%s", acc, translate_case(trans_case, elem));
-        }("", cases)
+        var str_cases = YzList.fold_left("", cases)^(acc, elem):
+          sprintf("%s%s", acc, translate_case(trans_case, elem))
         sprintf("begin match %s with%s\n%s", str_target, str_cases, indent(trans, "end"))
       case Expr.LetVal(pat,val_expr,cont_expr):
         var str_pat = translate_pattern(pat)
@@ -175,14 +167,13 @@ rec:
           str_pat, str_val, indent(trans, str_cont), indent(trans, "end")
         )
       case Expr.LetFun((name,val_expr)::defs, cont_expr):
-        var str_name = Names.show_val_name(name)
+        var str_name = translate_val_name(name)
         var str_val = translate_expr(trans, val_expr)
         var str_let_rec = sprintf("let rec %s = %s", str_name, str_val)
-        var str_let_rec = List.fold_left^(acc, (name,val_expr)){
-          var str_name = translate_val_name(name);
-          var str_val = translate_expr(trans, val_expr);
-          sprintf("%s\nand %s = %s", acc, str_name, str_val);
-        }(str_let_rec, defs)
+        var str_let_rec = YzList.fold_left(str_let_rec, defs)^(acc, (name,val_expr)):
+          var str_name = translate_val_name(name)
+          var str_val = translate_expr(trans, val_expr)
+          sprintf("%s\nand %s = %s", acc, str_name, str_val)
         var str_cont = translate_expr(trans, cont_expr)
         sprintf(
           "begin %s in\n%s\n%s", str_let_rec, indent(trans, str_cont), indent(trans, "end")
@@ -215,9 +206,8 @@ rec:
       case Expr.Try(expr,cases):
         var trans_expr = incr_indent_level(trans)
         var str_expr = translate_expr(trans_expr, expr)
-        var str_cases = List.fold_left^(acc, elem){
-          sprintf("%s%s", acc, translate_case(trans_expr, elem));
-        }("", cases)
+        var str_cases = YzList.fold_left("", cases)^(acc, elem):
+          sprintf("%s%s", acc, translate_case(trans_expr, elem))
         sprintf(
           "begin try\n%s\n%s\n%s\n%s",
           indent(trans_expr, str_expr),
@@ -258,16 +248,14 @@ def translate_type(t):
       translate_typector(typector)
     case Type.App(typector,t::ts):
       var str_typector = translate_typector(typector)
-      var str_types = List.fold_left^(acc, elem){
-        sprintf("%s, %s", acc, translate_type(elem));
-      }(translate_type(t), ts)
+      var str_types = YzList.fold_left(translate_type(t), ts)^(acc, elem):
+        sprintf("%s, %s", acc, translate_type(elem))
       sprintf("(%s) %s", str_types, str_typector)
     case Type.App(typector,[]):
       assert(false)
     case Type.Tuple(t::ts):
-      var str_types = List.fold_left^(acc, elem){
-        sprintf("%s * %s", acc, translate_type(elem));
-      }(translate_type(t), ts)
+      var str_types = YzList.fold_left(translate_type(t), ts)^(acc, elem):
+        sprintf("%s * %s", acc, translate_type(elem))
       sprintf("(%s)", str_types)
     case Type.Tuple([]):
       assert(false)
@@ -307,11 +295,10 @@ def translate_top(trans, top):
       var str_name = translate_val_name(name)
       var str_expr = translate_expr(trans, expr)
       var str_let_rec = sprintf("let rec %s = %s\n", str_name, str_expr)
-      List.fold_left^(acc, (name,expr)){
-        var str_name = translate_val_name(name);
-        var str_expr = translate_expr(trans, expr);
-        sprintf("%s\nand %s = %s\n", acc, str_name, str_expr);
-      }(str_let_rec, defs)
+      YzList.fold_left(str_let_rec, defs)^(acc, (name,expr)):
+        var str_name = translate_val_name(name)
+        var str_expr = translate_expr(trans, expr)
+        sprintf("%s\nand %s = %s\n", acc, str_name, str_expr)
     case Top.LetFun([]):
       assert(false)
     case Top.Open(path):
@@ -322,15 +309,13 @@ def translate_top(trans, top):
       sprintf("type %s = %s\n", name, str_type)
     case Top.Variant(name,ctor_decls):
       var trans_ctor_decl = incr_indent_level(trans)
-      var str_ctor_decls = List.fold_left^(acc, elem){
-        sprintf("%s%s", acc, indent(trans_ctor_decl, translate_ctor_decl(elem)));
-      }("", ctor_decls)
+      var str_ctor_decls = YzList.fold_left("", ctor_decls)^(acc, elem):
+        sprintf("%s%s", acc, indent(trans_ctor_decl, translate_ctor_decl(elem)))
       sprintf("type %s =\n%s", name, str_ctor_decls)
     case Top.Record(name,field_decls):
       var trans_field_decl = incr_indent_level(trans)
-      var str_field_decls = List.fold_left^(acc, elem){
-        sprintf("%s%s", acc, indent(trans_field_decl, translate_field_decl(elem)));
-      }("", field_decls)
+      var str_field_decls = YzList.fold_left("", field_decls)^(acc, elem):
+        sprintf("%s%s", acc, indent(trans_field_decl, translate_field_decl(elem)))
       sprintf("type %s = {\n%s%s\n", name, str_field_decls, indent(trans, "}"))
     case Top.Exception(exn_decl):
       var str_exn_decl = translate_exn_decl(exn_decl)

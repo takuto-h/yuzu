@@ -18,38 +18,3 @@ type typector = (mod_path * typector_name)
 
 type ctor = (mod_path * ctor_name)
 
-let rec show_val_name = begin fun name ->
-  begin match name with
-    | (Id(str)) ->
-      str
-    | (Op(str)) ->
-      ((sprintf "$(%s)") str)
-  end
-end
-
-let show_ctor_name = show_val_name
-
-let rec show_mod_path = begin fun path ->
-  begin match path with
-    | ([](_)) ->
-      ""
-    | ((( :: )(name, names))) ->
-      (((List.fold_left begin fun acc ->
-        begin fun elem ->
-          (((sprintf "%s.%s") acc) elem)
-        end
-      end) name) names)
-  end
-end
-
-let rec show_val_path = begin fun path ->
-  begin match path with
-    | (([](_)), val_name) ->
-      (show_val_name val_name)
-    | (mod_path, val_name) ->
-      (((sprintf "%s.%s") (show_mod_path mod_path)) (show_val_name val_name))
-  end
-end
-
-let show_ctor = show_val_path
-
