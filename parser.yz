@@ -136,21 +136,23 @@ def semi_or_rbracket(token):
     case Token.Reserved("]"): Term
     case _: Neither
 
+def semi_or_newline_or_undent(token):
+  match token:
+    case Token.Reserved(";"): Sep
+    case Token.Newline: Sep
+    case Token.Undent: Term
+    case _: Neither
+
+def semi_or_rbrace(token):
+  match token:
+    case Token.Reserved(";"): Sep
+    case Token.Reserved("}"): Term
+    case _: Neither
+
 def parse_indented_elems(parser, parse_elem):
-  def semi_or_newline_or_undent(token):
-    match token:
-      case Token.Reserved(";"): Sep
-      case Token.Newline: Sep
-      case Token.Undent: Term
-      case _: Neither
   parse_elems(parser, semi_or_newline_or_undent, parse_elem)
 
 def parse_braced_elems(parser, parse_elem):
-  def semi_or_rbrace(token):
-    match token:
-      case Token.Reserved(";"): Sep
-      case Token.Reserved("}"): Term
-      case _: Neither
   parse_elems(parser, semi_or_rbrace, parse_elem)
 
 def parse_block_like_elems(parser, parse_elem):
@@ -610,56 +612,45 @@ rec:
         failwith(expected(parser, "':' or '{'"))
   
   def parse_indented_block(parser):
-    def is_term(token):
-      match token:
-        case Token.Undent:
-          true
-        case _:
-          false
-    var expr = parse_block_elem(parser, is_term)
+    var expr = parse_block_elem(parser, semi_or_newline_or_undent)
     parse_token(parser, Token.Undent)
     expr
   
   def parse_braced_block(parser):
-    def is_term(token):
-      match token:
-        case Token.Reserved("}"):
-          true
-        case _:
-          false
-    var expr = parse_block_elem(parser, is_term)
+    var expr = parse_block_elem(parser, semi_or_rbrace)
     parse_token(parser, Token.Reserved("}"))
     expr
     
-  def parse_block_elem(parser, is_term):
+  def parse_block_elem(parser, sep_or_term):
     match parser.token:
       case Token.Reserved("var"):
         lookahead(parser)
         var (val_name,val_expr) = parse_let_val(parser)
-        parse_block_sep(parser)
-        var cont_expr = parse_block_elem(parser, is_term)
+        parse_sep(parser, sep_or_term)
+        var cont_expr = parse_block_elem(parser, sep_or_term)
         Expr.LetVal(val_name, val_expr, cont_expr)
       case Token.Reserved("def"):
         var defs = [parse_let_fun(parser)]
-        parse_block_sep(parser)
-        var cont_expr = parse_block_elem(parser, is_term)
+        parse_sep(parser, sep_or_term)
+        var cont_expr = parse_block_elem(parser, sep_or_term)
         Expr.LetFun(defs, cont_expr)
       case Token.Reserved("rec"):
         lookahead(parser)
         var defs = parse_block_like_elems(parser, parse_let_fun)
-        parse_block_sep(parser)
-        var cont_expr = parse_block_elem(parser, is_term)
+        parse_sep(parser, sep_or_term)
+        var cont_expr = parse_block_elem(parser, sep_or_term)
         Expr.LetFun(defs, cont_expr)
       case _:
         var lhs = parse_expr(parser)
-        match parser.token:
-          case Token.Reserved(";") | Token.Newline:
+        match sep_or_term(parser.token):
+          case Sep:
             lookahead(parser)
-            if is_term(parser.token):
-              lhs
-            else:
-              var rhs = parse_block_elem(parser, is_term)
-              Expr.Seq(lhs, rhs)
+            match sep_or_term(parser.token):
+              case Term:
+                lhs
+              case _:
+                var rhs = parse_block_elem(parser, sep_or_term)
+                Expr.Seq(lhs, rhs)
           case _:
             lhs
   
@@ -676,12 +667,12 @@ rec:
     var body_expr = parse_block(parser)
     (fun_name, make_abs(params, body_expr))
     
-  def parse_block_sep(parser):
-    match parser.token:
-      case Token.Reserved(";") | Token.Newline:
+  def parse_sep(parser, sep_or_term):
+    match sep_or_term(parser.token):
+      case Sep:
         lookahead(parser)
       case _:
-        failwith(expected(parser, "';' or newline"))
+        failwith(expected(parser, "separator"))
   
   def parse_list(parser):
     var list = parse_elems(parser, semi_or_rbracket, parse_expr)

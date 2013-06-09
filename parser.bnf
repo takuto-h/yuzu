@@ -61,16 +61,15 @@ ctor_app = '(' args | '^' abs | <empty>
 abs = params block
 params = '(' (')' | pattern_list)
 block = ':' indented_block | '{' braced_block
-indented_block = block_elem <undent>
-braced_block = block_elem '}'
-block_elem =
-  | 'var' let_val block_sep block_elem
-  | let_fun block_sep block_elem
-  | 'rec' [block_like_elems let_fun] block_sep block_elem
-  | expr ((';' | newline) block_elem?
+indented_block = [block_elem (';' | <newline>)] <undent>
+braced_block = [block_elem ';'] '}'
+[block_elem sep] =
+  | 'var' let_val sep block_elem
+  | let_fun sep block_elem
+  | 'rec' [block_like_elems let_fun] sep block_elem
+  | expr (sep block_elem?)?
 let_val = 'var' pattern '=' expr
 let_fun = 'def' val_name params block
-block_sep = ';' | newline
 list =  [elems ';' ']' expr]
 parens = ')' | expr_list
 args = ')' | expr_list
