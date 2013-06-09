@@ -120,23 +120,21 @@ def semi_or_rbracket(token):
     case Token.Reserved("]"): Term
     case _: Neither
 
-def semi_or_rbrace(token):
-  match token:
-    case Token.Reserved(";"): Sep
-    case Token.Reserved("}"): Term
-    case _: Neither
-
-def semi_or_newline_or_undent(token):
-  match token:
-    case Token.Reserved(";"): Sep
-    case Token.Newline: Sep
-    case Token.Undent: Term
-    case _: Neither
-
 def parse_indented_elems(parser, parse_elem):
+  def semi_or_newline_or_undent(token):
+    match token:
+      case Token.Reserved(";"): Sep
+      case Token.Newline: Sep
+      case Token.Undent: Term
+      case _: Neither
   parse_elems(parser, semi_or_newline_or_undent, parse_elem)
 
 def parse_braced_elems(parser, parse_elem):
+  def semi_or_rbrace(token):
+    match token:
+      case Token.Reserved(";"): Sep
+      case Token.Reserved("}"): Term
+      case _: Neither
   parse_elems(parser, semi_or_rbrace, parse_elem)
 
 def parse_block_like_elems(parser, parse_elem):

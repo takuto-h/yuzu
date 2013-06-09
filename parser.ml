@@ -211,39 +211,39 @@ let rec semi_or_rbracket = begin fun token ->
   end
 end
 
-let rec semi_or_rbrace = begin fun token ->
-  begin match token with
-    | (Token.Reserved(";")) ->
-      Sep
-    | (Token.Reserved("}")) ->
-      Term
-    | _ ->
-      Neither
-  end
-end
-
-let rec semi_or_newline_or_undent = begin fun token ->
-  begin match token with
-    | (Token.Reserved(";")) ->
-      Sep
-    | (Token.Newline(_)) ->
-      Sep
-    | (Token.Undent(_)) ->
-      Term
-    | _ ->
-      Neither
-  end
-end
-
 let rec parse_indented_elems = begin fun parser ->
   begin fun parse_elem ->
+    begin let rec semi_or_newline_or_undent = begin fun token ->
+      begin match token with
+        | (Token.Reserved(";")) ->
+          Sep
+        | (Token.Newline(_)) ->
+          Sep
+        | (Token.Undent(_)) ->
+          Term
+        | _ ->
+          Neither
+      end
+    end in
     (((parse_elems parser) semi_or_newline_or_undent) parse_elem)
+    end
   end
 end
 
 let rec parse_braced_elems = begin fun parser ->
   begin fun parse_elem ->
+    begin let rec semi_or_rbrace = begin fun token ->
+      begin match token with
+        | (Token.Reserved(";")) ->
+          Sep
+        | (Token.Reserved("}")) ->
+          Term
+        | _ ->
+          Neither
+      end
+    end in
     (((parse_elems parser) semi_or_rbrace) parse_elem)
+    end
   end
 end
 
