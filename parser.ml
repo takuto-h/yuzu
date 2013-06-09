@@ -1407,14 +1407,11 @@ end
 let rec parse = begin fun parser ->
   begin
   (lookahead parser);
-  begin
-  ((skip parser) Token.Newline);
   begin match parser.token with
     | (Token.EOF(_)) ->
       None
     | _ ->
       (Some ((parse_stmt parser)))
-  end
   end
   end
 end

@@ -861,7 +861,6 @@ def parse_stmt(parser):
   
 def parse(parser):
   lookahead(parser)
-  skip(parser, Token.Newline)
   match parser.token:
     case Token.EOF:
       None

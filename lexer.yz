@@ -28,16 +28,13 @@ var reserved = [
   "mutable";
 ]
 
-def create(source):
-  var lexer = {
-    source = source;
-    parens = Stack.create();
-    offside_lines = Stack.create();
-    is_bol = false;
-    is_bob = false;
-  }
-  Stack.push(0, lexer.offside_lines)
-  lexer
+def create(source): {
+  source = source;
+  parens = Stack.create();
+  offside_lines = Stack.create();
+  is_bol = true;
+  is_bob = true;
+}
 
 def indent(lexer):
   if Stack.is_empty(lexer.parens):

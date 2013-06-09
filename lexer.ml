@@ -13,18 +13,13 @@ let initial_buffer_size = 16
 let reserved = (( :: ) ("open", (( :: ) ("type", (( :: ) ("exception", (( :: ) ("def", (( :: ) ("rec", (( :: ) ("var", (( :: ) ("if", (( :: ) ("else", (( :: ) ("match", (( :: ) ("case", (( :: ) ("when", (( :: ) ("as", (( :: ) ("try", (( :: ) ("with", (( :: ) ("mutable", []))))))))))))))))))))))))))))))
 
 let rec create = begin fun source ->
-  begin let lexer = {
+  {
     source = source;
     parens = (Stack.create ());
     offside_lines = (Stack.create ());
-    is_bol = false;
-    is_bob = false;
-  } in
-  begin
-  ((Stack.push 0) lexer.offside_lines);
-  lexer
-  end
-  end
+    is_bol = true;
+    is_bob = true;
+  }
 end
 
 let rec indent = begin fun lexer ->
