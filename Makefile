@@ -5,7 +5,7 @@ SRCS =\
   literal.ml names.ml pattern.ml type.ml expr.ml top.ml parser.ml\
   trans.ml main.ml
 
-EXE = ./myml
+EXE = ./yuzuko
 
 .PHONY: all
 all: $(EXE)
