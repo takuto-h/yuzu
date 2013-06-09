@@ -259,7 +259,7 @@ rec:
         var typector = parse_typector(parser, [])
         if parser.token = Token.Reserved("("):
           lookahead(parser)
-          var args = parse_type_args(parser)
+          var args = parse_elems(parser, comma_or_rparen, parse_type)
           Type.App(typector, args)
         else:
           Type.Con(typector)
@@ -282,9 +282,6 @@ rec:
         parse_typector(parser, capid::mod_names)
       case _:
         failwith(expected(parser, "identifier"))
-  
-  def parse_type_args(parser):
-    parse_elems(parser, comma_or_rparen, parse_type)
 
 // END rec: def parse_type
 
@@ -779,8 +776,15 @@ rec:
     Top.LetVal(val_pat, parse_expr(parser))
   
   def parse_top_exn_decl(parser):
-    var exn_decl = parse_ctor_decl(parser)
-    Top.Exception(exn_decl)
+    parse_token(parser, Token.Reserved("exception"))
+    var exn_name = Names.Id(parse_capid(parser))
+    if parser.token = Token.Reserved("("):
+      lookahead(parser)
+      var t = parse_type(parser)
+      parse_token(parser, Token.Reserved(")"))
+      Top.Exception(exn_name, Some(t))
+    else:
+      Top.Exception(exn_name, None)
 
   def parse_top_typedef(parser):
     var typector_name = parse_lowid(parser)
@@ -815,7 +819,7 @@ rec:
         failwith(expected(parser, "':' or '{'"))
   
   def parse_ctor_decl(parser):
-    lookahead(parser)
+    parse_token(parser, Token.Reserved("def"))
     var ctor_name = Names.Id(parse_capid(parser))
     if parser.token = Token.Reserved("("):
       lookahead(parser)

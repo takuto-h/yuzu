@@ -438,7 +438,7 @@ and parse_atomic_type = begin fun parser ->
       begin if ((( = ) parser.token) (Token.Reserved ("("))) then
         begin
         (lookahead parser);
-        begin let args = (parse_type_args parser) in
+        begin let args = (((parse_elems parser) comma_or_rparen) parse_type) in
         (Type.App (typector, args))
         end
         end
@@ -479,10 +479,6 @@ and parse_typector = begin fun parser ->
         (failwith ((expected parser) "identifier"))
     end
   end
-end
-
-and parse_type_args = begin fun parser ->
-  (((parse_elems parser) comma_or_rparen) parse_type)
 end
 
 let rec parse_pattern = begin fun parser ->
@@ -1264,8 +1260,23 @@ and parse_top_let_val = begin fun parser ->
 end
 
 and parse_top_exn_decl = begin fun parser ->
-  begin let exn_decl = (parse_ctor_decl parser) in
-  (Top.Exception (exn_decl))
+  begin
+  ((parse_token parser) (Token.Reserved ("exception")));
+  begin let exn_name = (Names.Id ((parse_capid parser))) in
+  begin if ((( = ) parser.token) (Token.Reserved ("("))) then
+    begin
+    (lookahead parser);
+    begin let t = (parse_type parser) in
+    begin
+    ((parse_token parser) (Token.Reserved (")")));
+    (Top.Exception (exn_name, (Some (t))))
+    end
+    end
+    end
+  else
+    (Top.Exception (exn_name, None))
+  end
+  end
   end
 end
 
@@ -1321,7 +1332,7 @@ end
 
 and parse_ctor_decl = begin fun parser ->
   begin
-  (lookahead parser);
+  ((parse_token parser) (Token.Reserved ("def")));
   begin let ctor_name = (Names.Id ((parse_capid parser))) in
   begin if ((( = ) parser.token) (Token.Reserved ("("))) then
     begin

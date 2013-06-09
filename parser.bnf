@@ -32,7 +32,7 @@ variant_pattern = ctor ('(' pattern_list))?
 list_pattern = [elems ';' ']' pattern]
 record_pattern = [elems ';' '}' field_pattern]
 field_pattern = val_path ('=' pattern)?
-parens_pattern = (')' | pattern_list)
+parens_pattern = ')' | pattern_list
 pattern_list = [elems ',' ')' pattern]
 
 expr = assign_expr
@@ -94,7 +94,7 @@ top =
 top_open = mod_path
 top_let_fun = 'def' val_name params block
 top_let_val = 'var' pattern '=' expr
-top_exn_decl = ctor_decl
+top_exn_decl = 'exception' <capid> ('(' type ')')?
 top_typedef = <lowid> ('=' type | type_repr)
 type_repr =
   | ':' ([indented_elems ctor_decl] | [indented_elems field_decl])
