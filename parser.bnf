@@ -1,24 +1,14 @@
 
-<int>
-<string>
-<char>
-<capid>
-<lowid>
-<op>
-<cmp_op>
-<cons_op>
-<add_op>
-<mul_op>
-<pow_op>
-
 [elems sep term elem] = term | elem (term | sep [elems sep term elem])
+[indented_elems elem] = [elems (';' | <newline>) <undent> elem]
+[braced_elems elem] = [elems ';' '}' elem]
 [block_like_elems elem] =
-  | ':' [elems (';' | <newline>) <undent> elem]
-  | '{' [elems ';' '}' elem]
+  | ':' [indented_elems elem]
+  | '{' [braced_elems elem]
 
 literal = <int> | <string> | <char>
-capid = <capid>
 lowid = <lowid>
+capid = <capid>
 op = '(' <op> ')'
 val_name = lowid | '$' op
 val_path = val_name | capid '.' val_path
@@ -39,13 +29,14 @@ atomic_pattern =
   | literal
   | val_name
   | variant_pattern
-  | list_pattern
-  | record_pattern parens_pattern
+  | '[' list_pattern
+  | '{' record_pattern
+  | '(' parens_pattern
 variant_pattern = ctor ('(' pattern_list))?
-list_pattern = '[' [elems ';' ']' pattern]
-record_pattern = '{' [elems ';' '}' field_pattern]
+list_pattern = [elems ';' ']' pattern]
+record_pattern = [elems ';' '}' field_pattern]
 field_pattern = val_path ('=' pattern)?
-parens_pattern = '(' (')' | pattern_list)
+parens_pattern = (')' | pattern_list)
 pattern_list = [elems ',' ')' pattern]
 
 expr = assign_expr
@@ -63,20 +54,20 @@ dot_expr = atomic_expr ('.' ('{' [elems ';' '}' field_def] | val_path))?
 atomic_expr =
   | literal
   | var_or_ctor_app
-  | abs
-  | list
-  | record
-  | parens
-  | if_expr
-  | match_expr
-  | try_expr
+  | '^' abs
+  | '[' list
+  | '(' parens
+  | '{' record
+  | 'if' if_expr
+  | 'match' match_expr
+  | 'try' try_expr
 var_or_ctor_app = val_name | capid ('.' var_or_ctor_app | ctor_app)
 ctor_app = '(' args | '^' abs | <empty>
-abs = '^' params block
+abs = params block
 params = '(' (')' | pattern_list)
-block = indented_block | braced_block
-indented_block = ':' block_elem <undent>
-braced_block = '{' [block_elem] '}'
+block = ':' indented_block | '{' braced_block
+indented_block = block_elem <undent>
+braced_block = block_elem '}'
 block_elem =
   | let_val block_sep block_elem
   | let_fun block_sep block_elem
@@ -85,30 +76,30 @@ block_elem =
 let_val = 'var' pattern '=' expr
 let_fun = 'def' val_name params block
 block_sep = ';' | newline
-list =  '[' #loop=(']' | expr (']' | ';' loop))
-parens = '(' (')' | expr_list)
+list =  [elems ';' ']' expr]
+parens = ')' | expr_list
 args = ')' | expr_list
 expr_list = [elems ',' ')' expr]
-record = '{' [elems ';' '}' field_def]
+record = [elems ';' '}' field_def]
 field_def = val_path '=' expr
-if_expr = 'if' expr block newline? 'else' block
-match_expr = 'match' expr [block_like_elems case]
-try_expr = 'try' block newline? 'with' [block_like_elems case]
+if_expr = expr block newline? 'else' block
+match_expr = expr [block_like_elems case]
+try_expr = block newline? 'with' [block_like_elems case]
 case = 'case' pattern ('when' expr)? block
 
 top =
-  | top_open
+  | 'open' top_open
   | top_let_fun
   | top_let_val
   | 'rec' [block_like_elems top_let_fun]
   | top_exn_decl
-  | top_typedef
+  | 'type' top_typedef
   | expr
-top_open = 'open' mod_path
+top_open = mod_path
 top_let_fun = 'def' val_name params block
 top_let_val = 'var' pattern '=' expr
 top_exn_decl = ctor_decl
-top_typedef = 'type' lowid ('=' type | type_repr)
+top_typedef = lowid ('=' type | type_repr)
 type_repr =
   | ':' ([indented_elems ctor_decl] | [indented_elems field_decl])
   | '{' ([indented_elems ctor_decl] | [indented_elems field_decl])
