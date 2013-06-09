@@ -13,9 +13,8 @@ mod_path = <capid> ('.' mod_path)?
 
 type = tuple_type
 tuple_type = atomic_type ('*' atomic_type)*
-atomic_type = typector ('(' type_args)? | '(' type ')'
+atomic_type = typector ('(' [elems ',' ')' type])? | '(' type ')'
 typector = <lowid> | <capid> '.' typector
-type_args = [elems ',' ')' type]
 
 pattern = as_pattern
 as_pattern = or_pattern ('as' val_name)?
@@ -65,7 +64,7 @@ block = ':' indented_block | '{' braced_block
 indented_block = block_elem <undent>
 braced_block = block_elem '}'
 block_elem =
-  | let_val block_sep block_elem
+  | 'var' let_val block_sep block_elem
   | let_fun block_sep block_elem
   | 'rec' [block_like_elems let_fun] block_sep block_elem
   | expr ((';' | newline) block_elem?
@@ -84,21 +83,21 @@ try_expr = block newline? 'with' [block_like_elems case]
 case = 'case' pattern ('when' expr)? block
 
 top =
+  | 'var' top_let_val
   | top_let_fun
-  | top_let_val
   | 'rec' [block_like_elems top_let_fun]
   | 'open' top_open
   | 'exception' top_exn_decl
   | 'type' top_typedef
   | expr
+top_let_val = pattern '=' expr
 top_let_fun = 'def' val_name params block
-top_let_val = 'var' pattern '=' expr
 top_open = mod_path
 top_exn_decl = <capid> ('(' type ')')?
 top_typedef = <lowid> ('=' type | type_repr)
 type_repr =
   | ':' ([indented_elems ctor_decl] | [indented_elems field_decl])
-  | '{' ([indented_elems ctor_decl] | [indented_elems field_decl])
+  | '{' ([braced_elems ctor_decl] | [braced_elems field_decl])
 ctor_decl = 'def' <capid> ('(' type ')')?
 field_decl = 'mutable'? val_name ':' type
 

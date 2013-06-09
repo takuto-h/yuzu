@@ -1024,11 +1024,14 @@ and parse_block_elem = begin fun parser ->
   begin fun is_term ->
     begin match parser.token with
       | (Token.Reserved("var")) ->
+        begin
+        (lookahead parser);
         begin let (val_name, val_expr) = (parse_let_val parser) in
         begin
         (parse_block_sep parser);
         begin let cont_expr = ((parse_block_elem parser) is_term) in
         (Expr.LetVal (val_name, val_expr, cont_expr))
+        end
         end
         end
         end
@@ -1076,14 +1079,11 @@ and parse_block_elem = begin fun parser ->
 end
 
 and parse_let_val = begin fun parser ->
-  begin
-  ((parse_token parser) (Token.Reserved ("var")));
   begin let val_pat = (parse_pattern parser) in
   begin
   ((parse_token parser) (Token.CmpOp ("=")));
   begin let val_expr = (parse_expr parser) in
   (val_pat, val_expr)
-  end
   end
   end
   end
@@ -1228,10 +1228,13 @@ end
 
 let rec parse_top = begin fun parser ->
   begin match parser.token with
+    | (Token.Reserved("var")) ->
+      begin
+      (lookahead parser);
+      (parse_top_let_val parser)
+      end
     | (Token.Reserved("def")) ->
       (Top.LetFun ((( :: ) ((parse_top_let_fun parser), []))))
-    | (Token.Reserved("var")) ->
-      (parse_top_let_val parser)
     | (Token.Reserved("rec")) ->
       begin
       (lookahead parser);
@@ -1257,6 +1260,15 @@ let rec parse_top = begin fun parser ->
   end
 end
 
+and parse_top_let_val = begin fun parser ->
+  begin let val_pat = (parse_pattern parser) in
+  begin
+  ((parse_token parser) (Token.CmpOp ("=")));
+  (Top.LetVal (val_pat, (parse_expr parser)))
+  end
+  end
+end
+
 and parse_top_let_fun = begin fun parser ->
   begin
   ((parse_token parser) (Token.Reserved ("def")));
@@ -1265,18 +1277,6 @@ and parse_top_let_fun = begin fun parser ->
   begin let body_expr = (parse_block parser) in
   (fun_name, ((make_abs params) body_expr))
   end
-  end
-  end
-  end
-end
-
-and parse_top_let_val = begin fun parser ->
-  begin
-  ((parse_token parser) (Token.Reserved ("var")));
-  begin let val_pat = (parse_pattern parser) in
-  begin
-  ((parse_token parser) (Token.CmpOp ("=")));
-  (Top.LetVal (val_pat, (parse_expr parser)))
   end
   end
   end
