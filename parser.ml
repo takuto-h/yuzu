@@ -19,23 +19,17 @@ let rec create = begin fun lexer ->
   }
 end
 
-let rec make_variant_pattern = begin fun str ->
-  begin fun args ->
-    (Pattern.Variant (([], (Names.Id (str))), args))
-  end
-end
-
 let rec make_cons_pattern = begin fun lhs ->
   begin fun rhs ->
-    ((make_variant_pattern "::") (( :: ) (lhs, (( :: ) (rhs, [])))))
+    (Pattern.Variant (([], (Names.Op ("::"))), (( :: ) (lhs, (( :: ) (rhs, []))))))
   end
 end
 
 let wildcard_pattern = (Pattern.Var ((Names.Id ("_"))))
 
-let nil_pattern = ((make_variant_pattern "[]") (( :: ) (wildcard_pattern, [])))
+let nil_pattern = (Pattern.Variant (([], (Names.Id ("[]"))), (( :: ) (wildcard_pattern, []))))
 
-let unit_pattern = ((make_variant_pattern "()") (( :: ) (wildcard_pattern, [])))
+let unit_pattern = (Pattern.Variant (([], (Names.Id ("()"))), (( :: ) (wildcard_pattern, []))))
 
 let rec make_op_var = begin fun str ->
   (Expr.Var ([], (Names.Op (str))))

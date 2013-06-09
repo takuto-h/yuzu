@@ -17,15 +17,12 @@ def create(lexer): {
   pos = Pos.dummy;
 }
 
-def make_variant_pattern(str, args):
-  Pattern.Variant(([], Names.Id(str)), args)
-
 def make_cons_pattern(lhs, rhs):
-  make_variant_pattern("::", [lhs;rhs])
+  Pattern.Variant(([], Names.Op("::")), [lhs;rhs])
 
 var wildcard_pattern = Pattern.Var(Names.Id("_"))
-var nil_pattern = make_variant_pattern("[]", [wildcard_pattern])
-var unit_pattern = make_variant_pattern("()", [wildcard_pattern])
+var nil_pattern = Pattern.Variant(([], Names.Id("[]")), [wildcard_pattern])
+var unit_pattern = Pattern.Variant(([], Names.Id("()")), [wildcard_pattern])
 
 def make_op_var(str):
   Expr.Var([], Names.Op(str))

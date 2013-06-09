@@ -1,0 +1,6 @@
+
+def fold_left(init, list, func):
+  List.fold_left(func, init, list)
+
+def fold_right(list, init, func):
+  List.fold_right(func, list, init)

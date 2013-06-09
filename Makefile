@@ -1,5 +1,6 @@
 
 SRCS =\
+  yzList.ml\
   pos.ml source.ml token.ml lexer.ml\
   literal.ml names.ml pattern.ml type.ml expr.ml top.ml parser.ml\
   trans.ml main.ml
