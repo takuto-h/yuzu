@@ -74,6 +74,16 @@ let rec skip = begin fun parser ->
   end
 end
 
+let rec parse_token = begin fun parser ->
+  begin fun token ->
+    begin if ((( <> ) parser.token) token) then
+      (failwith ((expected parser) (Token.show token)))
+    else
+      (lookahead parser)
+    end
+  end
+end
+
 let rec parse_non_assoc = begin fun parser ->
   begin fun get_op ->
     begin fun parse_lower ->
@@ -288,13 +298,9 @@ let rec parse_op = begin fun parser ->
     | (Some(str)) ->
       begin
       (lookahead parser);
-      begin if ((( <> ) parser.token) (Token.Reserved (")"))) then
-        (failwith ((expected parser) "')'"))
-      else
-        begin
-        (lookahead parser);
-        str
-        end
+      begin
+      ((parse_token parser) (Token.Reserved (")")));
+      str
       end
       end
     | (None(_)) ->
@@ -309,13 +315,9 @@ let rec parse_val_name = begin fun parser ->
     | (Token.Reserved("$")) ->
       begin
       (lookahead parser);
-      begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
-        (failwith ((expected parser) "'('"))
-      else
-        begin
-        (lookahead parser);
-        (Names.Op ((parse_op parser)))
-        end
+      begin
+      ((parse_token parser) (Token.Reserved ("(")));
+      (Names.Op ((parse_op parser)))
       end
       end
     | _ ->
@@ -332,13 +334,9 @@ let rec parse_val_path = begin fun parser ->
         end
       | (Token.CapId(_)) ->
         begin let capid = (parse_capid parser) in
-        begin if ((( <> ) parser.token) (Token.Reserved ("."))) then
-          (failwith ((expected parser) "'.'"))
-        else
-          begin
-          (lookahead parser);
-          ((parse_val_path parser) (( :: ) (capid, mod_names)))
-          end
+        begin
+        ((parse_token parser) (Token.Reserved (".")));
+        ((parse_val_path parser) (( :: ) (capid, mod_names)))
         end
         end
       | _ ->
@@ -432,13 +430,9 @@ and parse_atomic_type = begin fun parser ->
       begin
       (lookahead parser);
       begin let t = (parse_type parser) in
-      begin if ((( <> ) parser.token) (Token.Reserved (")"))) then
-        (failwith ((expected parser) "')'"))
-      else
-        begin
-        (lookahead parser);
-        t
-        end
+      begin
+      ((parse_token parser) (Token.Reserved (")")));
+      t
       end
       end
       end
@@ -456,13 +450,9 @@ and parse_typector = begin fun parser ->
         end
       | (Token.CapId(_)) ->
         begin let capid = (parse_capid parser) in
-        begin if ((( <> ) parser.token) (Token.Reserved ("."))) then
-          (failwith ((expected parser) "'.'"))
-        else
-          begin
-          (lookahead parser);
-          ((parse_typector parser) (( :: ) (capid, mod_names)))
-          end
+        begin
+        ((parse_token parser) (Token.Reserved (".")));
+        ((parse_typector parser) (( :: ) (capid, mod_names)))
         end
         end
       | _ ->
@@ -937,20 +927,16 @@ and parse_abs = begin fun parser ->
 end
 
 and parse_params = begin fun parser ->
-  begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
-    (failwith ((expected parser) "'('"))
-  else
+  begin
+  ((parse_token parser) (Token.Reserved ("(")));
+  begin if ((( = ) parser.token) (Token.Reserved (")"))) then
     begin
     (lookahead parser);
-    begin if ((( = ) parser.token) (Token.Reserved (")"))) then
-      begin
-      (lookahead parser);
-      (( :: ) ((Pattern.Variant (([], (Names.Id ("()"))), (( :: ) ((Pattern.Var ((Names.Id ("_")))), [])))), []))
-      end
-    else
-      (parse_pattern_list parser)
+    (( :: ) ((Pattern.Variant (([], (Names.Id ("()"))), (( :: ) ((Pattern.Var ((Names.Id ("_")))), [])))), []))
     end
-    end
+  else
+    (parse_pattern_list parser)
+  end
   end
 end
 
@@ -980,13 +966,9 @@ and parse_indented_block = begin fun parser ->
   begin
   (lookahead parser);
   begin let expr = ((parse_block_elem parser) is_term) in
-  begin if ((( <> ) parser.token) Token.Undent) then
-    (failwith ((expected parser) "undent"))
-  else
-    begin
-    (lookahead parser);
-    expr
-    end
+  begin
+  ((parse_token parser) Token.Undent);
+  expr
   end
   end
   end
@@ -1005,13 +987,9 @@ and parse_braced_block = begin fun parser ->
   begin
   (lookahead parser);
   begin let expr = ((parse_block_elem parser) is_term) in
-  begin if ((( <> ) parser.token) (Token.Reserved ("}"))) then
-    (failwith ((expected parser) "'}'"))
-  else
-    begin
-    (lookahead parser);
-    expr
-    end
+  begin
+  ((parse_token parser) (Token.Reserved ("}")));
+  expr
   end
   end
   end
@@ -1077,34 +1055,26 @@ and parse_let_val = begin fun parser ->
   begin
   (lookahead parser);
   begin let val_pat = (parse_pattern parser) in
-  begin if ((( <> ) parser.token) (Token.CmpOp ("="))) then
-    (failwith ((expected parser) "'='"))
-  else
-    begin
-    (lookahead parser);
-    begin let val_expr = (parse_expr parser) in
-    (val_pat, val_expr)
-    end
-    end
+  begin
+  ((parse_token parser) (Token.CmpOp ("=")));
+  begin let val_expr = (parse_expr parser) in
+  (val_pat, val_expr)
+  end
   end
   end
   end
 end
 
 and parse_let_fun = begin fun parser ->
-  begin if ((( <> ) parser.token) (Token.Reserved ("def"))) then
-    (failwith ((expected parser) "'def'"))
-  else
-    begin
-    (lookahead parser);
-    begin let fun_name = (parse_val_name parser) in
-    begin let params = (parse_params parser) in
-    begin let body_expr = (parse_block parser) in
-    (fun_name, ((make_abs params) body_expr))
-    end
-    end
-    end
-    end
+  begin
+  ((parse_token parser) (Token.Reserved ("def")));
+  begin let fun_name = (parse_val_name parser) in
+  begin let params = (parse_params parser) in
+  begin let body_expr = (parse_block parser) in
+  (fun_name, ((make_abs params) body_expr))
+  end
+  end
+  end
   end
 end
 
@@ -1210,15 +1180,11 @@ end
 
 and parse_field_def = begin fun parser ->
   begin let field_name = ((parse_val_path parser) []) in
-  begin if ((( <> ) parser.token) (Token.CmpOp ("="))) then
-    (failwith ((expected parser) "'='"))
-  else
-    begin
-    (lookahead parser);
-    begin let expr = (parse_expr parser) in
-    (field_name, expr)
-    end
-    end
+  begin
+  ((parse_token parser) (Token.CmpOp ("=")));
+  begin let expr = (parse_expr parser) in
+  (field_name, expr)
+  end
   end
   end
 end
@@ -1230,15 +1196,11 @@ and parse_if_expr = begin fun parser ->
   begin let then_expr = (parse_block parser) in
   begin
   ((skip parser) Token.Newline);
-  begin if ((( <> ) parser.token) (Token.Reserved ("else"))) then
-    (failwith ((expected parser) "'else'"))
-  else
-    begin
-    (lookahead parser);
-    begin let else_expr = (parse_block parser) in
-    (Expr.If (cond_expr, then_expr, else_expr))
-    end
-    end
+  begin
+  ((parse_token parser) (Token.Reserved ("else")));
+  begin let else_expr = (parse_block parser) in
+  (Expr.If (cond_expr, then_expr, else_expr))
+  end
   end
   end
   end
@@ -1263,15 +1225,11 @@ and parse_try_expr = begin fun parser ->
   begin let expr = (parse_block parser) in
   begin
   ((skip parser) Token.Newline);
-  begin if ((( <> ) parser.token) (Token.Reserved ("with"))) then
-    (failwith ((expected parser) "'with'"))
-  else
-    begin
-    (lookahead parser);
-    begin let cases = ((parse_block_like_elems parser) parse_case) in
-    (Expr.Try (expr, cases))
-    end
-    end
+  begin
+  ((parse_token parser) (Token.Reserved ("with")));
+  begin let cases = ((parse_block_like_elems parser) parse_case) in
+  (Expr.Try (expr, cases))
+  end
   end
   end
   end
@@ -1353,13 +1311,9 @@ and parse_top_let_val = begin fun parser ->
   begin
   (lookahead parser);
   begin let val_pat = (parse_pattern parser) in
-  begin if ((( <> ) parser.token) (Token.CmpOp ("="))) then
-    (failwith ((expected parser) "'='"))
-  else
-    begin
-    (lookahead parser);
-    (Top.LetVal (val_pat, (parse_expr parser)))
-    end
+  begin
+  ((parse_token parser) (Token.CmpOp ("=")));
+  (Top.LetVal (val_pat, (parse_expr parser)))
   end
   end
   end
@@ -1434,13 +1388,9 @@ and parse_ctor_decl = begin fun parser ->
     begin
     (lookahead parser);
     begin let t = (parse_type parser) in
-    begin if ((( <> ) parser.token) (Token.Reserved (")"))) then
-      (failwith ((expected parser) "')'"))
-    else
-      begin
-      (lookahead parser);
-      (ctor_name, (Some (t)))
-      end
+    begin
+    ((parse_token parser) (Token.Reserved (")")));
+    (ctor_name, (Some (t)))
     end
     end
     end
@@ -1458,15 +1408,11 @@ and parse_field_decl = begin fun parser ->
     ()
   end;
   begin let field_name = (parse_val_name parser) in
-  begin if ((( <> ) parser.token) (Token.Reserved (":"))) then
-    (failwith ((expected parser) "':'"))
-  else
-    begin
-    (lookahead parser);
-    begin let t = (parse_type parser) in
-    (is_mutable, field_name, t)
-    end
-    end
+  begin
+  ((parse_token parser) (Token.Reserved (":")));
+  begin let t = (parse_type parser) in
+  (is_mutable, field_name, t)
+  end
   end
   end
   end

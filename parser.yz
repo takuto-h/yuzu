@@ -48,6 +48,12 @@ def skip(parser, token):
   else:
     ()
 
+def parse_token(parser, token):
+  if parser.token <> token:
+    failwith(expected(parser, Token.show(token)))
+  else:
+    lookahead(parser)
+
 def parse_non_assoc(parser, get_op, parse_lower):
   var lhs = parse_lower(parser)
   match get_op(parser.token):
@@ -165,11 +171,8 @@ def parse_op(parser):
   match Token.get_op(parser.token):
     case Some(str):
       lookahead(parser)
-      if parser.token <> Token.Reserved(")"):
-        failwith(expected(parser, "')'"))
-      else:
-        lookahead(parser)
-        str
+      parse_token(parser, Token.Reserved(")"))
+      str
     case None:
       failwith(expected(parser, "operator"))
 
@@ -179,11 +182,8 @@ def parse_val_name(parser):
       Names.Id(parse_lowid(parser))
     case Token.Reserved("$"):
       lookahead(parser)
-      if parser.token <> Token.Reserved("("):
-        failwith(expected(parser, "'('"))
-      else:
-        lookahead(parser)
-        Names.Op(parse_op(parser))
+      parse_token(parser, Token.Reserved("("))
+      Names.Op(parse_op(parser))
     case _:
       failwith(expected(parser, "identifier"))
 
@@ -194,11 +194,8 @@ def parse_val_path(parser, mod_names):
       (List.rev(mod_names), val_name)
     case Token.CapId(_):
       var capid = parse_capid(parser)
-      if parser.token <> Token.Reserved("."):
-        failwith (expected(parser, "'.'"))
-      else:
-        lookahead(parser)
-        parse_val_path(parser, capid::mod_names)
+      parse_token(parser, Token.Reserved("."))
+      parse_val_path(parser, capid::mod_names)
     case _:
       failwith(expected(parser, "identifier"))
   
@@ -259,11 +256,8 @@ rec:
       case Token.Reserved("("):
         lookahead(parser)
         var t = parse_type(parser)
-        if parser.token <> Token.Reserved(")"):
-          failwith(expected(parser, "')'"))
-        else:
-          lookahead(parser)
-          t
+        parse_token(parser, Token.Reserved(")"))
+        t
       case _:
         failwith(expected(parser, "type"))
   
@@ -274,11 +268,8 @@ rec:
         (List.rev(mod_names), typector_name)
       case Token.CapId(_):
         var capid = parse_capid(parser)
-        if parser.token <> Token.Reserved("."):
-          failwith(expected(parser, "'.'"))
-        else:
-          lookahead(parser)
-          parse_typector(parser, capid::mod_names)
+        parse_token(parser, Token.Reserved("."))
+        parse_typector(parser, capid::mod_names)
       case _:
         failwith(expected(parser, "identifier"))
   
@@ -589,15 +580,12 @@ rec:
     make_abs(params, body_expr)
   
   def parse_params(parser):
-    if parser.token <> Token.Reserved("("):
-      failwith(expected(parser, "'('"))
-    else:
+    parse_token(parser, Token.Reserved("("))
+    if parser.token = Token.Reserved(")"):
       lookahead(parser)
-      if parser.token = Token.Reserved(")"):
-        lookahead(parser)
-        [Pattern.Variant(([], Names.Id("()")), [Pattern.Var(Names.Id("_"))])]
-      else:
-        parse_pattern_list(parser)
+      [Pattern.Variant(([], Names.Id("()")), [Pattern.Var(Names.Id("_"))])]
+    else:
+      parse_pattern_list(parser)
   
   def parse_block(parser):
     match parser.token:
@@ -618,11 +606,8 @@ rec:
           false
     lookahead(parser)
     var expr = parse_block_elem(parser, is_term)
-    if parser.token <> Token.Undent:
-      failwith(expected(parser, "undent"))
-    else:
-      lookahead(parser)
-      expr
+    parse_token(parser, Token.Undent)
+    expr
   
   def parse_braced_block(parser):
     def is_term(token):
@@ -633,11 +618,8 @@ rec:
           false
     lookahead(parser)
     var expr = parse_block_elem(parser, is_term)
-    if parser.token <> Token.Reserved("}"):
-      failwith(expected(parser, "'}'"))
-    else:
-      lookahead(parser)
-      expr
+    parse_token(parser, Token.Reserved("}"))
+    expr
     
   def parse_block_elem(parser, is_term):
     match parser.token:
@@ -673,22 +655,16 @@ rec:
   def parse_let_val(parser):
     lookahead(parser)
     var val_pat = parse_pattern(parser)
-    if parser.token <> Token.CmpOp("="):
-      failwith(expected(parser, "'='"))
-    else:
-      lookahead(parser)
-      var val_expr = parse_expr(parser)
-      (val_pat,val_expr)
+    parse_token(parser, Token.CmpOp("="))
+    var val_expr = parse_expr(parser)
+    (val_pat,val_expr)
     
   def parse_let_fun(parser):
-    if parser.token <> Token.Reserved("def"):
-      failwith(expected(parser, "'def'"))
-    else:
-      lookahead(parser)
-      var fun_name = parse_val_name(parser)
-      var params = parse_params(parser)
-      var body_expr = parse_block(parser)
-      (fun_name, make_abs(params, body_expr))
+    parse_token(parser, Token.Reserved("def"))
+    var fun_name = parse_val_name(parser)
+    var params = parse_params(parser)
+    var body_expr = parse_block(parser)
+    (fun_name, make_abs(params, body_expr))
     
   def parse_block_sep(parser):
     match parser.token:
@@ -751,24 +727,18 @@ rec:
   
   def parse_field_def(parser):
     var field_name = parse_val_path(parser, [])
-    if parser.token <> Token.CmpOp("="):
-      failwith(expected(parser, "'='"))
-    else:
-      lookahead(parser)
-      var expr = parse_expr(parser)
-      (field_name, expr)
+    parse_token(parser, Token.CmpOp("="))
+    var expr = parse_expr(parser)
+    (field_name, expr)
   
   def parse_if_expr(parser):
     lookahead(parser)
     var cond_expr = parse_expr(parser)
     var then_expr = parse_block(parser)
     skip(parser, Token.Newline)
-    if parser.token <> Token.Reserved("else"):
-      failwith(expected(parser, "'else'"))
-    else:
-      lookahead(parser)
-      var else_expr = parse_block(parser)
-      Expr.If(cond_expr,then_expr,else_expr)
+    parse_token(parser, Token.Reserved("else"))
+    var else_expr = parse_block(parser)
+    Expr.If(cond_expr,then_expr,else_expr)
     
   def parse_match_expr(parser):
     lookahead(parser)
@@ -780,12 +750,9 @@ rec:
     lookahead(parser)
     var expr = parse_block(parser)
     skip(parser, Token.Newline)
-    if parser.token <> Token.Reserved("with"):
-      failwith(expected(parser, "'with'"))
-    else:
-      lookahead(parser)
-      var cases = parse_block_like_elems(parser, parse_case)
-      Expr.Try(expr, cases)
+    parse_token(parser, Token.Reserved("with"))
+    var cases = parse_block_like_elems(parser, parse_case)
+    Expr.Try(expr, cases)
 
   def parse_case(parser):
     match parser.token:
@@ -841,11 +808,8 @@ rec:
   def parse_top_let_val(parser):
     lookahead(parser)
     var val_pat = parse_pattern(parser)
-    if parser.token <> Token.CmpOp("="):
-      failwith(expected(parser, "'='"))
-    else:
-      lookahead(parser)
-      Top.LetVal(val_pat, parse_expr(parser))
+    parse_token(parser, Token.CmpOp("="))
+    Top.LetVal(val_pat, parse_expr(parser))
   
   def parse_top_exn_decl(parser):
     var exn_decl = parse_ctor_decl(parser)
@@ -892,11 +856,8 @@ rec:
     else:
       lookahead(parser)
       var t = parse_type(parser)
-      if parser.token <> Token.Reserved(")"):
-        failwith(expected(parser, "')'"))
-      else:
-        lookahead(parser)
-        (ctor_name, Some(t))
+      parse_token(parser, Token.Reserved(")"))
+      (ctor_name, Some(t))
   
   def parse_field_decl(parser):
     var is_mutable = (parser.token = Token.Reserved("mutable"))
@@ -905,12 +866,9 @@ rec:
     else:
       ()
     var field_name = parse_val_name(parser)
-    if parser.token <> Token.Reserved(":"):
-      failwith(expected(parser, "':'"))
-    else:
-      lookahead(parser)
-      var t = parse_type(parser)
-      (is_mutable, field_name, t)
+    parse_token(parser, Token.Reserved(":"))
+    var t = parse_type(parser)
+    (is_mutable, field_name, t)
 
 // END rec: def parse_top
 
