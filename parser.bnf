@@ -88,13 +88,13 @@ top =
   | top_let_fun
   | top_let_val
   | 'rec' [block_like_elems top_let_fun]
-  | top_exn_decl
+  | 'exception' top_exn_decl
   | 'type' top_typedef
   | expr
 top_open = mod_path
 top_let_fun = 'def' val_name params block
 top_let_val = 'var' pattern '=' expr
-top_exn_decl = 'exception' <capid> ('(' type ')')?
+top_exn_decl = <capid> ('(' type ')')?
 top_typedef = <lowid> ('=' type | type_repr)
 type_repr =
   | ':' ([indented_elems ctor_decl] | [indented_elems field_decl])

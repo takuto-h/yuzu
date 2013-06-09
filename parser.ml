@@ -1217,7 +1217,10 @@ let rec parse_top = begin fun parser ->
       (Top.LetFun (((parse_block_like_elems parser) parse_top_let_fun)))
       end
     | (Token.Reserved("exception")) ->
+      begin
+      (lookahead parser);
       (parse_top_exn_decl parser)
+      end
     | (Token.Reserved("type")) ->
       begin
       (lookahead parser);
@@ -1260,8 +1263,6 @@ and parse_top_let_val = begin fun parser ->
 end
 
 and parse_top_exn_decl = begin fun parser ->
-  begin
-  ((parse_token parser) (Token.Reserved ("exception")));
   begin let exn_name = (Names.Id ((parse_capid parser))) in
   begin if ((( = ) parser.token) (Token.Reserved ("("))) then
     begin
@@ -1275,7 +1276,6 @@ and parse_top_exn_decl = begin fun parser ->
     end
   else
     (Top.Exception (exn_name, None))
-  end
   end
   end
 end

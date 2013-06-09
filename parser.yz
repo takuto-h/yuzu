@@ -751,6 +751,7 @@ rec:
         lookahead(parser)
         Top.LetFun(parse_block_like_elems(parser, parse_top_let_fun))
       case Token.Reserved("exception"):
+        lookahead(parser)
         parse_top_exn_decl(parser)
       case Token.Reserved("type"):
         lookahead(parser)
@@ -776,7 +777,6 @@ rec:
     Top.LetVal(val_pat, parse_expr(parser))
   
   def parse_top_exn_decl(parser):
-    parse_token(parser, Token.Reserved("exception"))
     var exn_name = Names.Id(parse_capid(parser))
     if parser.token = Token.Reserved("("):
       lookahead(parser)
