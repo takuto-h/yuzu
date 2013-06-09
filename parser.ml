@@ -19,6 +19,32 @@ let rec create = begin fun lexer ->
   }
 end
 
+let rec make_variant_pattern = begin fun str ->
+  begin fun args ->
+    (Pattern.Variant (([], (Names.Id (str))), args))
+  end
+end
+
+let rec make_cons_pattern = begin fun lhs ->
+  begin fun rhs ->
+    ((make_variant_pattern "::") (( :: ) (lhs, (( :: ) (rhs, [])))))
+  end
+end
+
+let wildcard_pattern = (Pattern.Var ((Names.Id ("_"))))
+
+let nil_pattern = ((make_variant_pattern "[]") (( :: ) (wildcard_pattern, [])))
+
+let unit_pattern = ((make_variant_pattern "()") (( :: ) (wildcard_pattern, [])))
+
+let rec make_op_var = begin fun str ->
+  (Expr.Var ([], (Names.Op (str))))
+end
+
+let nil_expr = (Expr.Var ([], ((Names.Id ("[]")))))
+
+let unit_expr = (Expr.Var ([], ((Names.Id ("()")))))
+
 let rec make_abs = begin fun params ->
   begin fun body_expr ->
     begin let rec mk_abs = begin fun param ->
@@ -94,7 +120,7 @@ let rec parse_non_assoc = begin fun parser ->
         | (Some(str)) ->
           begin
           (lookahead parser);
-          begin let op = (Expr.Var ([], (Names.Op (str)))) in
+          begin let op = (make_op_var str) in
           begin let rhs = (parse_lower parser) in
           (Expr.App ((Expr.App (op, lhs)), rhs))
           end
@@ -116,7 +142,7 @@ let rec parse_right_assoc = begin fun parser ->
         | (Some(str)) ->
           begin
           (lookahead parser);
-          begin let op = (Expr.Var ([], ((Names.Op (str))))) in
+          begin let op = (make_op_var str) in
           begin let rhs = (((parse_right_assoc parser) get_op) parse_lower) in
           (Expr.App ((Expr.App (op, lhs)), rhs))
           end
@@ -139,7 +165,7 @@ let rec parse_left_assoc = begin fun parser ->
           | (Some(str)) ->
             begin
             (lookahead parser);
-            begin let op = (Expr.Var ([], ((Names.Op (str))))) in
+            begin let op = (make_op_var str) in
             begin let rhs = (parse_lower parser) in
             (loop (Expr.App ((Expr.App (op, lhs)), rhs)))
             end
@@ -525,7 +551,7 @@ and parse_cons_pattern = begin fun parser ->
     begin
     (lookahead parser);
     begin let rhs = (parse_cons_pattern parser) in
-    (Pattern.Variant (([], (Names.Op ("::"))), (( :: ) (lhs, (( :: ) (rhs, []))))))
+    ((make_cons_pattern lhs) rhs)
     end
     end
   else
@@ -576,7 +602,7 @@ and parse_variant_pattern = begin fun parser ->
     end
     end
   else
-    (Pattern.Variant (ctor, (( :: ) ((Pattern.Var ((Names.Id ("_")))), []))))
+    (Pattern.Variant (ctor, (( :: ) (wildcard_pattern, []))))
   end
   end
 end
@@ -585,9 +611,9 @@ and parse_list_pattern = begin fun parser ->
   begin let list = (((parse_elems parser) semi_or_rbracket) parse_pattern) in
   (((List.fold_right begin fun elem ->
     begin fun acc ->
-      (Pattern.Variant (([], (Names.Op ("::"))), (( :: ) (elem, (( :: ) (acc, []))))))
+      ((make_cons_pattern elem) acc)
     end
-  end) list) (Pattern.Variant (([], (Names.Id ("[]"))), (( :: ) ((Pattern.Var ((Names.Id ("_")))), [])))))
+  end) list) nil_pattern)
   end
 end
 
@@ -614,7 +640,7 @@ and parse_parens_pattern = begin fun parser ->
   begin if ((( = ) parser.token) (Token.Reserved (")"))) then
     begin
     (lookahead parser);
-    (Pattern.Variant (([], (Names.Id ("()"))), (( :: ) ((Pattern.Var ((Names.Id ("_")))), []))))
+    unit_pattern
     end
   else
     begin let list = (parse_pattern_list parser) in
@@ -698,7 +724,7 @@ and parse_cons_expr = begin fun parser ->
     | (Token.ConsOp(str)) ->
       begin
       (lookahead parser);
-      begin let op = (Expr.Var ([], ((Names.Op (str))))) in
+      begin let op = (make_op_var str) in
       begin let rhs = (parse_cons_expr parser) in
       (Expr.App (op, (Expr.Tuple ((( :: ) (lhs, (( :: ) (rhs, []))))))))
       end
@@ -755,14 +781,14 @@ and parse_unary_expr = begin fun parser ->
       begin
       (lookahead parser);
       begin let expr = (parse_unary_expr parser) in
-      (Expr.App ((Expr.Var ([], ((Names.Op ("~-"))))), expr))
+      (Expr.App ((make_op_var "~-"), expr))
       end
       end
     | (Token.AddOp("+")) ->
       begin
       (lookahead parser);
       begin let expr = (parse_unary_expr parser) in
-      (Expr.App ((Expr.Var ([], ((Names.Op ("~+"))))), expr))
+      (Expr.App ((make_op_var "~+"), expr))
       end
       end
     | _ ->
@@ -930,7 +956,7 @@ and parse_params = begin fun parser ->
   begin if ((( = ) parser.token) (Token.Reserved (")"))) then
     begin
     (lookahead parser);
-    (( :: ) ((Pattern.Variant (([], (Names.Id ("()"))), (( :: ) ((Pattern.Var ((Names.Id ("_")))), [])))), []))
+    (( :: ) (unit_pattern, []))
     end
   else
     (parse_pattern_list parser)
@@ -1087,12 +1113,12 @@ end
 
 and parse_list = begin fun parser ->
   begin let list = (((parse_elems parser) semi_or_rbracket) parse_expr) in
-  begin let ctor = (Expr.Var ([], ((Names.Op ("::"))))) in
+  begin let ctor = (make_op_var "::") in
   (((List.fold_right begin fun elem ->
     begin fun acc ->
       (Expr.App (ctor, (Expr.Tuple ((( :: ) (elem, (( :: ) (acc, []))))))))
     end
-  end) list) (Expr.Var ([], ((Names.Id ("[]"))))))
+  end) list) nil_expr)
   end
   end
 end
@@ -1101,7 +1127,7 @@ and parse_parens = begin fun parser ->
   begin if ((( = ) parser.token) (Token.Reserved (")"))) then
     begin
     (lookahead parser);
-    (Expr.Var ([], ((Names.Id ("()")))))
+    unit_expr
     end
   else
     begin let list = (parse_expr_list parser) in
@@ -1114,7 +1140,7 @@ and parse_args = begin fun parser ->
   begin if ((( = ) parser.token) (Token.Reserved (")"))) then
     begin
     (lookahead parser);
-    (( :: ) ((Expr.Var ([], (Names.Id ("()")))), []))
+    (( :: ) (unit_expr, []))
     end
   else
     (parse_expr_list parser)

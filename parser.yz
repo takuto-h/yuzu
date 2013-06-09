@@ -17,12 +17,28 @@ def create(lexer): {
   pos = Pos.dummy;
 }
 
+def make_variant_pattern(str, args):
+  Pattern.Variant(([], Names.Id(str)), args)
+
+def make_cons_pattern(lhs, rhs):
+  make_variant_pattern("::", [lhs;rhs])
+
+var wildcard_pattern = Pattern.Var(Names.Id("_"))
+var nil_pattern = make_variant_pattern("[]", [wildcard_pattern])
+var unit_pattern = make_variant_pattern("()", [wildcard_pattern])
+
+def make_op_var(str):
+  Expr.Var([], Names.Op(str))
+
+var nil_expr = Expr.Var([], (Names.Id("[]")))
+var unit_expr = Expr.Var([], (Names.Id("()")))
+
 def make_abs(params, body_expr):
-  def mk_abs(param, expr){ Expr.Abs(param, expr) }
+  def mk_abs(param, expr): Expr.Abs(param, expr)
   List.fold_right(mk_abs, params, body_expr)
 
 def make_app(fun_expr, arg_exprs):
-  def mk_app(e1, e2){ Expr.App(e1, e2) }
+  def mk_app(e1, e2): Expr.App(e1, e2)
   List.fold_left(mk_app, fun_expr, arg_exprs)
 
 def expected(parser, str_token):
@@ -61,7 +77,7 @@ def parse_non_assoc(parser, get_op, parse_lower):
       lhs
     case Some(str):
       lookahead(parser)
-      var op = Expr.Var([], Names.Op(str))
+      var op = make_op_var(str)
       var rhs = parse_lower(parser)
       Expr.App(Expr.App(op,lhs),rhs)
 
@@ -72,7 +88,7 @@ def parse_right_assoc(parser, get_op, parse_lower):
       lhs
     case Some(str):
       lookahead(parser)
-      var op = Expr.Var([], (Names.Op(str)))
+      var op = make_op_var(str)
       var rhs = parse_right_assoc(parser, get_op, parse_lower)
       Expr.App(Expr.App(op,lhs),rhs)
 
@@ -84,7 +100,7 @@ def parse_left_assoc(parser, get_op, parse_lower):
         lhs
       case Some(str):
         lookahead(parser)
-        var op = Expr.Var([], (Names.Op(str)))
+        var op = make_op_var(str)
         var rhs = parse_lower(parser)
         loop(Expr.App(Expr.App(op,lhs),rhs))
   loop(lhs)
@@ -316,7 +332,7 @@ rec:
     if parser.token = Token.ConsOp("::"):
       lookahead(parser)
       var rhs = parse_cons_pattern(parser)
-      Pattern.Variant(([], Names.Op("::")), [lhs;rhs])
+      make_cons_pattern(lhs, rhs)
     else:
       lhs
   
@@ -349,13 +365,13 @@ rec:
       var pat_list = parse_pattern_list(parser)
       Pattern.Variant(ctor, pat_list)
     else:
-      Pattern.Variant(ctor, [Pattern.Var(Names.Id("_"))])
+      Pattern.Variant(ctor, [wildcard_pattern])
     
   def parse_list_pattern(parser):
     var list = parse_elems(parser, semi_or_rbracket, parse_pattern)
     List.fold_right^(elem, acc){
-      Pattern.Variant(([], Names.Op("::")), [elem;acc])
-    }(list, Pattern.Variant(([], Names.Id("[]")), [Pattern.Var(Names.Id("_"))]))
+      make_cons_pattern(elem, acc)
+    }(list, nil_pattern)
   
   def parse_record_pattern(parser):
     Pattern.Record(parse_braced_elems(parser, parse_field_pattern))
@@ -372,7 +388,7 @@ rec:
   def parse_parens_pattern(parser):
     if parser.token = Token.Reserved(")"):
       lookahead(parser)
-      Pattern.Variant(([], Names.Id("()")), [Pattern.Var(Names.Id("_"))])
+      unit_pattern
     else:
       var list = parse_pattern_list(parser)
       Pattern.Tuple(list)
@@ -432,7 +448,7 @@ rec:
     match parser.token:
       case Token.ConsOp(str):
         lookahead(parser)
-        var op = Expr.Var([], (Names.Op(str)))
+        var op = make_op_var(str)
         var rhs = parse_cons_expr(parser)
         Expr.App(op,Expr.Tuple([lhs;rhs]))
       case _:
@@ -470,11 +486,11 @@ rec:
       case Token.AddOp("-"):
         lookahead(parser)
         var expr = parse_unary_expr(parser)
-        Expr.App(Expr.Var([],(Names.Op("~-"))),expr)
+        Expr.App(make_op_var("~-"),expr)
       case Token.AddOp("+"):
         lookahead(parser)
         var expr = parse_unary_expr(parser)
-        Expr.App(Expr.Var([],(Names.Op("~+"))),expr)
+        Expr.App(make_op_var("~+"),expr)
       case _:
         parse_prim_expr(parser)
   
@@ -577,7 +593,7 @@ rec:
     parse_token(parser, Token.Reserved("("))
     if parser.token = Token.Reserved(")"):
       lookahead(parser)
-      [Pattern.Variant(([], Names.Id("()")), [Pattern.Var(Names.Id("_"))])]
+      [unit_pattern]
     else:
       parse_pattern_list(parser)
   
@@ -669,15 +685,15 @@ rec:
   
   def parse_list(parser):
     var list = parse_elems(parser, semi_or_rbracket, parse_expr)
-    var ctor = Expr.Var([], (Names.Op("::")))
+    var ctor = make_op_var("::")
     List.fold_right^(elem, acc){
       Expr.App(ctor, Expr.Tuple([elem; acc]))
-    }(list, Expr.Var([], (Names.Id("[]"))))
+    }(list, nil_expr)
   
   def parse_parens(parser):
     if parser.token = Token.Reserved(")"):
       lookahead(parser)
-      Expr.Var([], (Names.Id("()")))
+      unit_expr
     else:
       var list = parse_expr_list(parser)
       Expr.Tuple(list)
@@ -685,7 +701,7 @@ rec:
   def parse_args(parser):
     if parser.token = Token.Reserved(")"):
       lookahead(parser)
-      [Expr.Var([], Names.Id("()"))]
+      [unit_expr]
     else:
       parse_expr_list(parser)
   
