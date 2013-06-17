@@ -32,6 +32,14 @@ let rec infer = begin fun inf ->
     begin match expr with
       | (Expr.Con(lit)) ->
         (infer_literal lit)
+      | (Expr.Var(([](_)), name)) ->
+        begin try
+          ((List.assoc name) inf.asp)
+        with
+
+          | (Not_found(_)) ->
+            (raise Not_found)
+        end
     end
   end
 end

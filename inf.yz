@@ -25,3 +25,10 @@ def infer(inf, expr):
   match expr:
     case Expr.Con(lit):
       infer_literal(lit)
+    case Expr.Var([], name):
+      try:
+        List.assoc(name, inf.asp)
+      with:
+        case Not_found:
+          raise(Not_found)
+      
