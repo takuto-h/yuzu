@@ -142,8 +142,6 @@ let rec translate_expr = begin fun trans ->
         (translate_literal lit)
       | (Expr.Var(path)) ->
         (translate_val_path path)
-      | (Expr.Ctor(ctor)) ->
-        (translate_ctor ctor)
       | (Expr.Abs(param_pat, body_expr)) ->
         begin let str_param = (translate_pattern param_pat) in
         begin let trans_body = (incr_indent_level trans) in

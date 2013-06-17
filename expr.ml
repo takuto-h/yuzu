@@ -3,7 +3,6 @@ open Printf
 type t =
   | Con of Literal.t
   | Var of Names.val_path
-  | Ctor of Names.ctor
   | Abs of (Pattern.t * t)
   | App of (t * t)
   | If of (t * t * t)

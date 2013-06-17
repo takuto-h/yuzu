@@ -102,8 +102,6 @@ rec:
         translate_literal(lit)
       case Expr.Var(path):
         translate_val_path(path)
-      case Expr.Ctor(ctor):
-        translate_ctor(ctor)
       case Expr.Abs(param_pat,body_expr):
         var str_param = translate_pattern(param_pat)
         var trans_body = incr_indent_level(trans)

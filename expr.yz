@@ -4,7 +4,6 @@ open Printf
 type t:
   def Con(Literal.t)
   def Var(Names.val_path)
-  def Ctor(Names.ctor)
   def Abs(Pattern.t * t)
   def App(t * t)
   def If(t * t * t)

@@ -896,7 +896,7 @@ and parse_var_or_ctor_app = begin fun parser ->
           ((parse_var_or_ctor_app parser) (( :: ) (capid, mod_names)))
           end
         else
-          ((parse_ctor_app parser) (Expr.Ctor ((List.rev mod_names), (Names.Id (capid)))))
+          ((parse_ctor_app parser) (Expr.Var ((List.rev mod_names), (Names.Id (capid)))))
         end
         end
       | _ ->
