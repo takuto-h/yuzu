@@ -746,18 +746,17 @@ rec:
         parse_top_let_val(parser)
       case Token.Reserved("def"):
         Top.LetFun([parse_top_let_fun(parser)])
-      case Token.Reserved("rec"):
-        lookahead(parser)
-        Top.LetFun(parse_block_like_elems(parser, parse_top_let_fun))
+      case Token.Reserved("type"):
+        Top.Type([parse_top_typedef(parser)])
       case Token.Reserved("open"):
         lookahead(parser)
         parse_top_open(parser)
       case Token.Reserved("exception"):
         lookahead(parser)
         parse_top_exn_decl(parser)
-      case Token.Reserved("type"):
+      case Token.Reserved("rec"):
         lookahead(parser)
-        parse_top_typedef(parser)
+        parse_top_rec(parser)
       case _:
         Top.Expr(parse_expr(parser))
 
@@ -787,15 +786,36 @@ rec:
     else:
       Top.Exception(exn_name, None)
 
+  def parse_top_rec(parser):
+    match parser.token:
+      case Token.Reserved(":"):
+        Lexer.indent(parser.lexer)
+        lookahead(parser)
+        match parser.token:
+          case Token.Reserved("type"):
+            Top.Type(parse_indented_elems(parser, parse_top_typedef))
+          case _:
+            Top.LetFun(parse_indented_elems(parser, parse_top_let_fun))
+      case Token.Reserved("{"):
+        lookahead(parser)
+        match parser.token:
+          case Token.Reserved("type"):
+            Top.Type(parse_braced_elems(parser, parse_top_typedef))
+          case _:
+            Top.LetFun(parse_braced_elems(parser, parse_top_let_fun))
+      case _:
+        failwith(expected(parser, "':' or '{'"))
+        
   def parse_top_typedef(parser):
+    parse_token(parser, Token.Reserved("type"))
     var typector_name = parse_lowid(parser)
     match parser.token:
       case Token.CmpOp("="):
         lookahead(parser)
         var t = parse_type(parser)
-        Top.Type([(typector_name, TypeInfo.Abbrev(t))])
+        (typector_name, TypeInfo.Abbrev(t))
       case Token.Reserved(":") | Token.Reserved("{"):
-        Top.Type([(typector_name, parse_type_repr(parser))])
+        (typector_name, parse_type_repr(parser))
       case _:
         failwith(expected(parser, "'=' or ':' or '{'"))
   

@@ -84,16 +84,19 @@ case = 'case' pattern ('when' expr)? block
 top =
   | 'var' top_let_val
   | top_let_fun
-  | 'rec' [block_like_elems top_let_fun]
+  | top_typedef
   | 'open' top_open
   | 'exception' top_exn_decl
-  | 'type' top_typedef
+  | 'rec' top_rec
   | expr
 top_let_val = pattern '=' expr
 top_let_fun = 'def' val_name params block
 top_open = mod_path
 top_exn_decl = <capid> ('(' type ')')?
-top_typedef = <lowid> ('=' type | type_repr)
+top_rec =
+  | ':' ([indented_elems top_let_fun] | [indented_elems top_typedef])
+  | '{' ([braced_elems top_let_fun] | [braced_elems top_typedef])
+top_typedef = 'type' <lowid> ('=' type | type_repr)
 type_repr =
   | ':' ([indented_elems ctor_decl] | [indented_elems field_decl])
   | '{' ([braced_elems ctor_decl] | [braced_elems field_decl])

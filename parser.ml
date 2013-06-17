@@ -1206,11 +1206,8 @@ let rec parse_top = begin fun parser ->
       end
     | (Token.Reserved("def")) ->
       (Top.LetFun ((( :: ) ((parse_top_let_fun parser), []))))
-    | (Token.Reserved("rec")) ->
-      begin
-      (lookahead parser);
-      (Top.LetFun (((parse_block_like_elems parser) parse_top_let_fun)))
-      end
+    | (Token.Reserved("type")) ->
+      (Top.Type ((( :: ) ((parse_top_typedef parser), []))))
     | (Token.Reserved("open")) ->
       begin
       (lookahead parser);
@@ -1221,10 +1218,10 @@ let rec parse_top = begin fun parser ->
       (lookahead parser);
       (parse_top_exn_decl parser)
       end
-    | (Token.Reserved("type")) ->
+    | (Token.Reserved("rec")) ->
       begin
       (lookahead parser);
-      (parse_top_typedef parser)
+      (parse_top_rec parser)
       end
     | _ ->
       (Top.Expr ((parse_expr parser)))
@@ -1277,20 +1274,53 @@ and parse_top_exn_decl = begin fun parser ->
   end
 end
 
+and parse_top_rec = begin fun parser ->
+  begin match parser.token with
+    | (Token.Reserved(":")) ->
+      begin
+      (Lexer.indent parser.lexer);
+      begin
+      (lookahead parser);
+      begin match parser.token with
+        | (Token.Reserved("type")) ->
+          (Top.Type (((parse_indented_elems parser) parse_top_typedef)))
+        | _ ->
+          (Top.LetFun (((parse_indented_elems parser) parse_top_let_fun)))
+      end
+      end
+      end
+    | (Token.Reserved("{")) ->
+      begin
+      (lookahead parser);
+      begin match parser.token with
+        | (Token.Reserved("type")) ->
+          (Top.Type (((parse_braced_elems parser) parse_top_typedef)))
+        | _ ->
+          (Top.LetFun (((parse_braced_elems parser) parse_top_let_fun)))
+      end
+      end
+    | _ ->
+      (failwith ((expected parser) "':' or '{'"))
+  end
+end
+
 and parse_top_typedef = begin fun parser ->
+  begin
+  ((parse_token parser) (Token.Reserved ("type")));
   begin let typector_name = (parse_lowid parser) in
   begin match parser.token with
     | (Token.CmpOp("=")) ->
       begin
       (lookahead parser);
       begin let t = (parse_type parser) in
-      (Top.Type ((( :: ) ((typector_name, (TypeInfo.Abbrev (t))), []))))
+      (typector_name, (TypeInfo.Abbrev (t)))
       end
       end
     | ((Token.Reserved(":")) | (Token.Reserved("{"))) ->
-      (Top.Type ((( :: ) ((typector_name, (parse_type_repr parser)), []))))
+      (typector_name, (parse_type_repr parser))
     | _ ->
       (failwith ((expected parser) "'=' or ':' or '{'"))
+  end
   end
   end
 end
