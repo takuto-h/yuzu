@@ -439,7 +439,7 @@ and parse_tuple_type = begin fun parser ->
   end in
   begin match parser.token with
     | (Token.MulOp("*")) ->
-      (Type.Tuple ((loop (( :: ) (t, [])))))
+      (TypeExpr.Tuple ((loop (( :: ) (t, [])))))
     | _ ->
       t
   end
@@ -455,11 +455,11 @@ and parse_atomic_type = begin fun parser ->
         begin
         (lookahead parser);
         begin let args = (((parse_elems parser) comma_or_rparen) parse_type) in
-        (Type.App (typector, args))
+        (TypeExpr.App (typector, args))
         end
         end
       else
-        (Type.Con (typector))
+        (TypeExpr.Con (typector))
       end
       end
     | (Token.Reserved("(")) ->

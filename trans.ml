@@ -340,9 +340,9 @@ end
 
 let rec translate_type = begin fun t ->
   begin match t with
-    | (Type.Con(typector)) ->
+    | (TypeExpr.Con(typector)) ->
       (translate_typector typector)
-    | (Type.App(typector, (( :: )(t, ts)))) ->
+    | (TypeExpr.App(typector, (( :: )(t, ts)))) ->
       begin let str_typector = (translate_typector typector) in
       begin let str_types = (((YzList.fold_left (translate_type t)) ts) begin fun acc ->
         begin fun elem ->
@@ -352,9 +352,9 @@ let rec translate_type = begin fun t ->
       (((sprintf "(%s) %s") str_types) str_typector)
       end
       end
-    | (Type.App(typector, ([](_)))) ->
+    | (TypeExpr.App(typector, ([](_)))) ->
       (assert false)
-    | (Type.Tuple((( :: )(t, ts)))) ->
+    | (TypeExpr.Tuple((( :: )(t, ts)))) ->
       begin let str_types = (((YzList.fold_left (translate_type t)) ts) begin fun acc ->
         begin fun elem ->
           (((sprintf "%s * %s") acc) (translate_type elem))
@@ -362,7 +362,7 @@ let rec translate_type = begin fun t ->
       end) in
       ((sprintf "(%s)") str_types)
       end
-    | (Type.Tuple(([](_)))) ->
+    | (TypeExpr.Tuple(([](_)))) ->
       (assert false)
   end
 end

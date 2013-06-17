@@ -244,20 +244,20 @@ def translate_typector(typector):
 
 def translate_type(t):
   match t:
-    case Type.Con(typector):
+    case TypeExpr.Con(typector):
       translate_typector(typector)
-    case Type.App(typector,t::ts):
+    case TypeExpr.App(typector,t::ts):
       var str_typector = translate_typector(typector)
       var str_types = YzList.fold_left(translate_type(t), ts)^(acc, elem):
         sprintf("%s, %s", acc, translate_type(elem))
       sprintf("(%s) %s", str_types, str_typector)
-    case Type.App(typector,[]):
+    case TypeExpr.App(typector,[]):
       assert(false)
-    case Type.Tuple(t::ts):
+    case TypeExpr.Tuple(t::ts):
       var str_types = YzList.fold_left(translate_type(t), ts)^(acc, elem):
         sprintf("%s * %s", acc, translate_type(elem))
       sprintf("(%s)", str_types)
-    case Type.Tuple([]):
+    case TypeExpr.Tuple([]):
       assert(false)
 
 def translate_ctor_decl(ctor_decl):

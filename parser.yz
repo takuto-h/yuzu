@@ -264,7 +264,7 @@ rec:
           List.rev(ts)
     match parser.token:
       case Token.MulOp("*"):
-        Type.Tuple(loop([t]))
+        TypeExpr.Tuple(loop([t]))
       case _:
         t
   
@@ -275,9 +275,9 @@ rec:
         if parser.token = Token.Reserved("("):
           lookahead(parser)
           var args = parse_elems(parser, comma_or_rparen, parse_type)
-          Type.App(typector, args)
+          TypeExpr.App(typector, args)
         else:
-          Type.Con(typector)
+          TypeExpr.Con(typector)
       case Token.Reserved("("):
         lookahead(parser)
         var t = parse_type(parser)

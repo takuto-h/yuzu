@@ -1,0 +1,17 @@
+
+type t:
+  dummy : unit
+  
+def create(): {
+  dummy = ();
+}
+
+def infer_lit(lit):
+  match lit:
+    case Int(_):
+      Type.Con(
+
+def infer(expr):
+  match expr:
+    case Con(lit):
+      
