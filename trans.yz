@@ -280,21 +280,19 @@ def translate_exn_decl(exn_decl):
       var str_type = translate_type_expr(t)
       sprintf("%s of %s", translate_ctor_name(ctor_name), str_type)
 
-def translate_typedef(trans, typedef):
-  match typedef:
-    case Typedef.Abbrev(name,t):
-      var str_type = translate_type_expr(t)
-      sprintf("type %s = %s\n", name, str_type)
-    case Typedef.Variant(name,ctor_decls):
+def translate_type_info(trans, type_info):
+  match type_info:
+    case TypeInfo.Abbrev(t):
+      translate_type_expr(t)
+    case TypeInfo.Variant(ctor_decls):
       var trans_ctor_decl = incr_indent_level(trans)
-      var str_ctor_decls = YzList.fold_left("", ctor_decls)^(acc, elem):
+      YzList.fold_left("", ctor_decls)^(acc, elem):
         sprintf("%s%s", acc, indent(trans_ctor_decl, translate_ctor_decl(elem)))
-      sprintf("type %s =\n%s", name, str_ctor_decls)
-    case Typedef.Record(name,field_decls):
+    case TypeInfo.Record(field_decls):
       var trans_field_decl = incr_indent_level(trans)
       var str_field_decls = YzList.fold_left("", field_decls)^(acc, elem):
         sprintf("%s%s", acc, indent(trans_field_decl, translate_field_decl(elem)))
-      sprintf("type %s = {\n%s%s\n", name, str_field_decls, indent(trans, "}"))
+      sprintf("{\n%s%s", str_field_decls, indent(trans, "}"))
 
 def translate_top(trans, top):
   match top:
@@ -318,8 +316,12 @@ def translate_top(trans, top):
     case Top.Open(path):
       var str_path = translate_mod_path(path)
       sprintf("open %s\n", str_path)
-    case Top.Type(typedef::[]):
-      translate_typedef(trans, typedef)
+    case Top.Type((name,info)::defs):
+      var str_info = translate_type_info(trans, info)
+      var str_type = sprintf("type %s = %s\n", name, str_info)
+      YzList.fold_left(str_type, defs)^(acc, (name,info)):
+        var str_info = translate_type_info(trans, info)
+        sprintf("%s\nand %s = %s\n", acc, name, str_info)
     case Top.Type([]):
       assert(false)
     case Top.Exception(exn_decl):

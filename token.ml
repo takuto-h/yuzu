@@ -1,7 +1,6 @@
 open Printf
 
-type t =
-  | EOF
+type t =   | EOF
   | Newline
   | Undent
   | Int of int
@@ -18,6 +17,7 @@ type t =
   | AddOp of string
   | MulOp of string
   | PowOp of string
+
 
 let rec get_op = begin fun token ->
   begin match token with

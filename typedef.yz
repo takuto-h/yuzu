@@ -1,5 +1,0 @@
-
-type t:
-  def Abbrev(Names.typector_name * TypeExpr.t)
-  def Variant(Names.typector_name * list(Names.ctor_name * option(TypeExpr.t)))
-  def Record(Names.typector_name * list(bool * Names.val_name * TypeExpr.t))

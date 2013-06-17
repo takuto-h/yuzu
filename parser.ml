@@ -6,10 +6,10 @@ type t = {
   mutable pos : Pos.t;
 }
 
-type sep_or_term =
-  | Sep
+type sep_or_term =   | Sep
   | Term
   | Neither
+
 
 let rec create = begin fun lexer ->
   {
@@ -1284,11 +1284,11 @@ and parse_top_typedef = begin fun parser ->
       begin
       (lookahead parser);
       begin let t = (parse_type parser) in
-      (Top.Type ((( :: ) ((Typedef.Abbrev (typector_name, t)), []))))
+      (Top.Type ((( :: ) ((typector_name, (TypeInfo.Abbrev (t))), []))))
       end
       end
     | ((Token.Reserved(":")) | (Token.Reserved("{"))) ->
-      (Top.Type ((( :: ) (((parse_type_repr parser) typector_name), []))))
+      (Top.Type ((( :: ) ((typector_name, (parse_type_repr parser)), []))))
     | _ ->
       (failwith ((expected parser) "'=' or ':' or '{'"))
   end
@@ -1296,34 +1296,32 @@ and parse_top_typedef = begin fun parser ->
 end
 
 and parse_type_repr = begin fun parser ->
-  begin fun typector_name ->
-    begin match parser.token with
-      | (Token.Reserved(":")) ->
-        begin
-        (Lexer.indent parser.lexer);
-        begin
-        (lookahead parser);
-        begin match parser.token with
-          | (Token.Reserved("def")) ->
-            (Typedef.Variant (typector_name, ((parse_indented_elems parser) parse_ctor_decl)))
-          | _ ->
-            (Typedef.Record (typector_name, ((parse_indented_elems parser) parse_field_decl)))
-        end
-        end
-        end
-      | (Token.Reserved("{")) ->
-        begin
-        (lookahead parser);
-        begin match parser.token with
-          | (Token.Reserved("def")) ->
-            (Typedef.Variant (typector_name, ((parse_braced_elems parser) parse_ctor_decl)))
-          | _ ->
-            (Typedef.Record (typector_name, ((parse_braced_elems parser) parse_field_decl)))
-        end
-        end
-      | _ ->
-        (failwith ((expected parser) "':' or '{'"))
-    end
+  begin match parser.token with
+    | (Token.Reserved(":")) ->
+      begin
+      (Lexer.indent parser.lexer);
+      begin
+      (lookahead parser);
+      begin match parser.token with
+        | (Token.Reserved("def")) ->
+          (TypeInfo.Variant (((parse_indented_elems parser) parse_ctor_decl)))
+        | _ ->
+          (TypeInfo.Record (((parse_indented_elems parser) parse_field_decl)))
+      end
+      end
+      end
+    | (Token.Reserved("{")) ->
+      begin
+      (lookahead parser);
+      begin match parser.token with
+        | (Token.Reserved("def")) ->
+          (TypeInfo.Variant (((parse_braced_elems parser) parse_ctor_decl)))
+        | _ ->
+          (TypeInfo.Record (((parse_braced_elems parser) parse_field_decl)))
+      end
+      end
+    | _ ->
+      (failwith ((expected parser) "':' or '{'"))
   end
 end
 
