@@ -51,3 +51,32 @@ def infer(inf, expr):
       infer_literal(lit)
     case Expr.Var(path):
       infer_var(inf, expr.Expr.pos, path)
+
+//      
+// assertions
+//
+var mod_B = Module.make(
+  [],
+  [(Names.Id("b1"), char_type); (Names.Id("b2"), int_type)],
+)
+var mod_A = Module.make(
+  [("B", mod_B)],
+  [(Names.Id("a1"), int_type); (Names.Id("a2"), string_type)],
+)
+var inf = {
+  mods = [("A", mod_A)];
+  asp = [(Names.Id("ans"), int_type)];
+}
+var pos = Pos.make("<assertion>", 1, 0, 0)
+var int_expr = Expr.at(pos, Expr.Con(Literal.Int(123)))
+var string_expr = Expr.at(pos, Expr.Con(Literal.String("abc")))
+var char_expr = Expr.at(pos, Expr.Con(Literal.Char("x")))
+assert(infer(inf, int_expr) = int_type)
+assert(infer(inf, string_expr) = string_type)
+assert(infer(inf, char_expr) = char_type)
+var ans = Expr.at(pos, Expr.Var([], Names.Id("ans")))
+var _A_a2 = Expr.at(pos, Expr.Var(["A"], Names.Id("a2")))
+var _A_B_b1 = Expr.at(pos, Expr.Var(["A"; "B"], Names.Id("b1")))
+assert(infer(inf, ans) = int_type)
+assert(infer(inf, _A_a2) = string_type)
+assert(infer(inf, _A_B_b1) = char_type)

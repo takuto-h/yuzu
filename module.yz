@@ -3,6 +3,11 @@ type t:
   mods : list(Names.mod_name * t)
   asp : list(Names.val_name * Type.t)
 
+def make(mods, asp): {
+  mods = mods;
+  asp = asp;
+}
+
 def find_asp(modl, mod_path, name):
   match mod_path:
     case []:

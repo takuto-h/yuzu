@@ -73,3 +73,38 @@ let rec infer = begin fun inf ->
   end
 end
 
+let mod_B = ((Module.make []) (( :: ) (((Names.Id ("b1")), char_type), (( :: ) (((Names.Id ("b2")), int_type), [])))))
+
+let mod_A = ((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1")), int_type), (( :: ) (((Names.Id ("a2")), string_type), [])))))
+
+let inf = {
+  mods = (( :: ) (("A", mod_A), []));
+  asp = (( :: ) (((Names.Id ("ans")), int_type), []));
+}
+
+let pos = ((((Pos.make "<assertion>") 1) 0) 0)
+
+let int_expr = ((Expr.at pos) (Expr.Con ((Literal.Int (123)))))
+
+let string_expr = ((Expr.at pos) (Expr.Con ((Literal.String ("abc")))))
+
+let char_expr = ((Expr.at pos) (Expr.Con ((Literal.Char ("x")))))
+
+let () = (assert ((( = ) ((infer inf) int_expr)) int_type))
+
+let () = (assert ((( = ) ((infer inf) string_expr)) string_type))
+
+let () = (assert ((( = ) ((infer inf) char_expr)) char_type))
+
+let ans = ((Expr.at pos) (Expr.Var ([], (Names.Id ("ans")))))
+
+let _A_a2 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", [])), (Names.Id ("a2")))))
+
+let _A_B_b1 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", (( :: ) ("B", [])))), (Names.Id ("b1")))))
+
+let () = (assert ((( = ) ((infer inf) ans)) int_type))
+
+let () = (assert ((( = ) ((infer inf) _A_a2)) string_type))
+
+let () = (assert ((( = ) ((infer inf) _A_B_b1)) char_type))
+

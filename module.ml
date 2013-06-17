@@ -3,6 +3,15 @@ type t = {
   asp : ((Names.val_name * Type.t)) list;
 }
 
+let rec make = begin fun mods ->
+  begin fun asp ->
+    {
+      mods = mods;
+      asp = asp;
+    }
+  end
+end
+
 let rec find_asp = begin fun modl ->
   begin fun mod_path ->
     begin fun name ->
