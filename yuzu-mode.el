@@ -12,7 +12,6 @@
            ("\\<\\(as\\|assert\\|case\\|do\\|done\\|downto\\|else\\|exception\\|for\\|fun\\|function\\|if\\|lazy\\|match\\|mutable\\|new\\|private\\|then\\|to\\|try\\|when\\|while\\|with\\)\\>" . (1 font-lock-keyword-face))
            ("\\<\\(asr\\|land\\|lor\\|lsl\\|lsr\\|lxor\\|mod\\|of\\|or\\)\\>" . (1 font-lock-comment-face))
            ("\\<\\(false\\|true\\)\\>" . (1 font-lock-constant-face))
-           ("case\\s +\\(\\sw+\\)" . (1 font-lock-constant-face))
            ("def\\s +\\(\\sw+\\)" . (1 font-lock-variable-name-face))
            ("exception\\s +\\(\\sw+\\)" . (1 font-lock-variable-name-face))
            ("open\\s +\\(\\sw+\\)" . (1 font-lock-string-face))
