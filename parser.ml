@@ -1281,40 +1281,56 @@ end
 let rec parse_top = begin fun parser ->
   begin match parser.token with
     | (Token.Reserved("var")) ->
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
-      (parse_top_let_val parser)
+      ((parse_top_let_val parser) pos)
+      end
       end
     | (Token.Reserved("def")) ->
-      (Top.LetFun ((( :: ) ((parse_top_let_fun parser), []))))
+      begin let pos = parser.pos in
+      ((Top.at pos) (Top.LetFun ((( :: ) ((parse_top_let_fun parser), [])))))
+      end
     | (Token.Reserved("type")) ->
-      (Top.Type ((( :: ) ((parse_top_typedef parser), []))))
+      begin let pos = parser.pos in
+      ((Top.at pos) (Top.Type ((( :: ) ((parse_top_typedef parser), [])))))
+      end
     | (Token.Reserved("open")) ->
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
-      (parse_top_open parser)
+      ((parse_top_open parser) pos)
+      end
       end
     | (Token.Reserved("exception")) ->
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
-      (parse_top_exn_decl parser)
+      ((parse_top_exn_decl parser) pos)
+      end
       end
     | (Token.Reserved("rec")) ->
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
-      (parse_top_rec parser)
+      ((parse_top_rec parser) pos)
+      end
       end
     | _ ->
-      (Top.Expr ((parse_expr parser)))
+      begin let pos = parser.pos in
+      ((Top.at pos) (Top.Expr ((parse_expr parser))))
+      end
   end
 end
 
 and parse_top_let_val = begin fun parser ->
-  begin let val_pat = (parse_pattern parser) in
-  begin
-  ((parse_token parser) (Token.CmpOp ("=")));
-  (Top.LetVal (val_pat, (parse_expr parser)))
-  end
+  begin fun pos ->
+    begin let val_pat = (parse_pattern parser) in
+    begin
+    ((parse_token parser) (Token.CmpOp ("=")));
+    ((Top.at pos) (Top.LetVal (val_pat, (parse_expr parser))))
+    end
+    end
   end
 end
 
@@ -1334,56 +1350,62 @@ and parse_top_let_fun = begin fun parser ->
 end
 
 and parse_top_open = begin fun parser ->
-  begin let mod_path = ((parse_mod_path parser) []) in
-  (Top.Open (mod_path))
+  begin fun pos ->
+    begin let mod_path = ((parse_mod_path parser) []) in
+    ((Top.at pos) (Top.Open (mod_path)))
+    end
   end
 end
 
 and parse_top_exn_decl = begin fun parser ->
-  begin let exn_name = (Names.Id ((parse_capid parser))) in
-  begin if ((( = ) parser.token) (Token.Reserved ("("))) then
-    begin
-    (lookahead parser);
-    begin let t = (parse_type parser) in
-    begin
-    ((parse_token parser) (Token.Reserved (")")));
-    (Top.Exception (exn_name, (Some (t))))
+  begin fun pos ->
+    begin let exn_name = (Names.Id ((parse_capid parser))) in
+    begin if ((( = ) parser.token) (Token.Reserved ("("))) then
+      begin
+      (lookahead parser);
+      begin let t = (parse_type parser) in
+      begin
+      ((parse_token parser) (Token.Reserved (")")));
+      ((Top.at pos) (Top.Exception (exn_name, (Some (t)))))
+      end
+      end
+      end
+    else
+      ((Top.at pos) (Top.Exception (exn_name, None)))
     end
     end
-    end
-  else
-    (Top.Exception (exn_name, None))
-  end
   end
 end
 
 and parse_top_rec = begin fun parser ->
-  begin match parser.token with
-    | (Token.Reserved(":")) ->
-      begin
-      (Lexer.indent parser.lexer);
-      begin
-      (lookahead parser);
-      begin match parser.token with
-        | (Token.Reserved("type")) ->
-          (Top.Type (((parse_indented_elems parser) parse_top_typedef)))
-        | _ ->
-          (Top.LetFun (((parse_indented_elems parser) parse_top_let_fun)))
-      end
-      end
-      end
-    | (Token.Reserved("{")) ->
-      begin
-      (lookahead parser);
-      begin match parser.token with
-        | (Token.Reserved("type")) ->
-          (Top.Type (((parse_braced_elems parser) parse_top_typedef)))
-        | _ ->
-          (Top.LetFun (((parse_braced_elems parser) parse_top_let_fun)))
-      end
-      end
-    | _ ->
-      (failwith ((expected parser) "':' or '{'"))
+  begin fun pos ->
+    begin match parser.token with
+      | (Token.Reserved(":")) ->
+        begin
+        (Lexer.indent parser.lexer);
+        begin
+        (lookahead parser);
+        begin match parser.token with
+          | (Token.Reserved("type")) ->
+            ((Top.at pos) (Top.Type (((parse_indented_elems parser) parse_top_typedef))))
+          | _ ->
+            ((Top.at pos) (Top.LetFun (((parse_indented_elems parser) parse_top_let_fun))))
+        end
+        end
+        end
+      | (Token.Reserved("{")) ->
+        begin
+        (lookahead parser);
+        begin match parser.token with
+          | (Token.Reserved("type")) ->
+            ((Top.at pos) (Top.Type (((parse_braced_elems parser) parse_top_typedef))))
+          | _ ->
+            ((Top.at pos) (Top.LetFun (((parse_braced_elems parser) parse_top_let_fun))))
+        end
+        end
+      | _ ->
+        (failwith ((expected parser) "':' or '{'"))
+    end
   end
 end
 

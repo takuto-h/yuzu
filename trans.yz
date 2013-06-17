@@ -296,7 +296,7 @@ def translate_type_info(trans, type_info):
       sprintf("{\n%s%s", str_field_decls, indent(trans, "}"))
 
 def translate_top(trans, top):
-  match top:
+  match top.Top.raw:
     case Top.Expr(expr):
       var str_expr = translate_expr(trans, expr)
       sprintf("let () = %s\n", str_expr)

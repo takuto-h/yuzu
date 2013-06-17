@@ -426,7 +426,7 @@ end
 
 let rec translate_top = begin fun trans ->
   begin fun top ->
-    begin match top with
+    begin match top.Top.raw with
       | (Top.Expr(expr)) ->
         begin let str_expr = ((translate_expr trans) expr) in
         ((sprintf "let () = %s\n") str_expr)

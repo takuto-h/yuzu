@@ -772,28 +772,35 @@ rec:
   def parse_top(parser):
     match parser.token:
       case Token.Reserved("var"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_top_let_val(parser)
+        parse_top_let_val(parser, pos)
       case Token.Reserved("def"):
-        Top.LetFun([parse_top_let_fun(parser)])
+        var pos = parser.pos
+        Top.at(pos, Top.LetFun([parse_top_let_fun(parser)]))
       case Token.Reserved("type"):
-        Top.Type([parse_top_typedef(parser)])
+        var pos = parser.pos
+        Top.at(pos, Top.Type([parse_top_typedef(parser)]))
       case Token.Reserved("open"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_top_open(parser)
+        parse_top_open(parser, pos)
       case Token.Reserved("exception"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_top_exn_decl(parser)
+        parse_top_exn_decl(parser, pos)
       case Token.Reserved("rec"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_top_rec(parser)
+        parse_top_rec(parser, pos)
       case _:
-        Top.Expr(parse_expr(parser))
+        var pos = parser.pos
+        Top.at(pos, Top.Expr(parse_expr(parser)))
 
-  def parse_top_let_val(parser):
+  def parse_top_let_val(parser, pos):
     var val_pat = parse_pattern(parser)
     parse_token(parser, Token.CmpOp("="))
-    Top.LetVal(val_pat, parse_expr(parser))
+    Top.at(pos, Top.LetVal(val_pat, parse_expr(parser)))
 
   def parse_top_let_fun(parser):
     parse_token(parser, Token.Reserved("def"))
@@ -803,37 +810,37 @@ rec:
     var body_expr = parse_block(parser)
     (fun_name, make_abs(pos, params, body_expr))
   
-  def parse_top_open(parser):
+  def parse_top_open(parser, pos):
     var mod_path = parse_mod_path(parser, [])
-    Top.Open(mod_path)
+    Top.at(pos, Top.Open(mod_path))
 
-  def parse_top_exn_decl(parser):
+  def parse_top_exn_decl(parser, pos):
     var exn_name = Names.Id(parse_capid(parser))
     if parser.token = Token.Reserved("("):
       lookahead(parser)
       var t = parse_type(parser)
       parse_token(parser, Token.Reserved(")"))
-      Top.Exception(exn_name, Some(t))
+      Top.at(pos, Top.Exception(exn_name, Some(t)))
     else:
-      Top.Exception(exn_name, None)
+      Top.at(pos, Top.Exception(exn_name, None))
 
-  def parse_top_rec(parser):
+  def parse_top_rec(parser, pos):
     match parser.token:
       case Token.Reserved(":"):
         Lexer.indent(parser.lexer)
         lookahead(parser)
         match parser.token:
           case Token.Reserved("type"):
-            Top.Type(parse_indented_elems(parser, parse_top_typedef))
+            Top.at(pos, Top.Type(parse_indented_elems(parser, parse_top_typedef)))
           case _:
-            Top.LetFun(parse_indented_elems(parser, parse_top_let_fun))
+            Top.at(pos, Top.LetFun(parse_indented_elems(parser, parse_top_let_fun)))
       case Token.Reserved("{"):
         lookahead(parser)
         match parser.token:
           case Token.Reserved("type"):
-            Top.Type(parse_braced_elems(parser, parse_top_typedef))
+            Top.at(pos, Top.Type(parse_braced_elems(parser, parse_top_typedef)))
           case _:
-            Top.LetFun(parse_braced_elems(parser, parse_top_let_fun))
+            Top.at(pos, Top.LetFun(parse_braced_elems(parser, parse_top_let_fun)))
       case _:
         failwith(expected(parser, "':' or '{'"))
         
