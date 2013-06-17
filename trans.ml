@@ -338,15 +338,15 @@ let rec translate_typector = begin fun typector ->
   end
 end
 
-let rec translate_type = begin fun t ->
+let rec translate_type_expr = begin fun t ->
   begin match t with
     | (TypeExpr.Con(typector)) ->
       (translate_typector typector)
     | (TypeExpr.App(typector, (( :: )(t, ts)))) ->
       begin let str_typector = (translate_typector typector) in
-      begin let str_types = (((YzList.fold_left (translate_type t)) ts) begin fun acc ->
+      begin let str_types = (((YzList.fold_left (translate_type_expr t)) ts) begin fun acc ->
         begin fun elem ->
-          (((sprintf "%s, %s") acc) (translate_type elem))
+          (((sprintf "%s, %s") acc) (translate_type_expr elem))
         end
       end) in
       (((sprintf "(%s) %s") str_types) str_typector)
@@ -355,9 +355,9 @@ let rec translate_type = begin fun t ->
     | (TypeExpr.App(typector, ([](_)))) ->
       (assert false)
     | (TypeExpr.Tuple((( :: )(t, ts)))) ->
-      begin let str_types = (((YzList.fold_left (translate_type t)) ts) begin fun acc ->
+      begin let str_types = (((YzList.fold_left (translate_type_expr t)) ts) begin fun acc ->
         begin fun elem ->
-          (((sprintf "%s * %s") acc) (translate_type elem))
+          (((sprintf "%s * %s") acc) (translate_type_expr elem))
         end
       end) in
       ((sprintf "(%s)") str_types)
@@ -372,7 +372,7 @@ let rec translate_ctor_decl = begin fun ctor_decl ->
     | (ctor_name, (None(_))) ->
       ((sprintf "| %s\n") (translate_ctor_name ctor_name))
     | (ctor_name, (Some(t))) ->
-      begin let str_type = (translate_type t) in
+      begin let str_type = (translate_type_expr t) in
       (((sprintf "| %s of %s\n") (translate_ctor_name ctor_name)) str_type)
       end
   end
@@ -380,9 +380,9 @@ end
 
 let rec translate_field_decl = begin fun (is_mutable, field_name, t) ->
   begin if is_mutable then
-    (((sprintf "mutable %s : %s;\n") (translate_val_name field_name)) (translate_type t))
+    (((sprintf "mutable %s : %s;\n") (translate_val_name field_name)) (translate_type_expr t))
   else
-    (((sprintf "%s : %s;\n") (translate_val_name field_name)) (translate_type t))
+    (((sprintf "%s : %s;\n") (translate_val_name field_name)) (translate_type_expr t))
   end
 end
 
@@ -391,7 +391,7 @@ let rec translate_exn_decl = begin fun exn_decl ->
     | (ctor_name, (None(_))) ->
       ((sprintf "%s") (translate_ctor_name ctor_name))
     | (ctor_name, (Some(t))) ->
-      begin let str_type = (translate_type t) in
+      begin let str_type = (translate_type_expr t) in
       (((sprintf "%s of %s") (translate_ctor_name ctor_name)) str_type)
       end
   end
@@ -433,7 +433,7 @@ let rec translate_top = begin fun trans ->
         ((sprintf "open %s\n") str_path)
         end
       | (Top.Abbrev(name, t)) ->
-        begin let str_type = (translate_type t) in
+        begin let str_type = (translate_type_expr t) in
         (((sprintf "type %s = %s\n") name) str_type)
         end
       | (Top.Variant(name, ctor_decls)) ->
