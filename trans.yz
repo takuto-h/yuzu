@@ -97,7 +97,7 @@ rec:
 
 rec:
   def translate_expr(trans, expr):
-    match expr:
+    match expr.Expr.raw:
       case Expr.Con(lit):
         translate_literal(lit)
       case Expr.Var(path):

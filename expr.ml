@@ -1,6 +1,10 @@
-open Printf
+type t = {
+  pos : Pos.t;
+  raw : raw;
+}
 
-type t =   | Con of Literal.t
+and raw = 
+  | Con of Literal.t
   | Var of Names.val_path
   | Abs of (Pattern.t * t)
   | App of (t * t)
@@ -18,4 +22,13 @@ type t =   | Con of Literal.t
   | Assign of (t * t)
   | Try of (t * ((Pattern.t * (t) option * t)) list)
 
+
+let rec at = begin fun pos ->
+  begin fun raw ->
+    {
+      pos = pos;
+      raw = raw;
+    }
+  end
+end
 

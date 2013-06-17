@@ -30,13 +30,13 @@ def make_op_var(str):
 var nil_expr = Expr.Var([], (Names.Id("[]")))
 var unit_expr = Expr.Var([], (Names.Id("()")))
 
-def make_abs(params, body_expr):
+def make_abs(pos, params, body_expr):
   YzList.fold_right(params, body_expr)^(param, expr):
-    Expr.Abs(param, expr)
+    Expr.at(pos, Expr.Abs(param, expr))
 
-def make_app(fun_expr, arg_exprs):
+def make_app(pos, fun_expr, arg_exprs):
   YzList.fold_left(fun_expr, arg_exprs)^(e1, e2):
-    Expr.App(e1, e2)
+    Expr.at(pos, Expr.App(e1, e2))
 
 def expected(parser, str_token):
   sprintf(
@@ -73,10 +73,11 @@ def parse_non_assoc(parser, get_op, parse_lower):
     case None:
       lhs
     case Some(str):
+      var pos = parser.pos
       lookahead(parser)
-      var op = make_op_var(str)
+      var op = Expr.at(pos, make_op_var(str))
       var rhs = parse_lower(parser)
-      Expr.App(Expr.App(op,lhs),rhs)
+      Expr.at(pos, Expr.App(Expr.at(pos, Expr.App(op,lhs)),rhs))
 
 def parse_right_assoc(parser, get_op, parse_lower):
   var lhs = parse_lower(parser)
@@ -84,10 +85,11 @@ def parse_right_assoc(parser, get_op, parse_lower):
     case None:
       lhs
     case Some(str):
+      var pos = parser.pos
       lookahead(parser)
-      var op = make_op_var(str)
+      var op = Expr.at(pos, make_op_var(str))
       var rhs = parse_right_assoc(parser, get_op, parse_lower)
-      Expr.App(Expr.App(op,lhs),rhs)
+      Expr.at(pos, Expr.App(Expr.at(pos, Expr.App(op,lhs)),rhs))
 
 def parse_left_assoc(parser, get_op, parse_lower):
   var lhs = parse_lower(parser)
@@ -96,10 +98,11 @@ def parse_left_assoc(parser, get_op, parse_lower):
       case None:
         lhs
       case Some(str):
+        var pos = parser.pos
         lookahead(parser)
-        var op = make_op_var(str)
+        var op = Expr.at(pos, make_op_var(str))
         var rhs = parse_lower(parser)
-        loop(Expr.App(Expr.App(op,lhs),rhs))
+        loop(Expr.at(pos, Expr.App(Expr.at(pos, Expr.App(op,lhs)),rhs)))
   loop(lhs)
 
 def parse_elems(parser, sep_or_term, parse_elem):
@@ -405,9 +408,10 @@ rec:
     var lhs = parse_or_expr(parser)
     match parser.token:
       case Token.AssignOp("<-"):
+        var pos = parser.pos
         lookahead(parser)
         var rhs = parse_assign_expr(parser)
-        Expr.Assign(lhs, rhs)
+        Expr.at(pos, Expr.Assign(lhs, rhs))
       case _:
         lhs
   
@@ -415,9 +419,10 @@ rec:
     var lhs = parse_and_expr(parser)
     match parser.token:
       case Token.OrOp("||"):
+        var pos = parser.pos
         lookahead(parser)
         var rhs = parse_or_expr(parser)
-        Expr.Or(lhs, rhs)
+        Expr.at(pos, Expr.Or(lhs, rhs))
       case _:
         lhs
   
@@ -425,9 +430,10 @@ rec:
     var lhs = parse_cmp_expr(parser)
     match parser.token:
       case Token.AndOp("&&"):
+        var pos = parser.pos
         lookahead(parser)
         var rhs = parse_and_expr(parser)
-        Expr.And(lhs, rhs)
+        Expr.at(pos, Expr.And(lhs, rhs))
       case _:
         lhs
   
@@ -444,10 +450,11 @@ rec:
     var lhs = parse_add_expr(parser)
     match parser.token:
       case Token.ConsOp(str):
+        var pos = parser.pos
         lookahead(parser)
-        var op = make_op_var(str)
+        var op = Expr.at(pos, make_op_var(str))
         var rhs = parse_cons_expr(parser)
-        Expr.App(op,Expr.Tuple([lhs;rhs]))
+        Expr.at(pos, Expr.App(op, Expr.at(pos, Expr.Tuple([lhs;rhs]))))
       case _:
         lhs
   
@@ -481,13 +488,15 @@ rec:
   def parse_unary_expr(parser):
     match parser.token:
       case Token.AddOp("-"):
+        var pos = parser.pos
         lookahead(parser)
         var expr = parse_unary_expr(parser)
-        Expr.App(make_op_var("~-"),expr)
+        Expr.at(pos, Expr.App(Expr.at(pos, make_op_var("~-")),expr))
       case Token.AddOp("+"):
+        var pos = parser.pos
         lookahead(parser)
         var expr = parse_unary_expr(parser)
-        Expr.App(make_op_var("~+"),expr)
+        Expr.at(pos, Expr.App(Expr.at(pos, make_op_var("~+")),expr))
       case _:
         parse_prim_expr(parser)
   
@@ -496,13 +505,15 @@ rec:
     def loop(fun_expr):
       match parser.token:
         case Token.Reserved("("):
+          var pos = parser.pos
           lookahead(parser)
-          var arg_exprs = parse_args(parser)
-          loop(make_app(fun_expr, arg_exprs))
+          var arg_exprs = parse_args(parser, pos)
+          loop(make_app(pos, fun_expr, arg_exprs))
         case Token.Reserved("^"):
+          var pos = parser.pos
           lookahead(parser)
-          var arg_expr = parse_abs(parser)
-          loop(Expr.App(fun_expr, arg_expr))
+          var arg_expr = parse_abs(parser, pos)
+          loop(Expr.at(pos, Expr.App(fun_expr, arg_expr)))
         case _:
           fun_expr
     loop(fun_expr)
@@ -511,80 +522,94 @@ rec:
     var expr = parse_atomic_expr(parser)
     match parser.token:
       case Token.Reserved("."):
+        var pos = parser.pos
         lookahead(parser)
         match parser.token:
           case Token.Reserved("{"):
             lookahead(parser)
-            Expr.Update(expr, parse_braced_elems(parser, parse_field_def))
+            Expr.at(pos, Expr.Update(expr, parse_braced_elems(parser, parse_field_def)))
           case _:
             var path = parse_val_path(parser, [])
-            Expr.Field(expr, path)
+            Expr.at(pos, Expr.Field(expr, path))
       case _:
         expr
   
   def parse_atomic_expr(parser):
     match parser.token:
       case Token.Int(_) | Token.String(_) | Token.Char(_):
+        var pos = parser.pos
         var lit = parse_literal(parser)
-        Expr.Con(lit)
+        Expr.at(pos, Expr.Con(lit))
       case Token.LowId(_) | Token.CapId(_) | Token.Reserved("$"):
         parse_var_or_ctor_app(parser, [])
       case Token.Reserved("^"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_abs(parser)
+        parse_abs(parser, pos)
       case Token.Reserved("["):
+        var pos = parser.pos
         lookahead(parser)
-        parse_list(parser)
+        parse_list(parser, pos)
       case Token.Reserved("("):
+        var pos = parser.pos
         lookahead(parser)
-        parse_parens(parser)
+        parse_parens(parser, pos)
       case Token.Reserved("{"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_record(parser)
+        parse_record(parser, pos)
       case Token.Reserved("if"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_if_expr(parser)
+        parse_if_expr(parser, pos)
       case Token.Reserved("match"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_match_expr(parser)
+        parse_match_expr(parser, pos)
       case Token.Reserved("try"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_try_expr(parser)
+        parse_try_expr(parser, pos)
       case _:
         failwith(expected(parser, "expression"))
   
   def parse_var_or_ctor_app(parser, mod_names):
     match parser.token:
       case Token.LowId(_) | Token.Reserved("$"):
+        var pos = parser.pos
         var val_name = parse_val_name(parser)
-        Expr.Var(List.rev(mod_names), val_name)
+        Expr.at(pos, Expr.Var(List.rev(mod_names), val_name))
       case Token.CapId(_):
+        var pos = parser.pos
         var capid = parse_capid(parser)
         if parser.token = Token.Reserved("."):
           lookahead(parser)
           parse_var_or_ctor_app(parser, capid::mod_names)
         else:
-          parse_ctor_app(parser, Expr.Var(List.rev(mod_names), Names.Id(capid)))
+          var ctor = Expr.at(pos, Expr.Var(List.rev(mod_names), Names.Id(capid)))
+          parse_ctor_app(parser, ctor)
       case _:
         failwith(expected(parser, "identifier"))
   
   def parse_ctor_app(parser, ctor):
     match parser.token:
       case Token.Reserved("("):
+        var pos = parser.pos
         lookahead(parser)
-        var arg_exprs = parse_args(parser)
-        Expr.App(ctor, Expr.Tuple(arg_exprs))
+        var arg_exprs = parse_args(parser, pos)
+        Expr.at(pos, Expr.App(ctor, Expr.at(pos, Expr.Tuple(arg_exprs))))
       case Token.Reserved("^"):
+        var pos = parser.pos
         lookahead(parser)
-        var arg_expr = parse_abs(parser)
-        Expr.App(ctor, arg_expr)
+        var arg_expr = parse_abs(parser, pos)
+        Expr.at(pos, Expr.App(ctor, arg_expr))
       case _:
         ctor
   
-  def parse_abs(parser):
+  def parse_abs(parser, pos):
     var params = parse_params(parser)
     var body_expr = parse_block(parser)
-    make_abs(params, body_expr)
+    make_abs(pos, params, body_expr)
   
   def parse_params(parser):
     parse_token(parser, Token.Reserved("("))
@@ -619,33 +644,37 @@ rec:
   def parse_block_elem(parser, sep_or_term):
     match parser.token:
       case Token.Reserved("var"):
+        var pos = parser.pos
         lookahead(parser)
         var (val_name,val_expr) = parse_let_val(parser)
         parse_sep(parser, sep_or_term)
         var cont_expr = parse_block_elem(parser, sep_or_term)
-        Expr.LetVal(val_name, val_expr, cont_expr)
+        Expr.at(pos, Expr.LetVal(val_name, val_expr, cont_expr))
       case Token.Reserved("def"):
+        var pos = parser.pos
         var defs = [parse_let_fun(parser)]
         parse_sep(parser, sep_or_term)
         var cont_expr = parse_block_elem(parser, sep_or_term)
-        Expr.LetFun(defs, cont_expr)
+        Expr.at(pos, Expr.LetFun(defs, cont_expr))
       case Token.Reserved("rec"):
+        var pos = parser.pos
         lookahead(parser)
         var defs = parse_block_like_elems(parser, parse_let_fun)
         parse_sep(parser, sep_or_term)
         var cont_expr = parse_block_elem(parser, sep_or_term)
-        Expr.LetFun(defs, cont_expr)
+        Expr.at(pos, Expr.LetFun(defs, cont_expr))
       case _:
         var lhs = parse_expr(parser)
         match sep_or_term(parser.token):
           case Sep:
+            var pos = parser.pos
             lookahead(parser)
             match sep_or_term(parser.token):
               case Term:
                 lhs
               case _:
                 var rhs = parse_block_elem(parser, sep_or_term)
-                Expr.Seq(lhs, rhs)
+                Expr.at(pos, Expr.Seq(lhs, rhs))
           case _:
             lhs
   
@@ -657,10 +686,11 @@ rec:
     
   def parse_let_fun(parser):
     parse_token(parser, Token.Reserved("def"))
+    var pos = parser.pos
     var fun_name = parse_val_name(parser)
     var params = parse_params(parser)
     var body_expr = parse_block(parser)
-    (fun_name, make_abs(params, body_expr))
+    (fun_name, make_abs(pos, params, body_expr))
     
   def parse_sep(parser, sep_or_term):
     match sep_or_term(parser.token):
@@ -669,32 +699,32 @@ rec:
       case _:
         failwith(expected(parser, "separator"))
   
-  def parse_list(parser):
+  def parse_list(parser, pos):
     var list = parse_elems(parser, semi_or_rbracket, parse_expr)
-    var ctor = make_op_var("::")
-    YzList.fold_right(list, nil_expr)^(elem, acc):
-      Expr.App(ctor, Expr.Tuple([elem; acc]))
+    var ctor = Expr.at(pos, make_op_var("::"))
+    YzList.fold_right(list, Expr.at(pos, nil_expr))^(elem, acc):
+      Expr.at(pos, Expr.App(ctor, Expr.at(pos, Expr.Tuple([elem; acc]))))
   
-  def parse_parens(parser):
+  def parse_parens(parser, pos):
     if parser.token = Token.Reserved(")"):
       lookahead(parser)
-      unit_expr
+      Expr.at(pos, unit_expr)
     else:
       var list = parse_expr_list(parser)
-      Expr.Tuple(list)
+      Expr.at(pos, Expr.Tuple(list))
   
-  def parse_args(parser):
+  def parse_args(parser, pos):
     if parser.token = Token.Reserved(")"):
       lookahead(parser)
-      [unit_expr]
+      [Expr.at(pos, unit_expr)]
     else:
       parse_expr_list(parser)
   
   def parse_expr_list(parser):
     parse_elems(parser, comma_or_rparen, parse_expr)
   
-  def parse_record(parser):
-    Expr.Record(parse_braced_elems(parser, parse_field_def))
+  def parse_record(parser, pos):
+    Expr.at(pos, Expr.Record(parse_braced_elems(parser, parse_field_def)))
   
   def parse_field_def(parser):
     var field_name = parse_val_path(parser, [])
@@ -702,25 +732,25 @@ rec:
     var expr = parse_expr(parser)
     (field_name, expr)
   
-  def parse_if_expr(parser):
+  def parse_if_expr(parser, pos):
     var cond_expr = parse_expr(parser)
     var then_expr = parse_block(parser)
     skip(parser, Token.Newline)
     parse_token(parser, Token.Reserved("else"))
     var else_expr = parse_block(parser)
-    Expr.If(cond_expr,then_expr,else_expr)
+    Expr.at(pos, Expr.If(cond_expr,then_expr,else_expr))
     
-  def parse_match_expr(parser):
+  def parse_match_expr(parser, pos):
     var target_expr = parse_expr(parser)
     var cases = parse_block_like_elems(parser, parse_case)
-    Expr.Match(target_expr, cases)
+    Expr.at(pos, Expr.Match(target_expr, cases))
   
-  def parse_try_expr(parser):
+  def parse_try_expr(parser, pos):
     var expr = parse_block(parser)
     skip(parser, Token.Newline)
     parse_token(parser, Token.Reserved("with"))
     var cases = parse_block_like_elems(parser, parse_case)
-    Expr.Try(expr, cases)
+    Expr.at(pos, Expr.Try(expr, cases))
 
   def parse_case(parser):
     parse_token(parser, Token.Reserved("case"))
@@ -767,10 +797,11 @@ rec:
 
   def parse_top_let_fun(parser):
     parse_token(parser, Token.Reserved("def"))
+    var pos = parser.pos
     var fun_name = parse_val_name(parser)
     var params = parse_params(parser)
     var body_expr = parse_block(parser)
-    (fun_name, make_abs(params, body_expr))
+    (fun_name, make_abs(pos, params, body_expr))
   
   def parse_top_open(parser):
     var mod_path = parse_mod_path(parser, [])

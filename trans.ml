@@ -137,7 +137,7 @@ end
 
 let rec translate_expr = begin fun trans ->
   begin fun expr ->
-    begin match expr with
+    begin match expr.Expr.raw with
       | (Expr.Con(lit)) ->
         (translate_literal lit)
       | (Expr.Var(path)) ->

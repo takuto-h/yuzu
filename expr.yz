@@ -1,6 +1,7 @@
 
 rec:
   type t:
+    pos : Pos.t
     raw : raw
 
   type raw:
@@ -21,3 +22,8 @@ rec:
     def Field(t * Names.val_path)
     def Assign(t * t)
     def Try(t * list(Pattern.t * option(t) * t))
+
+def at(pos, raw): {
+  pos = pos;
+  raw = raw;
+}
