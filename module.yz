@@ -1,0 +1,3 @@
+
+type t:
+  asp : list(Names.val_name * Type.t)

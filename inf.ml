@@ -1,10 +1,12 @@
 type t = {
-  dummy : unit;
+  mods : (Module.t) list;
+  asp : ((Names.val_name * Type.t)) list;
 }
 
 let rec create = begin fun (()(_)) ->
   {
-    dummy = ();
+    mods = [];
+    asp = [];
   }
 end
 

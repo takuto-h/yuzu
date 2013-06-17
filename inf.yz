@@ -1,9 +1,11 @@
 
 type t:
-  dummy : unit
+  mods : list(Module.t)
+  asp : list(Names.val_name * Type.t)
   
 def create(): {
-  dummy = ();
+  mods = [];
+  asp = [];
 }
 
 var int_type = Type.Con([], "int")
