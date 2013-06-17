@@ -1,5 +1,7 @@
+open Printf
+
 type t = {
-  mods : (Module.t) list;
+  mods : ((Names.mod_name * Module.t)) list;
   asp : ((Names.val_name * Type.t)) list;
 }
 
@@ -16,6 +18,12 @@ let string_type = (Type.Con ([], "string"))
 
 let char_type = (Type.Con ([], "char"))
 
+let rec unbound_variable = begin fun pos ->
+  begin fun path ->
+    (((sprintf "%s: error: unbound variable: %s\n") (Pos.show pos)) (Names.show_val_path path))
+  end
+end
+
 let rec infer_literal = begin fun lit ->
   begin match lit with
     | (Literal.Int(_)) ->
@@ -27,19 +35,40 @@ let rec infer_literal = begin fun lit ->
   end
 end
 
+let rec infer_var = begin fun inf ->
+  begin fun pos ->
+    begin fun path ->
+      begin match path with
+        | (([](_)), name) ->
+          begin try
+            ((List.assoc name) inf.asp)
+          with
+
+            | (Not_found(_)) ->
+              (failwith ((unbound_variable pos) path))
+          end
+        | ((( :: )(mod_name, mod_path)), name) ->
+          begin try
+            begin let modl = ((List.assoc mod_name) inf.mods) in
+            (((Module.find_asp modl) mod_path) name)
+            end
+          with
+
+            | (Not_found(_)) ->
+              (failwith ((unbound_variable pos) path))
+          end
+      end
+    end
+  end
+end
+
 let rec infer = begin fun inf ->
   begin fun expr ->
-    begin match expr with
+    begin match expr.Expr.raw with
       | (Expr.Con(lit)) ->
         (infer_literal lit)
-      | (Expr.Var(([](_)), name)) ->
-        begin try
-          ((List.assoc name) inf.asp)
-        with
-
-          | (Not_found(_)) ->
-            (raise Not_found)
-        end
+      | (Expr.Var(path)) ->
+        (((infer_var inf) expr.Expr.pos) path)
     end
   end
 end

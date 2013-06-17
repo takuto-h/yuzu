@@ -1,6 +1,8 @@
 
+open Printf
+
 type t:
-  mods : list(Module.t)
+  mods : list(Names.mod_name * Module.t)
   asp : list(Names.val_name * Type.t)
   
 def create(): {
@@ -12,6 +14,12 @@ var int_type = Type.Con([], "int")
 var string_type = Type.Con([], "string")
 var char_type = Type.Con([], "char")
 
+def unbound_variable(pos, path):
+  sprintf(
+    "%s: error: unbound variable: %s\n",
+    Pos.show(pos), Names.show_val_path(path)
+  )
+
 def infer_literal(lit):
   match lit:
     case Literal.Int(_):
@@ -21,14 +29,25 @@ def infer_literal(lit):
     case Literal.Char(_):
       char_type
 
-def infer(inf, expr):
-  match expr:
-    case Expr.Con(lit):
-      infer_literal(lit)
-    case Expr.Var([], name):
+def infer_var(inf, pos, path):
+  match path:
+    case ([], name):
       try:
         List.assoc(name, inf.asp)
       with:
         case Not_found:
-          raise(Not_found)
-      
+          failwith(unbound_variable(pos, path))
+    case (mod_name::mod_path, name):
+      try:
+        var modl = List.assoc(mod_name, inf.mods)
+        Module.find_asp(modl, mod_path, name)
+      with:
+        case Not_found:
+          failwith(unbound_variable(pos, path))
+
+def infer(inf, expr):
+  match expr.Expr.raw:
+    case Expr.Con(lit):
+      infer_literal(lit)
+    case Expr.Var(path):
+      infer_var(inf, expr.Expr.pos, path)
