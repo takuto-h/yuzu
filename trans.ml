@@ -395,6 +395,37 @@ let rec translate_exn_decl = begin fun exn_decl ->
   end
 end
 
+let rec translate_typedef = begin fun trans ->
+  begin fun typedef ->
+    begin match typedef with
+      | (Typedef.Abbrev(name, t)) ->
+        begin let str_type = (translate_type_expr t) in
+        (((sprintf "type %s = %s\n") name) str_type)
+        end
+      | (Typedef.Variant(name, ctor_decls)) ->
+        begin let trans_ctor_decl = (incr_indent_level trans) in
+        begin let str_ctor_decls = (((YzList.fold_left "") ctor_decls) begin fun acc ->
+          begin fun elem ->
+            (((sprintf "%s%s") acc) ((indent trans_ctor_decl) (translate_ctor_decl elem)))
+          end
+        end) in
+        (((sprintf "type %s =\n%s") name) str_ctor_decls)
+        end
+        end
+      | (Typedef.Record(name, field_decls)) ->
+        begin let trans_field_decl = (incr_indent_level trans) in
+        begin let str_field_decls = (((YzList.fold_left "") field_decls) begin fun acc ->
+          begin fun elem ->
+            (((sprintf "%s%s") acc) ((indent trans_field_decl) (translate_field_decl elem)))
+          end
+        end) in
+        ((((sprintf "type %s = {\n%s%s\n") name) str_field_decls) ((indent trans) "}"))
+        end
+        end
+    end
+  end
+end
+
 let rec translate_top = begin fun trans ->
   begin fun top ->
     begin match top with
@@ -430,30 +461,10 @@ let rec translate_top = begin fun trans ->
         begin let str_path = (translate_mod_path path) in
         ((sprintf "open %s\n") str_path)
         end
-      | (Top.Abbrev(name, t)) ->
-        begin let str_type = (translate_type_expr t) in
-        (((sprintf "type %s = %s\n") name) str_type)
-        end
-      | (Top.Variant(name, ctor_decls)) ->
-        begin let trans_ctor_decl = (incr_indent_level trans) in
-        begin let str_ctor_decls = (((YzList.fold_left "") ctor_decls) begin fun acc ->
-          begin fun elem ->
-            (((sprintf "%s%s") acc) ((indent trans_ctor_decl) (translate_ctor_decl elem)))
-          end
-        end) in
-        (((sprintf "type %s =\n%s") name) str_ctor_decls)
-        end
-        end
-      | (Top.Record(name, field_decls)) ->
-        begin let trans_field_decl = (incr_indent_level trans) in
-        begin let str_field_decls = (((YzList.fold_left "") field_decls) begin fun acc ->
-          begin fun elem ->
-            (((sprintf "%s%s") acc) ((indent trans_field_decl) (translate_field_decl elem)))
-          end
-        end) in
-        ((((sprintf "type %s = {\n%s%s\n") name) str_field_decls) ((indent trans) "}"))
-        end
-        end
+      | (Top.Type((( :: )(typedef, ([](_)))))) ->
+        ((translate_typedef trans) typedef)
+      | (Top.Type(([](_)))) ->
+        (assert false)
       | (Top.Exception(exn_decl)) ->
         begin let str_exn_decl = (translate_exn_decl exn_decl) in
         ((sprintf "exception %s\n") str_exn_decl)

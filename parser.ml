@@ -1284,11 +1284,11 @@ and parse_top_typedef = begin fun parser ->
       begin
       (lookahead parser);
       begin let t = (parse_type parser) in
-      (Top.Abbrev (typector_name, t))
+      (Top.Type ((( :: ) ((Typedef.Abbrev (typector_name, t)), []))))
       end
       end
     | ((Token.Reserved(":")) | (Token.Reserved("{"))) ->
-      ((parse_type_repr parser) typector_name)
+      (Top.Type ((( :: ) (((parse_type_repr parser) typector_name), []))))
     | _ ->
       (failwith ((expected parser) "'=' or ':' or '{'"))
   end
@@ -1305,9 +1305,9 @@ and parse_type_repr = begin fun parser ->
         (lookahead parser);
         begin match parser.token with
           | (Token.Reserved("def")) ->
-            (Top.Variant (typector_name, ((parse_indented_elems parser) parse_ctor_decl)))
+            (Typedef.Variant (typector_name, ((parse_indented_elems parser) parse_ctor_decl)))
           | _ ->
-            (Top.Record (typector_name, ((parse_indented_elems parser) parse_field_decl)))
+            (Typedef.Record (typector_name, ((parse_indented_elems parser) parse_field_decl)))
         end
         end
         end
@@ -1316,9 +1316,9 @@ and parse_type_repr = begin fun parser ->
         (lookahead parser);
         begin match parser.token with
           | (Token.Reserved("def")) ->
-            (Top.Variant (typector_name, ((parse_braced_elems parser) parse_ctor_decl)))
+            (Typedef.Variant (typector_name, ((parse_braced_elems parser) parse_ctor_decl)))
           | _ ->
-            (Top.Record (typector_name, ((parse_braced_elems parser) parse_field_decl)))
+            (Typedef.Record (typector_name, ((parse_braced_elems parser) parse_field_decl)))
         end
         end
       | _ ->

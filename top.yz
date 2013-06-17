@@ -1,12 +1,8 @@
 
-open Printf
-
 type t:
   def Expr(Expr.t)
   def LetVal(Pattern.t * Expr.t)
   def LetFun(list(Names.val_name * Expr.t))
   def Open(Names.mod_path)
-  def Abbrev(Names.typector_name * TypeExpr.t)
-  def Variant(Names.typector_name * list(Names.ctor_name * option(TypeExpr.t)))
-  def Record(Names.typector_name * list(bool * Names.val_name * TypeExpr.t))
+  def Type(list(Typedef.t))
   def Exception(Names.ctor_name * option(TypeExpr.t))

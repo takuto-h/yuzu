@@ -793,9 +793,9 @@ rec:
       case Token.CmpOp("="):
         lookahead(parser)
         var t = parse_type(parser)
-        Top.Abbrev(typector_name,t)
+        Top.Type([Typedef.Abbrev(typector_name,t)])
       case Token.Reserved(":") | Token.Reserved("{"):
-        parse_type_repr(parser, typector_name)
+        Top.Type([parse_type_repr(parser, typector_name)])
       case _:
         failwith(expected(parser, "'=' or ':' or '{'"))
   
@@ -806,16 +806,16 @@ rec:
         lookahead(parser)
         match parser.token:
           case Token.Reserved("def"):
-            Top.Variant(typector_name, parse_indented_elems(parser, parse_ctor_decl))
+            Typedef.Variant(typector_name, parse_indented_elems(parser, parse_ctor_decl))
           case _:
-            Top.Record(typector_name, parse_indented_elems(parser, parse_field_decl))
+            Typedef.Record(typector_name, parse_indented_elems(parser, parse_field_decl))
       case Token.Reserved("{"):
         lookahead(parser)
         match parser.token:
           case Token.Reserved("def"):
-            Top.Variant(typector_name, parse_braced_elems(parser, parse_ctor_decl))
+            Typedef.Variant(typector_name, parse_braced_elems(parser, parse_ctor_decl))
           case _:
-            Top.Record(typector_name, parse_braced_elems(parser, parse_field_decl))
+            Typedef.Record(typector_name, parse_braced_elems(parser, parse_field_decl))
       case _:
         failwith(expected(parser, "':' or '{'"))
   

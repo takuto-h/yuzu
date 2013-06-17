@@ -280,6 +280,22 @@ def translate_exn_decl(exn_decl):
       var str_type = translate_type_expr(t)
       sprintf("%s of %s", translate_ctor_name(ctor_name), str_type)
 
+def translate_typedef(trans, typedef):
+  match typedef:
+    case Typedef.Abbrev(name,t):
+      var str_type = translate_type_expr(t)
+      sprintf("type %s = %s\n", name, str_type)
+    case Typedef.Variant(name,ctor_decls):
+      var trans_ctor_decl = incr_indent_level(trans)
+      var str_ctor_decls = YzList.fold_left("", ctor_decls)^(acc, elem):
+        sprintf("%s%s", acc, indent(trans_ctor_decl, translate_ctor_decl(elem)))
+      sprintf("type %s =\n%s", name, str_ctor_decls)
+    case Typedef.Record(name,field_decls):
+      var trans_field_decl = incr_indent_level(trans)
+      var str_field_decls = YzList.fold_left("", field_decls)^(acc, elem):
+        sprintf("%s%s", acc, indent(trans_field_decl, translate_field_decl(elem)))
+      sprintf("type %s = {\n%s%s\n", name, str_field_decls, indent(trans, "}"))
+
 def translate_top(trans, top):
   match top:
     case Top.Expr(expr):
@@ -302,19 +318,10 @@ def translate_top(trans, top):
     case Top.Open(path):
       var str_path = translate_mod_path(path)
       sprintf("open %s\n", str_path)
-    case Top.Abbrev(name,t):
-      var str_type = translate_type_expr(t)
-      sprintf("type %s = %s\n", name, str_type)
-    case Top.Variant(name,ctor_decls):
-      var trans_ctor_decl = incr_indent_level(trans)
-      var str_ctor_decls = YzList.fold_left("", ctor_decls)^(acc, elem):
-        sprintf("%s%s", acc, indent(trans_ctor_decl, translate_ctor_decl(elem)))
-      sprintf("type %s =\n%s", name, str_ctor_decls)
-    case Top.Record(name,field_decls):
-      var trans_field_decl = incr_indent_level(trans)
-      var str_field_decls = YzList.fold_left("", field_decls)^(acc, elem):
-        sprintf("%s%s", acc, indent(trans_field_decl, translate_field_decl(elem)))
-      sprintf("type %s = {\n%s%s\n", name, str_field_decls, indent(trans, "}"))
+    case Top.Type(typedef::[]):
+      translate_typedef(trans, typedef)
+    case Top.Type([]):
+      assert(false)
     case Top.Exception(exn_decl):
       var str_exn_decl = translate_exn_decl(exn_decl)
       sprintf("exception %s\n", str_exn_decl)
