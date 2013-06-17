@@ -1,6 +1,7 @@
 open Printf
 
-type t =   | EOF
+type t = 
+  | EOF
   | Newline
   | Undent
   | Int of int

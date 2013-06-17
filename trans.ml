@@ -402,11 +402,13 @@ let rec translate_type_info = begin fun trans ->
         (translate_type_expr t)
       | (TypeInfo.Variant(ctor_decls)) ->
         begin let trans_ctor_decl = (incr_indent_level trans) in
-        (((YzList.fold_left "") ctor_decls) begin fun acc ->
+        begin let str_ctor_decls = (((YzList.fold_left "") ctor_decls) begin fun acc ->
           begin fun elem ->
             (((sprintf "%s%s") acc) ((indent trans_ctor_decl) (translate_ctor_decl elem)))
           end
-        end)
+        end) in
+        ((sprintf "\n%s") str_ctor_decls)
+        end
         end
       | (TypeInfo.Record(field_decls)) ->
         begin let trans_field_decl = (incr_indent_level trans) in

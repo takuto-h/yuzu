@@ -6,7 +6,8 @@ type t = {
   mutable pos : Pos.t;
 }
 
-type sep_or_term =   | Sep
+type sep_or_term = 
+  | Sep
   | Term
   | Neither
 

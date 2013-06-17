@@ -1,6 +1,7 @@
 open Printf
 
-type t =   | Con of Literal.t
+type t = 
+  | Con of Literal.t
   | Var of Names.val_name
   | Variant of (Names.ctor * (t) list)
   | Tuple of (t) list

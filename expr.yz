@@ -1,21 +1,23 @@
 
-open Printf
+rec:
+  type t:
+    raw : raw
 
-type t:
-  def Con(Literal.t)
-  def Var(Names.val_path)
-  def Abs(Pattern.t * t)
-  def App(t * t)
-  def If(t * t * t)
-  def Tuple(list(t))
-  def Record(list(Names.val_path * t))
-  def Update(t * list(Names.val_path * t))
-  def Match(t * list(Pattern.t * option(t) * t))
-  def LetVal(Pattern.t * t * t)
-  def LetFun(list(Names.val_name * t) * t)
-  def Or(t * t)
-  def And(t * t)
-  def Seq(t * t)
-  def Field(t * Names.val_path)
-  def Assign(t * t)
-  def Try(t * list(Pattern.t * option(t) * t))
+  type raw:
+    def Con(Literal.t)
+    def Var(Names.val_path)
+    def Abs(Pattern.t * t)
+    def App(t * t)
+    def If(t * t * t)
+    def Tuple(list(t))
+    def Record(list(Names.val_path * t))
+    def Update(t * list(Names.val_path * t))
+    def Match(t * list(Pattern.t * option(t) * t))
+    def LetVal(Pattern.t * t * t)
+    def LetFun(list(Names.val_name * t) * t)
+    def Or(t * t)
+    def And(t * t)
+    def Seq(t * t)
+    def Field(t * Names.val_path)
+    def Assign(t * t)
+    def Try(t * list(Pattern.t * option(t) * t))

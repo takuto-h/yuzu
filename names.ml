@@ -1,6 +1,7 @@
 open Printf
 
-type val_name =   | Id of string
+type val_name = 
+  | Id of string
   | Op of string
 
 

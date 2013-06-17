@@ -286,8 +286,9 @@ def translate_type_info(trans, type_info):
       translate_type_expr(t)
     case TypeInfo.Variant(ctor_decls):
       var trans_ctor_decl = incr_indent_level(trans)
-      YzList.fold_left("", ctor_decls)^(acc, elem):
+      var str_ctor_decls = YzList.fold_left("", ctor_decls)^(acc, elem):
         sprintf("%s%s", acc, indent(trans_ctor_decl, translate_ctor_decl(elem)))
+      sprintf("\n%s", str_ctor_decls)
     case TypeInfo.Record(field_decls):
       var trans_field_decl = incr_indent_level(trans)
       var str_field_decls = YzList.fold_left("", field_decls)^(acc, elem):
