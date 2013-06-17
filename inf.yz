@@ -6,12 +6,17 @@ def create(): {
   dummy = ();
 }
 
+var int_type = Type.Con([], "int")
+var string_type = Type.Con([], "string")
+var char_type = Type.Con([], "char")
+
 def infer_lit(lit):
   match lit:
-    case Int(_):
-      Type.Con(
+    case Literal.Int(_): int_type
+    case Literal.String(_): string_type
+    case Literal.Char(_): char_type
 
-def infer(expr):
+def infer(inf, expr):
   match expr:
-    case Con(lit):
-      
+    case Expr.Con(lit):
+      infer_lit(lit)

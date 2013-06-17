@@ -3,7 +3,7 @@ SRCS =\
   yzList.ml\
   pos.ml source.ml token.ml lexer.ml\
   literal.ml names.ml pattern.ml typeExpr.ml expr.ml top.ml parser.ml\
-  inf.ml trans.ml main.ml
+  type.ml inf.ml trans.ml main.ml
 
 EXE = ./yuzuko
 
