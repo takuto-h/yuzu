@@ -10,13 +10,16 @@ var int_type = Type.Con([], "int")
 var string_type = Type.Con([], "string")
 var char_type = Type.Con([], "char")
 
-def infer_lit(lit):
+def infer_literal(lit):
   match lit:
-    case Literal.Int(_): int_type
-    case Literal.String(_): string_type
-    case Literal.Char(_): char_type
+    case Literal.Int(_):
+      int_type
+    case Literal.String(_):
+      string_type
+    case Literal.Char(_):
+      char_type
 
 def infer(inf, expr):
   match expr:
     case Expr.Con(lit):
-      infer_lit(lit)
+      infer_literal(lit)
