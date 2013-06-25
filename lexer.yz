@@ -303,7 +303,7 @@ def skip_single_line_comment(lexer):
 def next(lexer):
   var pos = Source.pos(lexer.source)
   match Source.peek(lexer.source):
-    case None when Stack.length(lexer.offside_lines) = 1:
+    case None when Stack.length(lexer.offside_lines) <= 1:
       (None, pos)
     case None:
       ignore(Stack.pop(lexer.offside_lines))

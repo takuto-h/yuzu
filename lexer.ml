@@ -476,7 +476,7 @@ end
 let rec next = begin fun lexer ->
   begin let pos = (Source.pos lexer.source) in
   begin match (Source.peek lexer.source) with
-    | (None(_)) when ((( = ) (Stack.length lexer.offside_lines)) 1) ->
+    | (None(_)) when ((( <= ) (Stack.length lexer.offside_lines)) 1) ->
       (None, pos)
     | (None(_)) ->
       begin
