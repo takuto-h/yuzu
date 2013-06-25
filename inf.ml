@@ -146,3 +146,15 @@ let () = (assert ((( = ) ((Type.show shower) ((infer inf) _A_a2))) "string"))
 
 let () = (assert ((( = ) ((Type.show shower) ((infer inf) _A_B_b1))) "char"))
 
+let app_expr = ((Expr.at pos) (Expr.App (int_expr, string_expr)))
+
+let () = begin try
+  (ignore ((infer inf) app_expr))
+with
+
+  | (Failure(got)) ->
+    begin let req = (((((sprintf "%s%s%s%s") "<assertion>:1:0: error: invalid application\n") "function type: int\n") "argument type: string\n") "<assertion>:1:0: 'int' of function type\n") in
+    (assert ((( = ) got) req))
+    end
+end
+
