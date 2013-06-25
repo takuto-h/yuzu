@@ -2,7 +2,7 @@ open Printf
 
 let rec main = begin fun (() _) ->
   begin if ((( = ) (Array.length Sys.argv)) 1) then
-    ((eprintf "usage: %s files\n") ((Array.get Sys.argv) 0))
+    (Compiler.interactive ())
   else
     begin let fnames = (Array.to_list (((Array.sub Sys.argv) 1) ((( - ) (Array.length Sys.argv)) 1))) in
     begin if (Compiler.compile fnames) then

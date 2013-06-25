@@ -1,6 +1,8 @@
 
 open Printf
 
+var initial_buffer_size = 256
+
 def compile(fnames):
   def translate(fname_in):
     var fname_out = if Filename.check_suffix(fname_in, ".yz"):
@@ -9,3 +11,25 @@ def compile(fnames):
       sprintf("%s.ml", fname_in)
     Trans.translate_file(fname_in, fname_out)    
   List.for_all(translate, fnames)
+
+def interactive():
+  def read(buf):
+    printf("> ")
+    var line = read_line()
+    if line = "":
+      Buffer.contents(buf)
+    else:
+      Buffer.add_string(buf, sprintf("%s\n", line))
+      read(buf)
+  try:
+    var str = read(Buffer.create(initial_buffer_size))
+    match Trans.translate_string("<interactive>", str):
+      case None:
+        ()
+      case Some(result):
+        printf("%s", result)
+        flush(stdout)
+    interactive()
+  with:
+    case End_of_file:
+      ()

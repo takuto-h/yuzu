@@ -18,6 +18,10 @@ $(EXE): $(ML_SRCS)
 .yz.ml:
 	$(EXE) $(YZ_SRCS)
 
+.PHONY: run
+run: $(EXE)
+	$(EXE)
+
 .PHONY: clean
 clean:
 	rm -f $(EXE) *.cmi *.cmo *.annot *.out

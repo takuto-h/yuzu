@@ -10,6 +10,7 @@ def create(basic_offset): {
   indent_level = 0;
 }
 
+var initial_buffer_size = 256
 var ocaml_basic_offset = 2
 
 def incr_indent_level(trans): trans.{
@@ -338,3 +339,26 @@ def translate_file(fname_in, fname_out):
         eprintf("%s", message)
         flush(stderr)
         false
+
+def translate_string(fname_in, string):
+  var buf = Buffer.create(initial_buffer_size)
+  try:
+    var strm = Stream.of_string(string)
+    var src = Source.create(fname_in, strm)
+    var lexer = Lexer.create(src)
+    var parser = Parser.create(lexer)
+    var trans = create(ocaml_basic_offset)
+    def loop():
+      match Parser.parse(parser):
+        case None:
+          Some(Buffer.contents(buf))
+        case Some(top):
+          var result = translate_top(trans, top)
+          Buffer.add_string(buf, sprintf("%s", result))
+          loop()
+    loop()
+  with:
+    case Failure(message):
+      eprintf("%s", message)
+      flush(stderr)
+      None

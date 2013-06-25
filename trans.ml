@@ -12,6 +12,8 @@ let rec create = begin fun basic_offset ->
   }
 end
 
+let initial_buffer_size = 256
+
 let ocaml_basic_offset = 2
 
 let rec incr_indent_level = begin fun trans ->
@@ -518,6 +520,50 @@ let rec translate_file = begin fun fname_in ->
         end
       end)
     end)
+  end
+end
+
+let rec translate_string = begin fun fname_in ->
+  begin fun string ->
+    begin let buf = (Buffer.create initial_buffer_size) in
+    begin try
+      begin let strm = (Stream.of_string string) in
+      begin let src = ((Source.create fname_in) strm) in
+      begin let lexer = (Lexer.create src) in
+      begin let parser = (Parser.create lexer) in
+      begin let trans = (create ocaml_basic_offset) in
+      begin let rec loop = begin fun (() _) ->
+        begin match (Parser.parse parser) with
+          | (None _) ->
+            (Some ((Buffer.contents buf)))
+          | (Some (top)) ->
+            begin let result = ((translate_top trans) top) in
+            begin
+            ((Buffer.add_string buf) ((sprintf "%s") result));
+            (loop ())
+            end
+            end
+        end
+      end in
+      (loop ())
+      end
+      end
+      end
+      end
+      end
+      end
+    with
+
+      | (Failure (message)) ->
+        begin
+        ((eprintf "%s") message);
+        begin
+        (flush stderr);
+        None
+        end
+        end
+    end
+    end
   end
 end
 
