@@ -666,6 +666,17 @@ and parse_assign_expr = begin fun parser ->
       end
       end
       end
+    | (Token.AssignOp(":=")) ->
+      begin let pos = parser.pos in
+      begin
+      (lookahead parser);
+      begin let op = ((Expr.at pos) (make_op_var ":=")) in
+      begin let rhs = (parse_assign_expr parser) in
+      ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (op, lhs))), rhs)))
+      end
+      end
+      end
+      end
     | _ ->
       lhs
   end
@@ -797,6 +808,15 @@ and parse_unary_expr = begin fun parser ->
       (lookahead parser);
       begin let expr = (parse_unary_expr parser) in
       ((Expr.at pos) (Expr.App (((Expr.at pos) (make_op_var "~+")), expr)))
+      end
+      end
+      end
+    | (Token.Reserved("!")) ->
+      begin let pos = parser.pos in
+      begin
+      (lookahead parser);
+      begin let expr = (parse_unary_expr parser) in
+      ((Expr.at pos) (Expr.App (((Expr.at pos) (make_op_var "!")), expr)))
       end
       end
       end

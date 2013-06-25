@@ -375,6 +375,11 @@ let rec lex_visible_token = begin fun lexer ->
               (Source.junk lexer.source);
               (Token.ConsOp ("::"))
               end
+            | (Some('=')) ->
+              begin
+              (Source.junk lexer.source);
+              (Token.AssignOp (":="))
+              end
             | ((Some(_)) | (None(_))) ->
               (Token.Reserved (":"))
           end

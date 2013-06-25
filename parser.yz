@@ -412,6 +412,12 @@ rec:
         lookahead(parser)
         var rhs = parse_assign_expr(parser)
         Expr.at(pos, Expr.Assign(lhs, rhs))
+      case Token.AssignOp(":="):
+        var pos = parser.pos
+        lookahead(parser)
+        var op = Expr.at(pos, make_op_var(":="))
+        var rhs = parse_assign_expr(parser)
+        Expr.at(pos, Expr.App(Expr.at(pos, Expr.App(op,lhs)),rhs))
       case _:
         lhs
   

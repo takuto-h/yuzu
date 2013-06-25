@@ -245,6 +245,9 @@ def lex_visible_token(lexer, pos, c):
         case Some(':'):
           Source.junk(lexer.source)
           Token.ConsOp("::")
+        case Some('='):
+          Source.junk(lexer.source)
+          Token.AssignOp(":=")
         case Some(_) | None:
           Token.Reserved(":")
     case '"':
