@@ -334,6 +334,18 @@ let rec lex_visible_token = begin fun lexer ->
           (Token.AddOp (((lex_op lexer) buf)))
           end
           end
+        | '!' ->
+          begin match (Source.peek lexer.source) with
+            | (Some(c)) when (is_op_part c) ->
+              begin let buf = (Buffer.create initial_buffer_size) in
+              begin
+              ((Buffer.add_char buf) '!');
+              (Token.CmpOp (((lex_op lexer) buf)))
+              end
+              end
+            | ((Some(_)) | (None(_))) ->
+              (Token.Reserved ("!"))
+          end
         | '%' ->
           begin let buf = (Buffer.create initial_buffer_size) in
           begin

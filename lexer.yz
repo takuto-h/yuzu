@@ -219,6 +219,14 @@ def lex_visible_token(lexer, pos, c):
       var buf = Buffer.create(initial_buffer_size)
       Buffer.add_char(buf, c)
       Token.AddOp(lex_op(lexer, buf))
+    case '!':
+      match Source.peek(lexer.source):
+        case Some(c) when is_op_part(c):
+          var buf = Buffer.create(initial_buffer_size)
+          Buffer.add_char(buf, '!')
+          Token.CmpOp(lex_op(lexer, buf))
+        case Some(_) | None:
+          Token.Reserved("!")
     case '%':
       var buf = Buffer.create(initial_buffer_size)
       Buffer.add_char(buf, c)

@@ -497,6 +497,11 @@ rec:
         lookahead(parser)
         var expr = parse_unary_expr(parser)
         Expr.at(pos, Expr.App(Expr.at(pos, make_op_var("~+")),expr))
+      case Token.Reserved("!"):
+        var pos = parser.pos
+        lookahead(parser)
+        var expr = parse_unary_expr(parser)
+        Expr.at(pos, Expr.App(Expr.at(pos, make_op_var("!")),expr))
       case _:
         parse_prim_expr(parser)
   
