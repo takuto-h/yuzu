@@ -32,7 +32,7 @@ let rec invalid_application = begin fun pos ->
       begin fun t1 ->
         begin fun t2 ->
           begin let shower = (Type.create_shower 0) in
-          ((((sprintf "%s: error: invalid application\n%s%s") (Pos.show pos)) ((sprintf "function type: %s\n") ((Type.show shower) fun_type))) ((sprintf "argument type: %s\n") ((Type.show shower) arg_type)))
+          ((((((sprintf "%s: error: invalid application\n%s%s%s%s") (Pos.show pos)) ((sprintf "function type: %s\n") ((Type.show shower) fun_type))) ((sprintf "argument type: %s\n") ((Type.show shower) arg_type))) (((Type.show_origin shower) "function type") t1)) (((Type.show_origin shower) "argument type") t2))
           end
         end
       end
@@ -78,7 +78,7 @@ let rec infer = begin fun inf ->
   begin fun expr ->
     begin match expr.Expr.raw with
       | (Expr.Con(lit)) ->
-        (infer_literal lit)
+        ((Type.at (Some (expr.Expr.pos))) (infer_literal lit))
       | (Expr.Var(path)) ->
         begin try
           ((instantiate inf.let_level) ((find_asp inf) path))
@@ -93,7 +93,7 @@ let rec infer = begin fun inf ->
         begin let ret_type = (Type.make_var inf.let_level) in
         begin
         begin try
-          ((Type.unify fun_type) (Type.Fun (arg_type, ret_type)))
+          ((Type.unify fun_type) ((Type.at None) (Type.Fun (arg_type, ret_type))))
         with
 
           | (Type.Unification_error(t1, t2)) ->
@@ -108,17 +108,19 @@ let rec infer = begin fun inf ->
   end
 end
 
-let mod_B = ((Module.make []) (( :: ) (((Names.Id ("b1")), (Scheme.mono char_type)), (( :: ) (((Names.Id ("b2")), (Scheme.mono int_type)), [])))))
+let pos = ((((Pos.make "<assertion>") 1) 0) 0)
 
-let mod_A = ((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1")), (Scheme.mono int_type)), (( :: ) (((Names.Id ("a2")), (Scheme.mono string_type)), [])))))
+let mod_B = ((Module.make []) (( :: ) (((Names.Id ("b1")), (Scheme.mono ((Type.at (Some (pos))) char_type))), (( :: ) (((Names.Id ("b2")), (Scheme.mono ((Type.at (Some (pos))) int_type))), [])))))
+
+let mod_A = ((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1")), (Scheme.mono ((Type.at (Some (pos))) int_type))), (( :: ) (((Names.Id ("a2")), (Scheme.mono ((Type.at (Some (pos))) string_type))), [])))))
 
 let inf = {
   mods = (( :: ) (("A", mod_A), []));
-  asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono int_type)), []));
+  asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono ((Type.at (Some (pos))) int_type))), []));
   let_level = 0;
 }
 
-let pos = ((((Pos.make "<assertion>") 1) 0) 0)
+let shower = (Type.create_shower 0)
 
 let int_expr = ((Expr.at pos) (Expr.Con ((Literal.Int (123)))))
 
@@ -126,11 +128,11 @@ let string_expr = ((Expr.at pos) (Expr.Con ((Literal.String ("abc")))))
 
 let char_expr = ((Expr.at pos) (Expr.Con ((Literal.Char ("x")))))
 
-let () = (assert ((( = ) ((infer inf) int_expr)) int_type))
+let () = (assert ((( = ) ((Type.show shower) ((infer inf) int_expr))) "int"))
 
-let () = (assert ((( = ) ((infer inf) string_expr)) string_type))
+let () = (assert ((( = ) ((Type.show shower) ((infer inf) string_expr))) "string"))
 
-let () = (assert ((( = ) ((infer inf) char_expr)) char_type))
+let () = (assert ((( = ) ((Type.show shower) ((infer inf) char_expr))) "char"))
 
 let ans = ((Expr.at pos) (Expr.Var ([], (Names.Id ("ans")))))
 
@@ -138,9 +140,9 @@ let _A_a2 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", [])), (Names.Id ("a2")))))
 
 let _A_B_b1 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", (( :: ) ("B", [])))), (Names.Id ("b1")))))
 
-let () = (assert ((( = ) ((infer inf) ans)) int_type))
+let () = (assert ((( = ) ((Type.show shower) ((infer inf) ans))) "int"))
 
-let () = (assert ((( = ) ((infer inf) _A_a2)) string_type))
+let () = (assert ((( = ) ((Type.show shower) ((infer inf) _A_a2))) "string"))
 
-let () = (assert ((( = ) ((infer inf) _A_B_b1)) char_type))
+let () = (assert ((( = ) ((Type.show shower) ((infer inf) _A_B_b1))) "char"))
 

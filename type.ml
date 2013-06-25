@@ -2,7 +2,12 @@ open Printf
 
 type typevar = ((t) option) ref
 
-and t = 
+and t = {
+  pos : (Pos.t) option;
+  raw : raw;
+}
+
+and raw = 
   | Con of Names.typector
   | Var of (int * typevar)
   | Gen of int
@@ -11,13 +16,22 @@ and t =
   | Fun of (t * t)
 
 
+let rec at = begin fun pos ->
+  begin fun raw ->
+    {
+      pos = pos;
+      raw = raw;
+    }
+  end
+end
+
 let rec make_var = begin fun let_level ->
-  (Var (let_level, (ref None)))
+  ((at None) (Var (let_level, (ref None))))
 end
 
 let rec map = begin fun func ->
   begin fun t ->
-    begin match t with
+    begin match t.raw with
       | (Con(_)) ->
         t
       | (Var(_, t_ref)) ->
@@ -31,16 +45,16 @@ let rec map = begin fun func ->
         (func n)
       | (App(typector, t_args)) ->
         begin let t_args = ((List.map (map func)) t_args) in
-        (App (typector, t_args))
+        ((at t.pos) (App (typector, t_args)))
         end
       | (Tuple(ts)) ->
         begin let ts = ((List.map (map func)) ts) in
-        (Tuple (ts))
+        ((at t.pos) (Tuple (ts)))
         end
       | (Fun(t_param, t_ret)) ->
         begin let t_param = ((map func) t_param) in
         begin let t_ret = ((map func) t_ret) in
-        (Fun (t_param, t_ret))
+        ((at t.pos) (Fun (t_param, t_ret)))
         end
         end
     end
@@ -49,7 +63,7 @@ end
 
 let rec occurs = begin fun t_ref0 ->
   begin fun t ->
-    begin match t with
+    begin match t.raw with
       | (Con(_)) ->
         false
       | (Var(_, t_ref)) ->
@@ -75,7 +89,7 @@ exception Unification_error of (t * t)
 
 let rec unify = begin fun t1 ->
   begin fun t2 ->
-    begin match (t1, t2) with
+    begin match (t1.raw, t2.raw) with
       | ((Var(_, t1_ref)), (Var(_, t2_ref))) when ((( == ) t1_ref) t2_ref) ->
         ()
       | ((Var(lv1, t1_ref)), (Var(lv2, t2_ref))) ->
@@ -152,7 +166,7 @@ end
 
 let rec show = begin fun shower ->
   begin fun t ->
-    begin match t with
+    begin match t.raw with
       | (Con(tc)) ->
         (Names.show_typector tc)
       | (Var(_, t_ref)) ->
@@ -197,6 +211,19 @@ and show_list = begin fun shower ->
               ((((sprintf "%s%s%s") acc) sep) ((show shower) elem))
             end
           end)
+      end
+    end
+  end
+end
+
+let rec show_origin = begin fun shower ->
+  begin fun descr ->
+    begin fun t ->
+      begin match t.pos with
+        | (None(_)) ->
+          ""
+        | (Some(pos)) ->
+          ((((sprintf "%s: '%s' of %s\n") (Pos.show pos)) ((show shower) t)) descr)
       end
     end
   end

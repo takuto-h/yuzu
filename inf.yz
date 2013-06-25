@@ -25,9 +25,11 @@ def unbound_variable(pos, path):
 def invalid_application(pos, fun_type, arg_type, t1, t2):
   var shower = Type.create_shower(0)
   sprintf(
-    "%s: error: invalid application\n%s%s", Pos.show(pos),
+    "%s: error: invalid application\n%s%s%s%s", Pos.show(pos),
     sprintf("function type: %s\n", Type.show(shower, fun_type)),
-    sprintf("argument type: %s\n", Type.show(shower, arg_type))
+    sprintf("argument type: %s\n", Type.show(shower, arg_type)),
+    Type.show_origin(shower, "function type", t1),
+    Type.show_origin(shower, "argument type", t2),
   )
 
 def find_asp(inf, path):
@@ -54,7 +56,7 @@ def infer_literal(lit):
 def infer(inf, expr):
   match expr.Expr.raw:
     case Expr.Con(lit):
-      infer_literal(lit)
+      Type.at(Some(expr.Expr.pos), infer_literal(lit))
     case Expr.Var(path):
       try:
         instantiate(inf.let_level, find_asp(inf, path))
@@ -66,7 +68,7 @@ def infer(inf, expr):
       var arg_type = infer(inf, arg_expr)
       var ret_type = Type.make_var(inf.let_level)
       try:
-        Type.unify(fun_type, Type.Fun(arg_type, ret_type))
+        Type.unify(fun_type, Type.at(None, Type.Fun(arg_type, ret_type)))
       with:
         case Type.Unification_error(t1, t2):
           failwith(invalid_application(expr.Expr.pos, fun_type, arg_type, t1, t2))
@@ -75,29 +77,36 @@ def infer(inf, expr):
 //      
 // assertions
 //
+var pos = Pos.make("<assertion>", 1, 0, 0)
 var mod_B = Module.make(
   [],
-  [(Names.Id("b1"), Scheme.mono(char_type)); (Names.Id("b2"), Scheme.mono(int_type))],
+  [(Names.Id("b1"), Scheme.mono(Type.at(Some(pos),char_type)));
+   (Names.Id("b2"), Scheme.mono(Type.at(Some(pos),int_type)));
+  ],
 )
 var mod_A = Module.make(
   [("B", mod_B)],
-  [(Names.Id("a1"), Scheme.mono(int_type)); (Names.Id("a2"), Scheme.mono(string_type))],
+  [(Names.Id("a1"), Scheme.mono(Type.at(Some(pos),int_type)));
+   (Names.Id("a2"), Scheme.mono(Type.at(Some(pos),string_type)));
+  ],
 )
 var inf = {
   mods = [("A", mod_A)];
-  asp = [(Names.Id("ans"), Scheme.mono(int_type))];
+  asp = [(Names.Id("ans"), Scheme.mono(Type.at(Some(pos),int_type)))];
   let_level = 0;
 }
-var pos = Pos.make("<assertion>", 1, 0, 0)
+var shower = Type.create_shower(0)
 var int_expr = Expr.at(pos, Expr.Con(Literal.Int(123)))
 var string_expr = Expr.at(pos, Expr.Con(Literal.String("abc")))
 var char_expr = Expr.at(pos, Expr.Con(Literal.Char("x")))
-assert(infer(inf, int_expr) = int_type)
-assert(infer(inf, string_expr) = string_type)
-assert(infer(inf, char_expr) = char_type)
+assert(Type.show(shower, infer(inf, int_expr)) = "int")
+assert(Type.show(shower, infer(inf, string_expr)) = "string")
+assert(Type.show(shower, infer(inf, char_expr)) = "char")
 var ans = Expr.at(pos, Expr.Var([], Names.Id("ans")))
 var _A_a2 = Expr.at(pos, Expr.Var(["A"], Names.Id("a2")))
 var _A_B_b1 = Expr.at(pos, Expr.Var(["A"; "B"], Names.Id("b1")))
-assert(infer(inf, ans) = int_type)
-assert(infer(inf, _A_a2) = string_type)
-assert(infer(inf, _A_B_b1) = char_type)
+assert(Type.show(shower, infer(inf, ans)) = "int")
+assert(Type.show(shower, infer(inf, _A_a2)) = "string")
+assert(Type.show(shower, infer(inf, _A_B_b1)) = "char")
+//var app_expr = Expr.at(pos, Expr.App(int_expr, string_expr))
+//assert(Type.show(shower, infer(inf, app_expr)) = "char")

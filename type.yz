@@ -4,6 +4,9 @@ open Printf
 rec:
   type typevar = ref(option(t))
   type t:
+    pos: option(Pos.t)
+    raw: raw
+  type raw:
     def Con(Names.typector)
     def Var(int * typevar)
     def Gen(int)
@@ -11,11 +14,16 @@ rec:
     def Tuple(list(t))
     def Fun(t * t)
 
+def at(pos, raw): {
+  pos = pos;
+  raw = raw;
+}
+
 def make_var(let_level):
-  Var(let_level, ref(None))
+  at(None, Var(let_level, ref(None)))
 
 def map(func, t):
-  match t:
+  match t.raw:
     case Con(_):
       t
     case Var(_,t_ref):
@@ -28,17 +36,17 @@ def map(func, t):
       func(n)
     case App(typector,t_args):
       var t_args = List.map(map(func), t_args)
-      App(typector, t_args)
+      at(t.pos, App(typector, t_args))
     case Tuple(ts):
       var ts = List.map(map(func), ts)
-      Tuple(ts)
+      at(t.pos, Tuple(ts))
     case Fun(t_param, t_ret):
       var t_param = map(func, t_param)
       var t_ret = map(func, t_ret)
-      Fun(t_param, t_ret)
+      at(t.pos, Fun(t_param, t_ret))
 
 def occurs(t_ref0, t):
-  match t:
+  match t.raw:
     case Con(_):
       false
     case Var(_,t_ref):
@@ -59,7 +67,7 @@ def occurs(t_ref0, t):
 exception Unification_error(t * t)
 
 def unify(t1, t2):
-  match (t1, t2):
+  match (t1.raw, t2.raw):
     case (Var(_,t1_ref),Var(_,t2_ref)) when t1_ref == t2_ref:
       ()
     case (Var(lv1,t1_ref),Var(lv2,t2_ref)):
@@ -123,7 +131,7 @@ def create_shower(gen_num): {
 
 rec:
   def show(shower, t):
-    match t:
+    match t.raw:
       case Con(tc):
         Names.show_typector(tc)
       case Var(_,t_ref):
@@ -154,3 +162,10 @@ rec:
       case x::xs:
         YzList.fold_left(show(shower, x), xs)^(acc, elem):
           sprintf("%s%s%s", acc, sep, show(shower, elem))
+
+def show_origin(shower, descr, t):
+  match t.pos:
+    case None:
+      ""
+    case Some(pos):
+      sprintf("%s: '%s' of %s\n", Pos.show(pos), show(shower, t), descr)
