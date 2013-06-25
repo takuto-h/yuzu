@@ -1,21 +1,22 @@
 
-SRCS =\
-  yzList.ml\
-  pos.ml source.ml token.ml lexer.ml\
-  literal.ml names.ml pattern.ml typeExpr.ml expr.ml typeInfo.ml top.ml parser.ml\
-  type.ml scheme.ml module.ml inf.ml trans.ml compiler.ml main.ml
+YZ_SRCS =\
+  yzList.yz pos.yz source.yz token.yz lexer.yz\
+  literal.yz names.yz pattern.yz typeExpr.yz expr.yz typeInfo.yz top.yz parser.yz\
+  type.yz scheme.yz module.yz inf.yz trans.yz compiler.yz main.yz
+
+ML_SRCS = $(addsuffix .ml, $(basename $(YZ_SRCS)))
 
 EXE = ./yuzuko
 
 .PHONY: all
 all: $(EXE)
 
-$(EXE): $(SRCS)
-	ocamlc -g -o $(EXE) $(SRCS)
+$(EXE): $(ML_SRCS)
+	ocamlc -g -o $(EXE) $(ML_SRCS)
 
 .SUFFIXES: .yz .ml
 .yz.ml:
-	$(EXE) $(addsuffix .yz, $(basename $(SRCS)))
+	$(EXE) $(YZ_SRCS)
 
 .PHONY: clean
 clean:
@@ -23,5 +24,4 @@ clean:
 
 .PHONY: wc
 wc:
-#	find . \( -name "*.ml" -o -name "*.yz" \) | xargs wc -l
-	wc -l $(SRCS)
+	wc -l $(YZ_SRCS)
