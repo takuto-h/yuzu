@@ -33,11 +33,7 @@ let rec show_mod_path = begin fun path ->
     | ([](_)) ->
       ""
     | (( :: )(name, names)) ->
-      (((YzList.fold_left name) names) begin fun acc ->
-        begin fun elem ->
-          (((sprintf "%s.%s") acc) elem)
-        end
-      end)
+      (((List.fold_left (sprintf "%s.%s")) name) names)
   end
 end
 

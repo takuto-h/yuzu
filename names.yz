@@ -25,8 +25,7 @@ def show_mod_path(path):
     case []:
       ""
     case name::names:
-      YzList.fold_left(name, names)^(acc, elem):
-        sprintf("%s.%s", acc, elem)
+      List.fold_left(sprintf("%s.%s"), name, names)
 
 def show_val_path(path):
   match path:

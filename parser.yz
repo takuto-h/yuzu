@@ -31,12 +31,14 @@ var nil_expr = Expr.Var([], (Names.Id("[]")))
 var unit_expr = Expr.Var([], (Names.Id("()")))
 
 def make_abs(pos, params, body_expr):
-  YzList.fold_right(params, body_expr)^(param, expr):
+  def mk_abs(param, expr):
     Expr.at(pos, Expr.Abs(param, expr))
+  List.fold_right(mk_abs, params, body_expr)
 
 def make_app(pos, fun_expr, arg_exprs):
-  YzList.fold_left(fun_expr, arg_exprs)^(e1, e2):
+  def mk_app(e1, e2):
     Expr.at(pos, Expr.App(e1, e2))
+  List.fold_left(mk_app, fun_expr, arg_exprs)
 
 def expected(parser, str_token):
   sprintf(
@@ -371,7 +373,7 @@ rec:
     
   def parse_list_pattern(parser):
     var list = parse_elems(parser, semi_or_rbracket, parse_pattern)
-    YzList.fold_right(list, nil_pattern, make_cons_pattern)
+    List.fold_right(make_cons_pattern, list, nil_pattern)
   
   def parse_record_pattern(parser):
     Pattern.Record(parse_braced_elems(parser, parse_field_pattern))
@@ -713,8 +715,9 @@ rec:
   def parse_list(parser, pos):
     var list = parse_elems(parser, semi_or_rbracket, parse_expr)
     var ctor = Expr.at(pos, make_op_var("::"))
-    YzList.fold_right(list, Expr.at(pos, nil_expr))^(elem, acc):
+    def make_cons(elem, acc):
       Expr.at(pos, Expr.App(ctor, Expr.at(pos, Expr.Tuple([elem; acc]))))
+    List.fold_right(make_cons, list, Expr.at(pos, nil_expr))
   
   def parse_parens(parser, pos):
     if parser.token = Token.Reserved(")"):

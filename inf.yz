@@ -32,7 +32,7 @@ def find_asp(inf, path):
 
 def instantiate(let_level, {Scheme.gen_num;Scheme.body}):
   var type_vars = Array.init(gen_num)^(_): Type.make_var(let_level)
-  Type.map(body)^(n): Array.get(type_vars, n)
+  Type.map(Array.get(type_vars), body)
 
 def infer_literal(lit):
   match lit:
@@ -62,7 +62,7 @@ def infer(inf, expr):
       def unification_error(t1,t2):
         failwith("")
       Type.unify(
-        fun_type, Type.Fun(arg_type, ret_type), occurs_check_error, unification_error
+        occurs_check_error, unification_error, fun_type, Type.Fun(arg_type, ret_type)
       )
       ret_type
 

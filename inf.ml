@@ -44,9 +44,7 @@ let rec instantiate = begin fun let_level ->
     begin let type_vars = ((Array.init gen_num) begin fun _ ->
       (Type.make_var let_level)
     end) in
-    ((Type.map body) begin fun n ->
-      ((Array.get type_vars) n)
-    end)
+    ((Type.map (Array.get type_vars)) body)
     end
   end
 end
@@ -88,7 +86,7 @@ let rec infer = begin fun inf ->
           end
         end in
         begin
-        ((((Type.unify fun_type) (Type.Fun (arg_type, ret_type))) occurs_check_error) unification_error);
+        ((((Type.unify occurs_check_error) unification_error) fun_type) (Type.Fun (arg_type, ret_type)));
         ret_type
         end
         end

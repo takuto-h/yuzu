@@ -10,35 +10,28 @@ type t:
 def make_var(let_level):
   Var(let_level, ref(None))
 
-rec:
-  def map(t, func):
-    match t:
-      case Con(_):
-        t
-      case Var(_,t_ref):
-        match !t_ref:
-          case None:
-            t
-          case Some(t_val):
-            map(t_val, func)
-      case Gen(n):
-        func(n)
-      case App(typector,t_args):
-        var t_args = map_list(t_args, func)
-        App(typector, t_args)
-      case Tuple(ts):
-        var ts = map_list(ts, func)
-        Tuple(ts)
-      case Fun(t_param, t_ret):
-        var t_param = map(t_param, func)
-        var t_ret = map(t_ret, func)
-        Fun(t_param, t_ret)
-
-  def map_list(ts, func):
-    var ts_ref = ref([])
-    YzList.iter(ts)^(t_elem):
-      ts_ref := map(t_elem, func)::!ts_ref
-    List.rev(!ts_ref)
+def map(func, t):
+  match t:
+    case Con(_):
+      t
+    case Var(_,t_ref):
+      match !t_ref:
+        case None:
+          t
+        case Some(t_val):
+          map(func, t_val)
+    case Gen(n):
+      func(n)
+    case App(typector,t_args):
+      var t_args = List.map(map(func), t_args)
+      App(typector, t_args)
+    case Tuple(ts):
+      var ts = List.map(map(func), ts)
+      Tuple(ts)
+    case Fun(t_param, t_ret):
+      var t_param = map(func, t_param)
+      var t_ret = map(func, t_ret)
+      Fun(t_param, t_ret)
 
 def occurs(t_ref0, t):
   match t:
@@ -59,27 +52,27 @@ def occurs(t_ref0, t):
     case Fun(t_param, t_ret):
       occurs(t_ref0, t_param) || occurs(t_ref0, t_ret)
 
-rec:
-  def unify(t1, t2, occurs_check_error, unification_error):
+def unify(occurs_check_error, unification_error, t1, t2):
+  def loop(t1, t2):
     match (t1, t2):
-      case (Var(_, t1_ref),Var(_, t2_ref)) when t1_ref == t2_ref:
+      case (Var(_,t1_ref),Var(_,t2_ref)) when t1_ref == t2_ref:
         ()
-      case (Var(lv1, t1_ref),Var(lv2, t2_ref)):
+      case (Var(lv1,t1_ref),Var(lv2,t2_ref)):
         match (!t1_ref, !t2_ref):
           case (Some(t10),_):
-            unify(t10, t2, occurs_check_error, unification_error)
+            loop(t10, t2)
           case (_,Some(t20)):
-            unify(t1, t20, occurs_check_error, unification_error)
+            loop(t1, t20)
           case (None,None) when lv1 > lv2:
             t1_ref := Some(t2)
           case (None,None) when lv1 < lv2:
             t2_ref := Some(t1)
           case (None,None):
             t2_ref := Some(t1)
-      case (Var(lv1, t1_ref),_):
+      case (Var(lv1,t1_ref),_):
         match !t1_ref:
           case Some(t10):
-            unify(t10, t2, occurs_check_error, unification_error)
+            loop(t10, t2)
           case None:
             if occurs(t1_ref, t2):
               occurs_check_error()
@@ -88,7 +81,7 @@ rec:
       case (_,Var(lv2, t2_ref)):
         match !t2_ref:
           case Some(t20):
-            unify(t1, t20, occurs_check_error, unification_error)
+            loop(t1, t20)
           case None:
             if occurs(t2_ref, t1):
               occurs_check_error()
@@ -101,19 +94,16 @@ rec:
       case (Gen(_),_):
         assert(false)
       case (App(tc1,ts1),App(tc2,ts2)) when tc1 = tc2:
-        unify_list(ts1, ts2, occurs_check_error, unification_error)
+        List.iter2(loop, ts1, ts2)
       case (App(_,_),_):
         unification_error(t1, t2)
       case (Tuple(ts1),Tuple(ts2)):
-        unify_list(ts1, ts2, occurs_check_error, unification_error)
+        List.iter2(loop, ts1, ts2)
       case (Tuple(_),_):
         unification_error(t1, t2)
       case (Fun(t11,t12),Fun(t21,t22)):
-        unify(t11, t21, occurs_check_error, unification_error)
-        unify(t12, t22, occurs_check_error, unification_error)
+        loop(t11, t21)
+        loop(t12, t22)
       case (Fun(_,_),_):
         unification_error(t1, t2)
-
-  def unify_list(ts1, ts2, occurs_check_error, unification_error):
-    YzList.iter2(ts1, ts2)^(t1, t2):
-      unify(t1, t2, occurs_check_error, unification_error)
+  loop(t1, t2)

@@ -43,11 +43,13 @@ let unit_expr = (Expr.Var ([], ((Names.Id ("()")))))
 let rec make_abs = begin fun pos ->
   begin fun params ->
     begin fun body_expr ->
-      (((YzList.fold_right params) body_expr) begin fun param ->
+      begin let rec mk_abs = begin fun param ->
         begin fun expr ->
           ((Expr.at pos) (Expr.Abs (param, expr)))
         end
-      end)
+      end in
+      (((List.fold_right mk_abs) params) body_expr)
+      end
     end
   end
 end
@@ -55,11 +57,13 @@ end
 let rec make_app = begin fun pos ->
   begin fun fun_expr ->
     begin fun arg_exprs ->
-      (((YzList.fold_left fun_expr) arg_exprs) begin fun e1 ->
+      begin let rec mk_app = begin fun e1 ->
         begin fun e2 ->
           ((Expr.at pos) (Expr.App (e1, e2)))
         end
-      end)
+      end in
+      (((List.fold_left mk_app) fun_expr) arg_exprs)
+      end
     end
   end
 end
@@ -610,7 +614,7 @@ end
 
 and parse_list_pattern = begin fun parser ->
   begin let list = (((parse_elems parser) semi_or_rbracket) parse_pattern) in
-  (((YzList.fold_right list) nil_pattern) make_cons_pattern)
+  (((List.fold_right make_cons_pattern) list) nil_pattern)
   end
 end
 
@@ -1173,11 +1177,13 @@ and parse_list = begin fun parser ->
   begin fun pos ->
     begin let list = (((parse_elems parser) semi_or_rbracket) parse_expr) in
     begin let ctor = ((Expr.at pos) (make_op_var "::")) in
-    (((YzList.fold_right list) ((Expr.at pos) nil_expr)) begin fun elem ->
+    begin let rec make_cons = begin fun elem ->
       begin fun acc ->
         ((Expr.at pos) (Expr.App (ctor, ((Expr.at pos) (Expr.Tuple ((( :: ) (elem, (( :: ) (acc, []))))))))))
       end
-    end)
+    end in
+    (((List.fold_right make_cons) list) ((Expr.at pos) nil_expr))
+    end
     end
     end
   end

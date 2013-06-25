@@ -14,17 +14,3 @@ let rec fold_right = begin fun list ->
   end
 end
 
-let rec iter = begin fun list ->
-  begin fun func ->
-    ((List.iter func) list)
-  end
-end
-
-let rec iter2 = begin fun list1 ->
-  begin fun list2 ->
-    begin fun func ->
-      (((List.iter2 func) list1) list2)
-    end
-  end
-end
-

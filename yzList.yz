@@ -4,9 +4,3 @@ def fold_left(init, list, func):
 
 def fold_right(list, init, func):
   List.fold_right(func, list, init)
-
-def iter(list, func):
-  List.iter(func, list)
-
-def iter2(list1, list2, func):
-  List.iter2(func, list1, list2)
