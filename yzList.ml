@@ -14,3 +14,23 @@ let rec fold_right = begin fun list ->
   end
 end
 
+let rec iteri = begin fun list ->
+  begin fun func ->
+    begin let rec loop = begin fun i ->
+      begin fun list ->
+        begin match list with
+          | ([](_)) ->
+            ()
+          | (( :: )(x, xs)) ->
+            begin
+            ((func i) x);
+            ((loop ((( + ) i) 1)) xs)
+            end
+        end
+      end
+    end in
+    ((loop 0) list)
+    end
+  end
+end
+

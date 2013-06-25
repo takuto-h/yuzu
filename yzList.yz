@@ -4,3 +4,13 @@ def fold_left(init, list, func):
 
 def fold_right(list, init, func):
   List.fold_right(func, list, init)
+
+def iteri(list, func):
+  def loop(i, list):
+    match list:
+      case []:
+        ()
+      case x::xs:
+        func(i, x)
+        loop(i + 1, xs)
+  loop(0, list)

@@ -5,3 +5,29 @@ type t:
   def Gen(int)
   def App(Names.typector * list(t))
   def Tuple(list(t))
+
+rec:
+  def map(func, t):
+    match t:
+      case Con(_):
+        t
+      case Var(_,t_ref):
+        match !t_ref:
+          case None:
+            t
+          case Some(t_val):
+            map(func, t_val)
+      case Gen(n):
+        func(n)
+      case App(typector,t_args):
+        var t_args = map_list(func, t_args)
+        App(typector, t_args)
+      case Tuple(ts):
+        var ts = map_list(func, ts)
+        Tuple(ts)
+
+  def map_list(func, ts):
+    var ts_ary = Array.make(0, Gen(0))
+    YzList.iteri(ts)^(i, t_elem):
+      Array.set(ts_ary, i, map(func, t_elem))
+    Array.to_list(ts_ary)
