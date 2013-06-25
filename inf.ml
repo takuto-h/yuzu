@@ -6,7 +6,7 @@ type t = {
   let_level : int;
 }
 
-let rec create = begin fun (()(_)) ->
+let rec create = begin fun (() _) ->
   {
     mods = [];
     asp = [];
@@ -43,9 +43,9 @@ end
 let rec find_asp = begin fun inf ->
   begin fun path ->
     begin match path with
-      | (([](_)), name) ->
+      | (([] _), name) ->
         ((List.assoc name) inf.asp)
-      | ((( :: )(mod_name, mod_path)), name) ->
+      | ((( :: ) (mod_name, mod_path)), name) ->
         begin let modl = ((List.assoc mod_name) inf.mods) in
         (((Module.find_asp modl) mod_path) name)
         end
@@ -65,11 +65,11 @@ end
 
 let rec infer_literal = begin fun lit ->
   begin match lit with
-    | (Literal.Int(_)) ->
+    | (Literal.Int (_)) ->
       int_type
-    | (Literal.String(_)) ->
+    | (Literal.String (_)) ->
       string_type
-    | (Literal.Char(_)) ->
+    | (Literal.Char (_)) ->
       char_type
   end
 end
@@ -77,9 +77,9 @@ end
 let rec infer_pattern = begin fun inf ->
   begin fun pat ->
     begin match pat with
-      | (Pattern.Con(lit)) ->
+      | (Pattern.Con (lit)) ->
         (inf, ((Type.at None) (infer_literal lit)))
-      | (Pattern.Var(name)) ->
+      | (Pattern.Var (name)) ->
         begin let t = (Type.make_var inf.let_level) in
         begin let inf = {
           inf with
@@ -88,7 +88,7 @@ let rec infer_pattern = begin fun inf ->
         (inf, t)
         end
         end
-      | (Pattern.Tuple(pats)) ->
+      | (Pattern.Tuple (pats)) ->
         begin let (inf, ts) = (((YzList.fold_right pats) (inf, [])) begin fun elem ->
           begin fun (inf, ts) ->
             begin let (inf, t) = ((infer_pattern inf) elem) in
@@ -105,17 +105,17 @@ end
 let rec infer = begin fun inf ->
   begin fun expr ->
     begin match expr.Expr.raw with
-      | (Expr.Con(lit)) ->
+      | (Expr.Con (lit)) ->
         ((Type.at (Some (expr.Expr.pos))) (infer_literal lit))
-      | (Expr.Var(path)) ->
+      | (Expr.Var (path)) ->
         begin try
           ((instantiate inf.let_level) ((find_asp inf) path))
         with
 
-          | (Not_found(_)) ->
+          | (Not_found _) ->
             (failwith ((unbound_variable expr.Expr.pos) path))
         end
-      | (Expr.App(fun_expr, arg_expr)) ->
+      | (Expr.App (fun_expr, arg_expr)) ->
         begin let fun_type = ((infer inf) fun_expr) in
         begin let arg_type = ((infer inf) arg_expr) in
         begin let ret_type = (Type.make_var inf.let_level) in
@@ -124,7 +124,7 @@ let rec infer = begin fun inf ->
           ((Type.unify fun_type) ((Type.at None) (Type.Fun (arg_type, ret_type))))
         with
 
-          | (Type.Unification_error(t1, t2)) ->
+          | (Type.Unification_error (t1, t2)) ->
             (failwith (((((invalid_application expr.Expr.pos) fun_type) arg_type) t1) t2))
         end;
         ret_type
@@ -132,7 +132,7 @@ let rec infer = begin fun inf ->
         end
         end
         end
-      | (Expr.Abs(pat, body_expr)) ->
+      | (Expr.Abs (pat, body_expr)) ->
         begin let (inf, pat_type) = ((infer_pattern inf) pat) in
         begin let body_type = ((infer inf) body_expr) in
         ((Type.at (Some (expr.Expr.pos))) (Type.Fun (pat_type, body_type)))
@@ -186,7 +186,7 @@ let () = begin try
   (ignore ((infer inf) app_expr))
 with
 
-  | (Failure(got)) ->
+  | (Failure (got)) ->
     begin let req = (((((sprintf "%s%s%s%s") "<assertion>:1:0: error: invalid application\n") "function type: int\n") "argument type: string\n") "<assertion>:1:0: 'int' of function type\n") in
     (assert ((( = ) got) req))
     end

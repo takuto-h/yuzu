@@ -22,15 +22,15 @@ end
 
 let rec make_cons_pattern = begin fun lhs ->
   begin fun rhs ->
-    (Pattern.Variant (([], (Names.Op ("::"))), (( :: ) (lhs, (( :: ) (rhs, []))))))
+    (Pattern.Variant (([], (Names.Op ("::"))), (Pattern.Tuple ((( :: ) (lhs, (( :: ) (rhs, []))))))))
   end
 end
 
 let wildcard_pattern = (Pattern.Var ((Names.Id ("_"))))
 
-let nil_pattern = (Pattern.Variant (([], (Names.Id ("[]"))), (( :: ) (wildcard_pattern, []))))
+let nil_pattern = (Pattern.Variant (([], (Names.Id ("[]"))), wildcard_pattern))
 
-let unit_pattern = (Pattern.Variant (([], (Names.Id ("()"))), (( :: ) (wildcard_pattern, []))))
+let unit_pattern = (Pattern.Variant (([], (Names.Id ("()"))), wildcard_pattern))
 
 let rec make_op_var = begin fun str ->
   (Expr.Var ([], (Names.Op (str))))
@@ -76,12 +76,12 @@ end
 
 let rec lookahead = begin fun parser ->
   begin match (Lexer.next parser.lexer) with
-    | ((None(_)), pos) ->
+    | ((None _), pos) ->
       begin
       (parser.token <- Token.EOF);
       (parser.pos <- pos)
       end
-    | ((Some(token)), pos) ->
+    | ((Some (token)), pos) ->
       begin
       (parser.token <- token);
       (parser.pos <- pos)
@@ -114,9 +114,9 @@ let rec parse_non_assoc = begin fun parser ->
     begin fun parse_lower ->
       begin let lhs = (parse_lower parser) in
       begin match (get_op parser.token) with
-        | (None(_)) ->
+        | (None _) ->
           lhs
-        | (Some(str)) ->
+        | (Some (str)) ->
           begin let pos = parser.pos in
           begin
           (lookahead parser);
@@ -138,9 +138,9 @@ let rec parse_right_assoc = begin fun parser ->
     begin fun parse_lower ->
       begin let lhs = (parse_lower parser) in
       begin match (get_op parser.token) with
-        | (None(_)) ->
+        | (None _) ->
           lhs
-        | (Some(str)) ->
+        | (Some (str)) ->
           begin let pos = parser.pos in
           begin
           (lookahead parser);
@@ -163,9 +163,9 @@ let rec parse_left_assoc = begin fun parser ->
       begin let lhs = (parse_lower parser) in
       begin let rec loop = begin fun lhs ->
         begin match (get_op parser.token) with
-          | (None(_)) ->
+          | (None _) ->
             lhs
-          | (Some(str)) ->
+          | (Some (str)) ->
             begin let pos = parser.pos in
             begin
             (lookahead parser);
@@ -190,7 +190,7 @@ let rec parse_elems = begin fun parser ->
     begin fun parse_elem ->
       begin let rec loop = begin fun elems ->
         begin match (sep_or_term parser.token) with
-          | (Term(_)) ->
+          | (Term _) ->
             begin
             (lookahead parser);
             (List.rev elems)
@@ -198,17 +198,17 @@ let rec parse_elems = begin fun parser ->
           | _ ->
             begin let elem = (parse_elem parser) in
             begin match (sep_or_term parser.token) with
-              | (Term(_)) ->
+              | (Term _) ->
                 begin
                 (lookahead parser);
                 (List.rev (( :: ) (elem, elems)))
                 end
-              | (Sep(_)) ->
+              | (Sep _) ->
                 begin
                 (lookahead parser);
                 (loop (( :: ) (elem, elems)))
                 end
-              | (Neither(_)) ->
+              | (Neither _) ->
                 (failwith ((expected parser) "separator or terminator"))
             end
             end
@@ -222,9 +222,9 @@ end
 
 let rec comma_or_rparen = begin fun token ->
   begin match token with
-    | (Token.Reserved(",")) ->
+    | (Token.Reserved (",")) ->
       Sep
-    | (Token.Reserved(")")) ->
+    | (Token.Reserved (")")) ->
       Term
     | _ ->
       Neither
@@ -233,9 +233,9 @@ end
 
 let rec semi_or_rbracket = begin fun token ->
   begin match token with
-    | (Token.Reserved(";")) ->
+    | (Token.Reserved (";")) ->
       Sep
-    | (Token.Reserved("]")) ->
+    | (Token.Reserved ("]")) ->
       Term
     | _ ->
       Neither
@@ -244,11 +244,11 @@ end
 
 let rec semi_or_newline_or_undent = begin fun token ->
   begin match token with
-    | (Token.Reserved(";")) ->
+    | (Token.Reserved (";")) ->
       Sep
-    | (Token.Newline(_)) ->
+    | (Token.Newline _) ->
       Sep
-    | (Token.Undent(_)) ->
+    | (Token.Undent _) ->
       Term
     | _ ->
       Neither
@@ -257,9 +257,9 @@ end
 
 let rec semi_or_rbrace = begin fun token ->
   begin match token with
-    | (Token.Reserved(";")) ->
+    | (Token.Reserved (";")) ->
       Sep
-    | (Token.Reserved("}")) ->
+    | (Token.Reserved ("}")) ->
       Term
     | _ ->
       Neither
@@ -281,7 +281,7 @@ end
 let rec parse_block_like_elems = begin fun parser ->
   begin fun parse_elem ->
     begin match parser.token with
-      | (Token.Reserved(":")) ->
+      | (Token.Reserved (":")) ->
         begin
         (Lexer.indent parser.lexer);
         begin
@@ -289,7 +289,7 @@ let rec parse_block_like_elems = begin fun parser ->
         ((parse_indented_elems parser) parse_elem)
         end
         end
-      | (Token.Reserved("{")) ->
+      | (Token.Reserved ("{")) ->
         begin
         (lookahead parser);
         ((parse_braced_elems parser) parse_elem)
@@ -302,17 +302,17 @@ end
 
 let rec parse_literal = begin fun parser ->
   begin match parser.token with
-    | (Token.Int(n)) ->
+    | (Token.Int (n)) ->
       begin
       (lookahead parser);
       (Literal.Int (n))
       end
-    | (Token.String(str)) ->
+    | (Token.String (str)) ->
       begin
       (lookahead parser);
       (Literal.String (str))
       end
-    | (Token.Char(str)) ->
+    | (Token.Char (str)) ->
       begin
       (lookahead parser);
       (Literal.Char (str))
@@ -324,7 +324,7 @@ end
 
 let rec parse_capid = begin fun parser ->
   begin match parser.token with
-    | (Token.CapId(str)) ->
+    | (Token.CapId (str)) ->
       begin
       (lookahead parser);
       str
@@ -336,7 +336,7 @@ end
 
 let rec parse_lowid = begin fun parser ->
   begin match parser.token with
-    | (Token.LowId(str)) ->
+    | (Token.LowId (str)) ->
       begin
       (lookahead parser);
       str
@@ -350,7 +350,7 @@ let rec parse_op = begin fun parser ->
   begin
   ((parse_token parser) (Token.Reserved ("(")));
   begin match (Token.get_op parser.token) with
-    | (Some(str)) ->
+    | (Some (str)) ->
       begin
       (lookahead parser);
       begin
@@ -358,7 +358,7 @@ let rec parse_op = begin fun parser ->
       str
       end
       end
-    | (None(_)) ->
+    | (None _) ->
       (failwith ((expected parser) "operator"))
   end
   end
@@ -366,9 +366,9 @@ end
 
 let rec parse_val_name = begin fun parser ->
   begin match parser.token with
-    | (Token.LowId(_)) ->
+    | (Token.LowId (_)) ->
       (Names.Id ((parse_lowid parser)))
-    | (Token.Reserved("$")) ->
+    | (Token.Reserved ("$")) ->
       begin
       (lookahead parser);
       (Names.Op ((parse_op parser)))
@@ -381,11 +381,11 @@ end
 let rec parse_val_path = begin fun parser ->
   begin fun mod_names ->
     begin match parser.token with
-      | ((Token.LowId(_)) | (Token.Reserved("$"))) ->
+      | ((Token.LowId (_)) | (Token.Reserved ("$"))) ->
         begin let val_name = (parse_val_name parser) in
         ((List.rev mod_names), val_name)
         end
-      | (Token.CapId(_)) ->
+      | (Token.CapId (_)) ->
         begin let capid = (parse_capid parser) in
         begin
         ((parse_token parser) (Token.Reserved (".")));
@@ -401,7 +401,7 @@ end
 let rec parse_ctor = begin fun parser ->
   begin fun mod_names ->
     begin match parser.token with
-      | (Token.CapId(_)) ->
+      | (Token.CapId (_)) ->
         begin let capid = (parse_capid parser) in
         begin if ((( = ) parser.token) (Token.Reserved ("."))) then
           begin
@@ -441,7 +441,7 @@ and parse_tuple_type = begin fun parser ->
   begin let t = (parse_atomic_type parser) in
   begin let rec loop = begin fun ts ->
     begin match parser.token with
-      | (Token.MulOp("*")) ->
+      | (Token.MulOp ("*")) ->
         begin
         (lookahead parser);
         begin let t = (parse_atomic_type parser) in
@@ -453,7 +453,7 @@ and parse_tuple_type = begin fun parser ->
     end
   end in
   begin match parser.token with
-    | (Token.MulOp("*")) ->
+    | (Token.MulOp ("*")) ->
       (TypeExpr.Tuple ((loop (( :: ) (t, [])))))
     | _ ->
       t
@@ -464,7 +464,7 @@ end
 
 and parse_atomic_type = begin fun parser ->
   begin match parser.token with
-    | ((Token.LowId(_)) | (Token.CapId(_))) ->
+    | ((Token.LowId (_)) | (Token.CapId (_))) ->
       begin let typector = ((parse_typector parser) []) in
       begin if ((( = ) parser.token) (Token.Reserved ("("))) then
         begin
@@ -477,7 +477,7 @@ and parse_atomic_type = begin fun parser ->
         (TypeExpr.Con (typector))
       end
       end
-    | (Token.Reserved("(")) ->
+    | (Token.Reserved ("(")) ->
       begin
       (lookahead parser);
       begin let t = (parse_type parser) in
@@ -495,11 +495,11 @@ end
 and parse_typector = begin fun parser ->
   begin fun mod_names ->
     begin match parser.token with
-      | (Token.LowId(_)) ->
+      | (Token.LowId (_)) ->
         begin let typector_name = (parse_lowid parser) in
         ((List.rev mod_names), typector_name)
         end
-      | (Token.CapId(_)) ->
+      | (Token.CapId (_)) ->
         begin let capid = (parse_capid parser) in
         begin
         ((parse_token parser) (Token.Reserved (".")));
@@ -567,27 +567,27 @@ end
 
 and parse_atomic_pattern = begin fun parser ->
   begin match parser.token with
-    | (((Token.Int(_)) | (Token.String(_))) | (Token.Char(_))) ->
+    | (((Token.Int (_)) | (Token.String (_))) | (Token.Char (_))) ->
       begin let lit = (parse_literal parser) in
       (Pattern.Con (lit))
       end
-    | (Token.LowId(_)) ->
+    | (Token.LowId (_)) ->
       begin let name = (parse_val_name parser) in
       (Pattern.Var (name))
       end
-    | (Token.CapId(_)) ->
+    | (Token.CapId (_)) ->
       (parse_variant_pattern parser)
-    | (Token.Reserved("[")) ->
+    | (Token.Reserved ("[")) ->
       begin
       (lookahead parser);
       (parse_list_pattern parser)
       end
-    | (Token.Reserved("{")) ->
+    | (Token.Reserved ("{")) ->
       begin
       (lookahead parser);
       (parse_record_pattern parser)
       end
-    | (Token.Reserved("(")) ->
+    | (Token.Reserved ("(")) ->
       begin
       (lookahead parser);
       (parse_parens_pattern parser)
@@ -603,11 +603,11 @@ and parse_variant_pattern = begin fun parser ->
     begin
     (lookahead parser);
     begin let pat_list = (parse_pattern_list parser) in
-    (Pattern.Variant (ctor, pat_list))
+    (Pattern.Variant (ctor, (Pattern.Tuple (pat_list))))
     end
     end
   else
-    (Pattern.Variant (ctor, (( :: ) (wildcard_pattern, []))))
+    (Pattern.Variant (ctor, wildcard_pattern))
   end
   end
 end
@@ -661,7 +661,7 @@ end
 and parse_assign_expr = begin fun parser ->
   begin let lhs = (parse_or_expr parser) in
   begin match parser.token with
-    | (Token.AssignOp("<-")) ->
+    | (Token.AssignOp ("<-")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -670,7 +670,7 @@ and parse_assign_expr = begin fun parser ->
       end
       end
       end
-    | (Token.AssignOp(":=")) ->
+    | (Token.AssignOp (":=")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -690,7 +690,7 @@ end
 and parse_or_expr = begin fun parser ->
   begin let lhs = (parse_and_expr parser) in
   begin match parser.token with
-    | (Token.OrOp("||")) ->
+    | (Token.OrOp ("||")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -708,7 +708,7 @@ end
 and parse_and_expr = begin fun parser ->
   begin let lhs = (parse_cmp_expr parser) in
   begin match parser.token with
-    | (Token.AndOp("&&")) ->
+    | (Token.AndOp ("&&")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -726,7 +726,7 @@ end
 and parse_cmp_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
-      | (Token.CmpOp(str)) ->
+      | (Token.CmpOp (str)) ->
         (Some (str))
       | _ ->
         None
@@ -739,7 +739,7 @@ end
 and parse_cons_expr = begin fun parser ->
   begin let lhs = (parse_add_expr parser) in
   begin match parser.token with
-    | (Token.ConsOp(str)) ->
+    | (Token.ConsOp (str)) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -759,7 +759,7 @@ end
 and parse_add_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
-      | (Token.AddOp(str)) ->
+      | (Token.AddOp (str)) ->
         (Some (str))
       | _ ->
         None
@@ -772,7 +772,7 @@ end
 and parse_mul_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
-      | (Token.MulOp(str)) ->
+      | (Token.MulOp (str)) ->
         (Some (str))
       | _ ->
         None
@@ -785,7 +785,7 @@ end
 and parse_pow_expr = begin fun parser ->
   begin let rec get_op = begin fun token ->
     begin match token with
-      | (Token.PowOp(str)) ->
+      | (Token.PowOp (str)) ->
         (Some (str))
       | _ ->
         None
@@ -797,7 +797,7 @@ end
 
 and parse_unary_expr = begin fun parser ->
   begin match parser.token with
-    | (Token.AddOp("-")) ->
+    | (Token.AddOp ("-")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -806,7 +806,7 @@ and parse_unary_expr = begin fun parser ->
       end
       end
       end
-    | (Token.AddOp("+")) ->
+    | (Token.AddOp ("+")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -815,7 +815,7 @@ and parse_unary_expr = begin fun parser ->
       end
       end
       end
-    | (Token.Reserved("!")) ->
+    | (Token.Reserved ("!")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -832,12 +832,12 @@ end
 and parse_dot_expr = begin fun parser ->
   begin let expr = (parse_prim_expr parser) in
   begin match parser.token with
-    | (Token.Reserved(".")) ->
+    | (Token.Reserved (".")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       begin match parser.token with
-        | (Token.Reserved("{")) ->
+        | (Token.Reserved ("{")) ->
           begin
           (lookahead parser);
           ((Expr.at pos) (Expr.Update (expr, ((parse_braced_elems parser) parse_field_def))))
@@ -859,7 +859,7 @@ and parse_prim_expr = begin fun parser ->
   begin let fun_expr = (parse_atomic_expr parser) in
   begin let rec loop = begin fun fun_expr ->
     begin match parser.token with
-      | (Token.Reserved("(")) ->
+      | (Token.Reserved ("(")) ->
         begin let pos = parser.pos in
         begin
         (lookahead parser);
@@ -868,7 +868,7 @@ and parse_prim_expr = begin fun parser ->
         end
         end
         end
-      | (Token.Reserved("^")) ->
+      | (Token.Reserved ("^")) ->
         begin let pos = parser.pos in
         begin
         (lookahead parser);
@@ -888,57 +888,57 @@ end
 
 and parse_atomic_expr = begin fun parser ->
   begin match parser.token with
-    | (((Token.Int(_)) | (Token.String(_))) | (Token.Char(_))) ->
+    | (((Token.Int (_)) | (Token.String (_))) | (Token.Char (_))) ->
       begin let pos = parser.pos in
       begin let lit = (parse_literal parser) in
       ((Expr.at pos) (Expr.Con (lit)))
       end
       end
-    | (((Token.LowId(_)) | (Token.CapId(_))) | (Token.Reserved("$"))) ->
+    | (((Token.LowId (_)) | (Token.CapId (_))) | (Token.Reserved ("$"))) ->
       ((parse_var_or_ctor_app parser) [])
-    | (Token.Reserved("^")) ->
+    | (Token.Reserved ("^")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       ((parse_abs parser) pos)
       end
       end
-    | (Token.Reserved("[")) ->
+    | (Token.Reserved ("[")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       ((parse_list parser) pos)
       end
       end
-    | (Token.Reserved("(")) ->
+    | (Token.Reserved ("(")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       ((parse_parens parser) pos)
       end
       end
-    | (Token.Reserved("{")) ->
+    | (Token.Reserved ("{")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       ((parse_record parser) pos)
       end
       end
-    | (Token.Reserved("if")) ->
+    | (Token.Reserved ("if")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       ((parse_if_expr parser) pos)
       end
       end
-    | (Token.Reserved("match")) ->
+    | (Token.Reserved ("match")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       ((parse_match_expr parser) pos)
       end
       end
-    | (Token.Reserved("try")) ->
+    | (Token.Reserved ("try")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -953,13 +953,13 @@ end
 and parse_var_or_ctor_app = begin fun parser ->
   begin fun mod_names ->
     begin match parser.token with
-      | ((Token.LowId(_)) | (Token.Reserved("$"))) ->
+      | ((Token.LowId (_)) | (Token.Reserved ("$"))) ->
         begin let pos = parser.pos in
         begin let val_name = (parse_val_name parser) in
         ((Expr.at pos) (Expr.Var ((List.rev mod_names), val_name)))
         end
         end
-      | (Token.CapId(_)) ->
+      | (Token.CapId (_)) ->
         begin let pos = parser.pos in
         begin let capid = (parse_capid parser) in
         begin if ((( = ) parser.token) (Token.Reserved ("."))) then
@@ -983,7 +983,7 @@ end
 and parse_ctor_app = begin fun parser ->
   begin fun ctor ->
     begin match parser.token with
-      | (Token.Reserved("(")) ->
+      | (Token.Reserved ("(")) ->
         begin let pos = parser.pos in
         begin
         (lookahead parser);
@@ -992,7 +992,7 @@ and parse_ctor_app = begin fun parser ->
         end
         end
         end
-      | (Token.Reserved("^")) ->
+      | (Token.Reserved ("^")) ->
         begin let pos = parser.pos in
         begin
         (lookahead parser);
@@ -1033,7 +1033,7 @@ end
 
 and parse_block = begin fun parser ->
   begin match parser.token with
-    | (Token.Reserved(":")) ->
+    | (Token.Reserved (":")) ->
       begin
       (Lexer.indent parser.lexer);
       begin
@@ -1041,7 +1041,7 @@ and parse_block = begin fun parser ->
       (parse_indented_block parser)
       end
       end
-    | (Token.Reserved("{")) ->
+    | (Token.Reserved ("{")) ->
       begin
       (lookahead parser);
       (parse_braced_block parser)
@@ -1072,7 +1072,7 @@ end
 and parse_block_elem = begin fun parser ->
   begin fun sep_or_term ->
     begin match parser.token with
-      | (Token.Reserved("var")) ->
+      | (Token.Reserved ("var")) ->
         begin let pos = parser.pos in
         begin
         (lookahead parser);
@@ -1086,7 +1086,7 @@ and parse_block_elem = begin fun parser ->
         end
         end
         end
-      | (Token.Reserved("def")) ->
+      | (Token.Reserved ("def")) ->
         begin let pos = parser.pos in
         begin let defs = (( :: ) ((parse_let_fun parser), [])) in
         begin
@@ -1097,7 +1097,7 @@ and parse_block_elem = begin fun parser ->
         end
         end
         end
-      | (Token.Reserved("rec")) ->
+      | (Token.Reserved ("rec")) ->
         begin let pos = parser.pos in
         begin
         (lookahead parser);
@@ -1114,12 +1114,12 @@ and parse_block_elem = begin fun parser ->
       | _ ->
         begin let lhs = (parse_expr parser) in
         begin match (sep_or_term parser.token) with
-          | (Sep(_)) ->
+          | (Sep _) ->
             begin let pos = parser.pos in
             begin
             (lookahead parser);
             begin match (sep_or_term parser.token) with
-              | (Term(_)) ->
+              | (Term _) ->
                 lhs
               | _ ->
                 begin let rhs = ((parse_block_elem parser) sep_or_term) in
@@ -1165,7 +1165,7 @@ end
 and parse_sep = begin fun parser ->
   begin fun sep_or_term ->
     begin match (sep_or_term parser.token) with
-      | (Sep(_)) ->
+      | (Sep _) ->
         (lookahead parser)
       | _ ->
         (failwith ((expected parser) "separator"))
@@ -1306,36 +1306,36 @@ end
 
 let rec parse_top = begin fun parser ->
   begin match parser.token with
-    | (Token.Reserved("var")) ->
+    | (Token.Reserved ("var")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       ((parse_top_let_val parser) pos)
       end
       end
-    | (Token.Reserved("def")) ->
+    | (Token.Reserved ("def")) ->
       begin let pos = parser.pos in
       ((Top.at pos) (Top.LetFun ((( :: ) ((parse_top_let_fun parser), [])))))
       end
-    | (Token.Reserved("type")) ->
+    | (Token.Reserved ("type")) ->
       begin let pos = parser.pos in
       ((Top.at pos) (Top.Type ((( :: ) ((parse_top_typedef parser), [])))))
       end
-    | (Token.Reserved("open")) ->
+    | (Token.Reserved ("open")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       ((parse_top_open parser) pos)
       end
       end
-    | (Token.Reserved("exception")) ->
+    | (Token.Reserved ("exception")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
       ((parse_top_exn_decl parser) pos)
       end
       end
-    | (Token.Reserved("rec")) ->
+    | (Token.Reserved ("rec")) ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
@@ -1406,24 +1406,24 @@ end
 and parse_top_rec = begin fun parser ->
   begin fun pos ->
     begin match parser.token with
-      | (Token.Reserved(":")) ->
+      | (Token.Reserved (":")) ->
         begin
         (Lexer.indent parser.lexer);
         begin
         (lookahead parser);
         begin match parser.token with
-          | (Token.Reserved("type")) ->
+          | (Token.Reserved ("type")) ->
             ((Top.at pos) (Top.Type (((parse_indented_elems parser) parse_top_typedef))))
           | _ ->
             ((Top.at pos) (Top.LetFun (((parse_indented_elems parser) parse_top_let_fun))))
         end
         end
         end
-      | (Token.Reserved("{")) ->
+      | (Token.Reserved ("{")) ->
         begin
         (lookahead parser);
         begin match parser.token with
-          | (Token.Reserved("type")) ->
+          | (Token.Reserved ("type")) ->
             ((Top.at pos) (Top.Type (((parse_braced_elems parser) parse_top_typedef))))
           | _ ->
             ((Top.at pos) (Top.LetFun (((parse_braced_elems parser) parse_top_let_fun))))
@@ -1440,14 +1440,14 @@ and parse_top_typedef = begin fun parser ->
   ((parse_token parser) (Token.Reserved ("type")));
   begin let typector_name = (parse_lowid parser) in
   begin match parser.token with
-    | (Token.CmpOp("=")) ->
+    | (Token.CmpOp ("=")) ->
       begin
       (lookahead parser);
       begin let t = (parse_type parser) in
       (typector_name, (TypeInfo.Abbrev (t)))
       end
       end
-    | ((Token.Reserved(":")) | (Token.Reserved("{"))) ->
+    | ((Token.Reserved (":")) | (Token.Reserved ("{"))) ->
       (typector_name, (parse_type_repr parser))
     | _ ->
       (failwith ((expected parser) "'=' or ':' or '{'"))
@@ -1458,24 +1458,24 @@ end
 
 and parse_type_repr = begin fun parser ->
   begin match parser.token with
-    | (Token.Reserved(":")) ->
+    | (Token.Reserved (":")) ->
       begin
       (Lexer.indent parser.lexer);
       begin
       (lookahead parser);
       begin match parser.token with
-        | (Token.Reserved("def")) ->
+        | (Token.Reserved ("def")) ->
           (TypeInfo.Variant (((parse_indented_elems parser) parse_ctor_decl)))
         | _ ->
           (TypeInfo.Record (((parse_indented_elems parser) parse_field_decl)))
       end
       end
       end
-    | (Token.Reserved("{")) ->
+    | (Token.Reserved ("{")) ->
       begin
       (lookahead parser);
       begin match parser.token with
-        | (Token.Reserved("def")) ->
+        | (Token.Reserved ("def")) ->
           (TypeInfo.Variant (((parse_braced_elems parser) parse_ctor_decl)))
         | _ ->
           (TypeInfo.Record (((parse_braced_elems parser) parse_field_decl)))
@@ -1530,7 +1530,7 @@ end
 let rec parse_stmt = begin fun parser ->
   begin let expr = (parse_top parser) in
   begin match parser.token with
-    | (((Token.EOF(_)) | (Token.Newline(_))) | (Token.Reserved(";"))) ->
+    | (((Token.EOF _) | (Token.Newline _)) | (Token.Reserved (";"))) ->
       expr
     | _ ->
       (failwith ((expected parser) "newline or ';'"))
@@ -1542,7 +1542,7 @@ let rec parse = begin fun parser ->
   begin
   (lookahead parser);
   begin match parser.token with
-    | (Token.EOF(_)) ->
+    | (Token.EOF _) ->
       None
     | _ ->
       (Some ((parse_stmt parser)))

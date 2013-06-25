@@ -16,9 +16,9 @@ let rec find_asp = begin fun modl ->
   begin fun mod_path ->
     begin fun name ->
       begin match mod_path with
-        | ([](_)) ->
+        | ([] _) ->
           ((List.assoc name) modl.asp)
-        | (( :: )(mod_name, mod_path)) ->
+        | (( :: ) (mod_name, mod_path)) ->
           begin let modl = ((List.assoc mod_name) modl.mods) in
           (((find_asp modl) mod_path) name)
           end

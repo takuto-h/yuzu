@@ -4,7 +4,7 @@ open Printf
 type t:
   def Con(Literal.t)
   def Var(Names.val_name)
-  def Variant(Names.ctor * list(t))
+  def Variant(Names.ctor * t)
   def Tuple(list(t))
   def Record(list(Names.val_path * option(t)))
   def Or(t * t)

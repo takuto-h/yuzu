@@ -1,6 +1,6 @@
 open Printf
 
-let rec main = begin fun (()(_)) ->
+let rec main = begin fun (() _) ->
   begin if ((( <> ) (Array.length Sys.argv)) 3) then
     ((eprintf "usage: %s in.yz out.ml\n") ((Array.get Sys.argv) 0))
   else

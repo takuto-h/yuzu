@@ -18,11 +18,11 @@ def create(lexer): {
 }
 
 def make_cons_pattern(lhs, rhs):
-  Pattern.Variant(([], Names.Op("::")), [lhs;rhs])
+  Pattern.Variant(([], Names.Op("::")), Pattern.Tuple([lhs;rhs]))
 
 var wildcard_pattern = Pattern.Var(Names.Id("_"))
-var nil_pattern = Pattern.Variant(([], Names.Id("[]")), [wildcard_pattern])
-var unit_pattern = Pattern.Variant(([], Names.Id("()")), [wildcard_pattern])
+var nil_pattern = Pattern.Variant(([], Names.Id("[]")), wildcard_pattern)
+var unit_pattern = Pattern.Variant(([], Names.Id("()")), wildcard_pattern)
 
 def make_op_var(str):
   Expr.Var([], Names.Op(str))
@@ -367,9 +367,9 @@ rec:
     if parser.token = Token.Reserved("("):
       lookahead(parser)
       var pat_list = parse_pattern_list(parser)
-      Pattern.Variant(ctor, pat_list)
+      Pattern.Variant(ctor, Pattern.Tuple(pat_list))
     else:
-      Pattern.Variant(ctor, [wildcard_pattern])
+      Pattern.Variant(ctor, wildcard_pattern)
     
   def parse_list_pattern(parser):
     var list = parse_elems(parser, semi_or_rbracket, parse_pattern)

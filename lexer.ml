@@ -80,7 +80,7 @@ end
 let rec lex_op = begin fun lexer ->
   begin fun buf ->
     begin match (Source.peek lexer.source) with
-      | (Some(c)) when (is_op_part c) ->
+      | (Some (c)) when (is_op_part c) ->
         begin
         ((Buffer.add_char buf) c);
         begin
@@ -88,7 +88,7 @@ let rec lex_op = begin fun lexer ->
         ((lex_op lexer) buf)
         end
         end
-      | ((Some(_)) | (None(_))) ->
+      | ((Some (_)) | (None _)) ->
         (Buffer.contents buf)
     end
   end
@@ -97,12 +97,12 @@ end
 let rec lex_int = begin fun lexer ->
   begin fun n ->
     begin match (Source.peek lexer.source) with
-      | (Some(c)) when (is_digit c) ->
+      | (Some (c)) when (is_digit c) ->
         begin
         (Source.junk lexer.source);
         ((lex_int lexer) ((( + ) ((( * ) n) 10)) (int_of_digit c)))
         end
-      | ((Some(_)) | (None(_))) ->
+      | ((Some (_)) | (None _)) ->
         (Token.Int (n))
     end
   end
@@ -111,16 +111,16 @@ end
 let rec lex_string = begin fun lexer ->
   begin fun buf ->
     begin match (Source.peek lexer.source) with
-      | (Some('"')) ->
+      | (Some ('"')) ->
         begin
         (Source.junk lexer.source);
         (Token.String ((Buffer.contents buf)))
         end
-      | (Some('\\')) ->
+      | (Some ('\\')) ->
         begin
         (Source.junk lexer.source);
         begin match (Source.peek lexer.source) with
-          | (Some('"')) ->
+          | (Some ('"')) ->
             begin
             (Source.junk lexer.source);
             begin
@@ -128,7 +128,7 @@ let rec lex_string = begin fun lexer ->
             ((lex_string lexer) buf)
             end
             end
-          | (Some(c)) ->
+          | (Some (c)) ->
             begin
             (Source.junk lexer.source);
             begin
@@ -139,13 +139,13 @@ let rec lex_string = begin fun lexer ->
             end
             end
             end
-          | (None(_)) ->
+          | (None _) ->
             begin let pos_eof = (Source.pos lexer.source) in
             (failwith ((sprintf "%s: error: EOF inside a string literal\n") (Pos.show pos_eof)))
             end
         end
         end
-      | (Some(c)) ->
+      | (Some (c)) ->
         begin
         (Source.junk lexer.source);
         begin
@@ -153,7 +153,7 @@ let rec lex_string = begin fun lexer ->
         ((lex_string lexer) buf)
         end
         end
-      | (None(_)) ->
+      | (None _) ->
         begin let pos_eof = (Source.pos lexer.source) in
         (failwith ((sprintf "%s: error: EOF inside a string literal\n") (Pos.show pos_eof)))
         end
@@ -164,16 +164,16 @@ end
 let rec lex_char = begin fun lexer ->
   begin fun buf ->
     begin match (Source.peek lexer.source) with
-      | (Some('\'')) ->
+      | (Some ('\'')) ->
         begin
         (Source.junk lexer.source);
         (Token.Char ((Buffer.contents buf)))
         end
-      | (Some('\\')) ->
+      | (Some ('\\')) ->
         begin
         (Source.junk lexer.source);
         begin match (Source.peek lexer.source) with
-          | (Some('\'')) ->
+          | (Some ('\'')) ->
             begin
             (Source.junk lexer.source);
             begin
@@ -181,7 +181,7 @@ let rec lex_char = begin fun lexer ->
             ((lex_char lexer) buf)
             end
             end
-          | (Some(c)) ->
+          | (Some (c)) ->
             begin
             (Source.junk lexer.source);
             begin
@@ -192,13 +192,13 @@ let rec lex_char = begin fun lexer ->
             end
             end
             end
-          | (None(_)) ->
+          | (None _) ->
             begin let pos_eof = (Source.pos lexer.source) in
             (failwith ((sprintf "%s: error: EOF inside a string literal\n") (Pos.show pos_eof)))
             end
         end
         end
-      | (Some(c)) ->
+      | (Some (c)) ->
         begin
         (Source.junk lexer.source);
         begin
@@ -206,7 +206,7 @@ let rec lex_char = begin fun lexer ->
         ((lex_char lexer) buf)
         end
         end
-      | (None(_)) ->
+      | (None _) ->
         begin let pos_eof = (Source.pos lexer.source) in
         (failwith ((sprintf "%s: error: EOF inside a character literal\n") (Pos.show pos_eof)))
         end
@@ -225,7 +225,7 @@ end
 let rec lex_lowid = begin fun lexer ->
   begin fun buf ->
     begin match (Source.peek lexer.source) with
-      | (Some(c)) when (is_id_part c) ->
+      | (Some (c)) when (is_id_part c) ->
         begin
         ((Buffer.add_char buf) c);
         begin
@@ -233,7 +233,7 @@ let rec lex_lowid = begin fun lexer ->
         ((lex_lowid lexer) buf)
         end
         end
-      | ((Some(_)) | (None(_))) ->
+      | ((Some (_)) | (None _)) ->
         (lowid_or_reserved (Buffer.contents buf))
     end
   end
@@ -242,7 +242,7 @@ end
 let rec lex_capid = begin fun lexer ->
   begin fun buf ->
     begin match (Source.peek lexer.source) with
-      | (Some(c)) when (is_id_part c) ->
+      | (Some (c)) when (is_id_part c) ->
         begin
         ((Buffer.add_char buf) c);
         begin
@@ -250,7 +250,7 @@ let rec lex_capid = begin fun lexer ->
         ((lex_capid lexer) buf)
         end
         end
-      | ((Some(_)) | (None(_))) ->
+      | ((Some (_)) | (None _)) ->
         (Token.CapId ((Buffer.contents buf)))
     end
   end
@@ -277,12 +277,12 @@ let rec lex_visible_token = begin fun lexer ->
           ((((lex_close_paren lexer) pos) "[") "]")
         | '<' ->
           begin match (Source.peek lexer.source) with
-            | (Some('-')) ->
+            | (Some ('-')) ->
               begin
               (Source.junk lexer.source);
               (Token.AssignOp ("<-"))
               end
-            | ((Some(_)) | (None(_))) ->
+            | ((Some (_)) | (None _)) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
@@ -292,12 +292,12 @@ let rec lex_visible_token = begin fun lexer ->
           end
         | '|' ->
           begin match (Source.peek lexer.source) with
-            | (Some('|')) ->
+            | (Some ('|')) ->
               begin
               (Source.junk lexer.source);
               (Token.OrOp ("||"))
               end
-            | ((Some(_)) | (None(_))) ->
+            | ((Some (_)) | (None _)) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
@@ -307,12 +307,12 @@ let rec lex_visible_token = begin fun lexer ->
           end
         | '&' ->
           begin match (Source.peek lexer.source) with
-            | (Some('&')) ->
+            | (Some ('&')) ->
               begin
               (Source.junk lexer.source);
               (Token.AndOp ("&&"))
               end
-            | ((Some(_)) | (None(_))) ->
+            | ((Some (_)) | (None _)) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
@@ -336,14 +336,14 @@ let rec lex_visible_token = begin fun lexer ->
           end
         | '!' ->
           begin match (Source.peek lexer.source) with
-            | (Some(c)) when (is_op_part c) ->
+            | (Some (c)) when (is_op_part c) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) '!');
               (Token.CmpOp (((lex_op lexer) buf)))
               end
               end
-            | ((Some(_)) | (None(_))) ->
+            | ((Some (_)) | (None _)) ->
               (Token.Reserved ("!"))
           end
         | '%' ->
@@ -355,12 +355,12 @@ let rec lex_visible_token = begin fun lexer ->
           end
         | '*' ->
           begin match (Source.peek lexer.source) with
-            | (Some('*')) ->
+            | (Some ('*')) ->
               begin
               (Source.junk lexer.source);
               (Token.PowOp ("**"))
               end
-            | ((Some(_)) | (None(_))) ->
+            | ((Some (_)) | (None _)) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
@@ -370,17 +370,17 @@ let rec lex_visible_token = begin fun lexer ->
           end
         | ':' ->
           begin match (Source.peek lexer.source) with
-            | (Some(':')) ->
+            | (Some (':')) ->
               begin
               (Source.junk lexer.source);
               (Token.ConsOp ("::"))
               end
-            | (Some('=')) ->
+            | (Some ('=')) ->
               begin
               (Source.junk lexer.source);
               (Token.AssignOp (":="))
               end
-            | ((Some(_)) | (None(_))) ->
+            | ((Some (_)) | (None _)) ->
               (Token.Reserved (":"))
           end
         | '"' ->
@@ -463,9 +463,9 @@ end
 
 let rec skip_single_line_comment = begin fun lexer ->
   begin match (Source.peek lexer.source) with
-    | ((None(_)) | (Some('\n'))) ->
+    | ((None _) | (Some ('\n'))) ->
       ()
-    | (Some(_)) ->
+    | (Some (_)) ->
       begin
       (Source.junk lexer.source);
       (skip_single_line_comment lexer)
@@ -476,14 +476,14 @@ end
 let rec next = begin fun lexer ->
   begin let pos = (Source.pos lexer.source) in
   begin match (Source.peek lexer.source) with
-    | (None(_)) when ((( <= ) (Stack.length lexer.offside_lines)) 1) ->
+    | (None _) when ((( <= ) (Stack.length lexer.offside_lines)) 1) ->
       (None, pos)
-    | (None(_)) ->
+    | (None _) ->
       begin
       (ignore (Stack.pop lexer.offside_lines));
       ((Some (Token.Undent)), pos)
       end
-    | (Some('\n')) when (Stack.is_empty lexer.parens) ->
+    | (Some ('\n')) when (Stack.is_empty lexer.parens) ->
       begin
       (lexer.is_bol <- true);
       begin
@@ -491,16 +491,16 @@ let rec next = begin fun lexer ->
       (next lexer)
       end
       end
-    | (Some(c)) when (is_whitespace c) ->
+    | (Some (c)) when (is_whitespace c) ->
       begin
       (Source.junk lexer.source);
       (next lexer)
       end
-    | (Some('/')) ->
+    | (Some ('/')) ->
       begin
       (Source.junk lexer.source);
       begin match (Source.peek lexer.source) with
-        | (Some('/')) ->
+        | (Some ('/')) ->
           begin
           (Source.junk lexer.source);
           begin
@@ -508,7 +508,7 @@ let rec next = begin fun lexer ->
           (next lexer)
           end
           end
-        | ((Some(_)) | (None(_))) ->
+        | ((Some (_)) | (None _)) ->
           begin let buf = (Buffer.create initial_buffer_size) in
           begin
           ((Buffer.add_char buf) '/');
@@ -517,7 +517,7 @@ let rec next = begin fun lexer ->
           end
       end
       end
-    | (Some(c)) ->
+    | (Some (c)) ->
       ((Some ((((lex_token lexer) pos) c))), pos)
   end
   end
