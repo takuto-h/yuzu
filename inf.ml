@@ -26,6 +26,20 @@ let rec unbound_variable = begin fun pos ->
   end
 end
 
+let rec invalid_application = begin fun pos ->
+  begin fun fun_type ->
+    begin fun arg_type ->
+      begin fun t1 ->
+        begin fun t2 ->
+          begin let shower = (Type.create_shower 0) in
+          ((((sprintf "%s: error: invalid application\n%s%s") (Pos.show pos)) ((sprintf "function type: %s\n") ((Type.show shower) fun_type))) ((sprintf "argument type: %s\n") ((Type.show shower) arg_type)))
+          end
+        end
+      end
+    end
+  end
+end
+
 let rec find_asp = begin fun inf ->
   begin fun path ->
     begin match path with
@@ -77,19 +91,15 @@ let rec infer = begin fun inf ->
         begin let fun_type = ((infer inf) fun_expr) in
         begin let arg_type = ((infer inf) arg_expr) in
         begin let ret_type = (Type.make_var inf.let_level) in
-        begin let rec occurs_check_error = begin fun (()(_)) ->
-          (failwith "")
-        end in
-        begin let rec unification_error = begin fun t1 ->
-          begin fun t2 ->
-            (failwith "")
-          end
-        end in
         begin
-        ((((Type.unify occurs_check_error) unification_error) fun_type) (Type.Fun (arg_type, ret_type)));
+        begin try
+          ((Type.unify fun_type) (Type.Fun (arg_type, ret_type)))
+        with
+
+          | (Type.Unification_error(t1, t2)) ->
+            (failwith (((((invalid_application expr.Expr.pos) fun_type) arg_type) t1) t2))
+        end;
         ret_type
-        end
-        end
         end
         end
         end

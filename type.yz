@@ -1,11 +1,15 @@
 
-type t:
-  def Con(Names.typector)
-  def Var(int * ref(option(t)))
-  def Gen(int)
-  def App(Names.typector * list(t))
-  def Tuple(list(t))
-  def Fun(t * t)
+open Printf
+
+rec:
+  type typevar = ref(option(t))
+  type t:
+    def Con(Names.typector)
+    def Var(int * typevar)
+    def Gen(int)
+    def App(Names.typector * list(t))
+    def Tuple(list(t))
+    def Fun(t * t)
 
 def make_var(let_level):
   Var(let_level, ref(None))
@@ -52,58 +56,101 @@ def occurs(t_ref0, t):
     case Fun(t_param, t_ret):
       occurs(t_ref0, t_param) || occurs(t_ref0, t_ret)
 
-def unify(occurs_check_error, unification_error, t1, t2):
-  def loop(t1, t2):
-    match (t1, t2):
-      case (Var(_,t1_ref),Var(_,t2_ref)) when t1_ref == t2_ref:
-        ()
-      case (Var(lv1,t1_ref),Var(lv2,t2_ref)):
-        match (!t1_ref, !t2_ref):
-          case (Some(t10),_):
-            loop(t10, t2)
-          case (_,Some(t20)):
-            loop(t1, t20)
-          case (None,None) when lv1 > lv2:
+exception Unification_error(t * t)
+
+def unify(t1, t2):
+  match (t1, t2):
+    case (Var(_,t1_ref),Var(_,t2_ref)) when t1_ref == t2_ref:
+      ()
+    case (Var(lv1,t1_ref),Var(lv2,t2_ref)):
+      match (!t1_ref, !t2_ref):
+        case (Some(t10),_):
+          unify(t10, t2)
+        case (_,Some(t20)):
+          unify(t1, t20)
+        case (None,None) when lv1 > lv2:
+          t1_ref := Some(t2)
+        case (None,None) when lv1 < lv2:
+          t2_ref := Some(t1)
+        case (None,None):
+          t2_ref := Some(t1)
+    case (Var(lv1,t1_ref),_):
+      match !t1_ref:
+        case Some(t10):
+          unify(t10, t2)
+        case None:
+          if occurs(t1_ref, t2):
+            raise(Unification_error(t1, t2))
+          else:
             t1_ref := Some(t2)
-          case (None,None) when lv1 < lv2:
+    case (_,Var(lv2, t2_ref)):
+      match !t2_ref:
+        case Some(t20):
+          unify(t1, t20)
+        case None:
+          if occurs(t2_ref, t1):
+            raise(Unification_error(t1, t2))
+          else:
             t2_ref := Some(t1)
-          case (None,None):
-            t2_ref := Some(t1)
-      case (Var(lv1,t1_ref),_):
-        match !t1_ref:
-          case Some(t10):
-            loop(t10, t2)
+    case (Con(tc1), Con(tc2)) when tc1 = tc2:
+      ()
+    case (Con(_),_):
+      raise(Unification_error(t1, t2))
+    case (Gen(_),_):
+      assert(false)
+    case (App(tc1,ts1),App(tc2,ts2)) when tc1 = tc2:
+      List.iter2(unify, ts1, ts2)
+    case (App(_,_),_):
+      raise(Unification_error(t1, t2))
+    case (Tuple(ts1),Tuple(ts2)):
+      List.iter2(unify, ts1, ts2)
+    case (Tuple(_),_):
+      raise(Unification_error(t1, t2))
+    case (Fun(t11,t12),Fun(t21,t22)):
+      unify(t11, t21)
+      unify(t12, t22)
+    case (Fun(_,_),_):
+      raise(Unification_error(t1, t2))
+
+type shower:
+  mutable var_map : list(typevar * string)
+  gen_map : array(string)
+
+def create_shower(gen_num): {
+  var_map = [];
+  gen_map = Array.init(gen_num, sprintf("`t%d"));
+}
+
+rec:
+  def show(shower, t):
+    match t:
+      case Con(tc):
+        Names.show_typector(tc)
+      case Var(_,t_ref):
+        match !t_ref:
+          case Some(t_val):
+            show(shower, t_val)
           case None:
-            if occurs(t1_ref, t2):
-              occurs_check_error()
-            else:
-              t1_ref := Some(t2)
-      case (_,Var(lv2, t2_ref)):
-        match !t2_ref:
-          case Some(t20):
-            loop(t1, t20)
-          case None:
-            if occurs(t2_ref, t1):
-              occurs_check_error()
-            else:
-              t2_ref := Some(t1)
-      case (Con(tc1), Con(tc2)) when tc1 = tc2:
-        ()
-      case (Con(_),_):
-        unification_error(t1, t2)
-      case (Gen(_),_):
+            try:
+              List.assq(t_ref, shower.var_map)
+            with:
+              case Not_found:
+                var str = sprintf("`_t%d", List.length(shower.var_map))
+                shower.var_map <- (t_ref, str)::shower.var_map
+                str
+      case Gen(n):
+        Array.get(shower.gen_map, n)
+      case App(tc,t_args):
+        sprintf("%s(%s)", Names.show_typector(tc), show_list(shower, ", ", t_args))
+      case Tuple(ts):
+        sprintf("(%s)", show_list(shower, " * ", ts))
+      case Fun(t_param, t_ret):
+        sprintf("(%s -> %s)", show(shower, t_param), show(shower, t_ret))
+
+  def show_list(shower, sep, ts):
+    match ts:
+      case []:
         assert(false)
-      case (App(tc1,ts1),App(tc2,ts2)) when tc1 = tc2:
-        List.iter2(loop, ts1, ts2)
-      case (App(_,_),_):
-        unification_error(t1, t2)
-      case (Tuple(ts1),Tuple(ts2)):
-        List.iter2(loop, ts1, ts2)
-      case (Tuple(_),_):
-        unification_error(t1, t2)
-      case (Fun(t11,t12),Fun(t21,t22)):
-        loop(t11, t21)
-        loop(t12, t22)
-      case (Fun(_,_),_):
-        unification_error(t1, t2)
-  loop(t1, t2)
+      case x::xs:
+        YzList.fold_left(show(shower, x), xs)^(acc, elem):
+          sprintf("%s%s%s", acc, sep, show(shower, elem))

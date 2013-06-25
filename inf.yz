@@ -22,6 +22,14 @@ def unbound_variable(pos, path):
     Pos.show(pos), Names.show_val_path(path)
   )
 
+def invalid_application(pos, fun_type, arg_type, t1, t2):
+  var shower = Type.create_shower(0)
+  sprintf(
+    "%s: error: invalid application\n%s%s", Pos.show(pos),
+    sprintf("function type: %s\n", Type.show(shower, fun_type)),
+    sprintf("argument type: %s\n", Type.show(shower, arg_type))
+  )
+
 def find_asp(inf, path):
   match path:
     case ([], name):
@@ -57,13 +65,11 @@ def infer(inf, expr):
       var fun_type = infer(inf, fun_expr)
       var arg_type = infer(inf, arg_expr)
       var ret_type = Type.make_var(inf.let_level)
-      def occurs_check_error():
-        failwith("")
-      def unification_error(t1,t2):
-        failwith("")
-      Type.unify(
-        occurs_check_error, unification_error, fun_type, Type.Fun(arg_type, ret_type)
-      )
+      try:
+        Type.unify(fun_type, Type.Fun(arg_type, ret_type))
+      with:
+        case Type.Unification_error(t1, t2):
+          failwith(invalid_application(expr.Expr.pos, fun_type, arg_type, t1, t2))
       ret_type
 
 //      
