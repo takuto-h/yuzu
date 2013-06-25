@@ -75,6 +75,27 @@ let rec infer = begin fun inf ->
           | (Not_found(_)) ->
             (failwith ((unbound_variable expr.Expr.pos) path))
         end
+      | (Expr.App(fun_expr, arg_expr)) ->
+        begin let fun_type = ((infer inf) fun_expr) in
+        begin let arg_type = ((infer inf) arg_expr) in
+        begin let ret_type = (Type.make_var inf.let_level) in
+        begin let rec occurs_check_error = begin fun (()(_)) ->
+          (failwith "")
+        end in
+        begin let rec unification_error = begin fun t1 ->
+          begin fun t2 ->
+            (failwith "")
+          end
+        end in
+        begin
+        ((((Type.unify fun_type) (Type.Fun (arg_type, ret_type))) occurs_check_error) unification_error);
+        ret_type
+        end
+        end
+        end
+        end
+        end
+        end
     end
   end
 end

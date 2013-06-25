@@ -53,6 +53,18 @@ def infer(inf, expr):
       with:
         case Not_found:
           failwith(unbound_variable(expr.Expr.pos, path))
+    case Expr.App(fun_expr, arg_expr):
+      var fun_type = infer(inf, fun_expr)
+      var arg_type = infer(inf, arg_expr)
+      var ret_type = Type.make_var(inf.let_level)
+      def occurs_check_error():
+        failwith("")
+      def unification_error(t1,t2):
+        failwith("")
+      Type.unify(
+        fun_type, Type.Fun(arg_type, ret_type), occurs_check_error, unification_error
+      )
+      ret_type
 
 //      
 // assertions
