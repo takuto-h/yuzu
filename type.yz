@@ -1,5 +1,7 @@
 
 type t:
   def Con(Names.typector)
+  def Var(int * ref(option(t)))
+  def Gen(int)
   def App(Names.typector * list(t))
   def Tuple(list(t))
