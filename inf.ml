@@ -74,6 +74,34 @@ let rec infer_literal = begin fun lit ->
   end
 end
 
+let rec infer_pattern = begin fun inf ->
+  begin fun pat ->
+    begin match pat with
+      | (Pattern.Con(lit)) ->
+        (inf, ((Type.at None) (infer_literal lit)))
+      | (Pattern.Var(name)) ->
+        begin let t = (Type.make_var inf.let_level) in
+        begin let inf = {
+          inf with
+          asp = (( :: ) ((name, (Scheme.mono t)), inf.asp));
+        } in
+        (inf, t)
+        end
+        end
+      | (Pattern.Tuple(pats)) ->
+        begin let (inf, ts) = (((YzList.fold_right pats) (inf, [])) begin fun elem ->
+          begin fun (inf, ts) ->
+            begin let (inf, t) = ((infer_pattern inf) elem) in
+            (inf, (( :: ) (t, ts)))
+            end
+          end
+        end) in
+        (inf, ((Type.at None) (Type.Tuple (ts))))
+        end
+    end
+  end
+end
+
 let rec infer = begin fun inf ->
   begin fun expr ->
     begin match expr.Expr.raw with
@@ -102,6 +130,12 @@ let rec infer = begin fun inf ->
         ret_type
         end
         end
+        end
+        end
+      | (Expr.Abs(pat, body_expr)) ->
+        begin let (inf, pat_type) = ((infer_pattern inf) pat) in
+        begin let body_type = ((infer inf) body_expr) in
+        ((Type.at (Some (expr.Expr.pos))) (Type.Fun (pat_type, body_type)))
         end
         end
     end

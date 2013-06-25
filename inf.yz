@@ -53,6 +53,20 @@ def infer_literal(lit):
     case Literal.Char(_):
       char_type
 
+def infer_pattern(inf, pat):
+  match pat:
+    case Pattern.Con(lit):
+      (inf, Type.at(None, infer_literal(lit)))
+    case Pattern.Var(name):
+      var t = Type.make_var(inf.let_level)
+      var inf = inf.{asp = (name,Scheme.mono(t))::inf.asp}
+      (inf, t)
+    case Pattern.Tuple(pats):
+      var (inf, ts) = YzList.fold_right(pats, (inf, []))^(elem, (inf, ts)):
+        var (inf, t) = infer_pattern(inf, elem)
+        (inf, t::ts)
+      (inf, Type.at(None, Type.Tuple(ts)))
+
 def infer(inf, expr):
   match expr.Expr.raw:
     case Expr.Con(lit):
@@ -73,6 +87,10 @@ def infer(inf, expr):
         case Type.Unification_error(t1, t2):
           failwith(invalid_application(expr.Expr.pos, fun_type, arg_type, t1, t2))
       ret_type
+    case Expr.Abs(pat, body_expr):
+      var (inf, pat_type) = infer_pattern(inf, pat)
+      var body_type = infer(inf, body_expr)
+      Type.at(Some(expr.Expr.pos), Type.Fun(pat_type, body_type))
 
 //      
 // assertions
