@@ -12,15 +12,16 @@ def compile(fnames):
     Trans.translate_file(fname_in, fname_out)    
   List.for_all(translate, fnames)
 
+def read(buf):
+  printf("> ")
+  var line = read_line()
+  if line = "":
+    Buffer.contents(buf)
+  else:
+    Buffer.add_string(buf, sprintf("%s\n", line))
+    read(buf)
+
 def interactive():
-  def read(buf):
-    printf("> ")
-    var line = read_line()
-    if line = "":
-      Buffer.contents(buf)
-    else:
-      Buffer.add_string(buf, sprintf("%s\n", line))
-      read(buf)
   try:
     var str = read(Buffer.create(initial_buffer_size))
     match Trans.translate_string("<interactive>", str):

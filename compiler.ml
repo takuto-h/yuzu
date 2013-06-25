@@ -16,22 +16,23 @@ let rec compile = begin fun fnames ->
   end
 end
 
-let rec interactive = begin fun (() _) ->
-  begin let rec read = begin fun buf ->
+let rec read = begin fun buf ->
+  begin
+  (printf "> ");
+  begin let line = (read_line ()) in
+  begin if ((( = ) line) "") then
+    (Buffer.contents buf)
+  else
     begin
-    (printf "> ");
-    begin let line = (read_line ()) in
-    begin if ((( = ) line) "") then
-      (Buffer.contents buf)
-    else
-      begin
-      ((Buffer.add_string buf) ((sprintf "%s\n") line));
-      (read buf)
-      end
+    ((Buffer.add_string buf) ((sprintf "%s\n") line));
+    (read buf)
     end
-    end
-    end
-  end in
+  end
+  end
+  end
+end
+
+let rec interactive = begin fun (() _) ->
   begin try
     begin let str = (read (Buffer.create initial_buffer_size)) in
     begin
@@ -48,7 +49,6 @@ let rec interactive = begin fun (() _) ->
 
     | (End_of_file _) ->
       ()
-  end
   end
 end
 
