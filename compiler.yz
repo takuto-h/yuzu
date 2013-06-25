@@ -1,0 +1,11 @@
+
+open Printf
+
+def compile(fnames):
+  def translate(fname_in):
+    var fname_out = if Filename.check_suffix(fname_in, ".yz"):
+      sprintf("%s.ml", Filename.chop_suffix(fname_in, ".yz"))
+    else:
+      sprintf("%s.ml", fname_in)
+    Trans.translate_file(fname_in, fname_out)    
+  List.for_all(translate, fnames)
