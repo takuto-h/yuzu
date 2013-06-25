@@ -3,12 +3,14 @@ open Printf
 type t = {
   mods : ((Names.mod_name * Module.t)) list;
   asp : ((Names.val_name * Scheme.t)) list;
+  let_level : int;
 }
 
 let rec create = begin fun (()(_)) ->
   {
     mods = [];
     asp = [];
+    let_level = 0;
   }
 end
 
@@ -21,17 +23,6 @@ let char_type = (Type.Con ([], "char"))
 let rec unbound_variable = begin fun pos ->
   begin fun path ->
     (((sprintf "%s: error: unbound variable: %s\n") (Pos.show pos)) (Names.show_val_path path))
-  end
-end
-
-let rec infer_literal = begin fun lit ->
-  begin match lit with
-    | (Literal.Int(_)) ->
-      int_type
-    | (Literal.String(_)) ->
-      string_type
-    | (Literal.Char(_)) ->
-      char_type
   end
 end
 
@@ -48,6 +39,29 @@ let rec find_asp = begin fun inf ->
   end
 end
 
+let rec instantiate = begin fun let_level ->
+  begin fun {Scheme.gen_num;Scheme.body;} ->
+    begin let type_vars = ((Array.init gen_num) begin fun _ ->
+      (Type.make_var let_level)
+    end) in
+    ((Type.map body) begin fun n ->
+      ((Array.get type_vars) n)
+    end)
+    end
+  end
+end
+
+let rec infer_literal = begin fun lit ->
+  begin match lit with
+    | (Literal.Int(_)) ->
+      int_type
+    | (Literal.String(_)) ->
+      string_type
+    | (Literal.Char(_)) ->
+      char_type
+  end
+end
+
 let rec infer = begin fun inf ->
   begin fun expr ->
     begin match expr.Expr.raw with
@@ -55,7 +69,7 @@ let rec infer = begin fun inf ->
         (infer_literal lit)
       | (Expr.Var(path)) ->
         begin try
-          ((find_asp inf) path).Scheme.body
+          ((instantiate inf.let_level) ((find_asp inf) path))
         with
 
           | (Not_found(_)) ->
@@ -72,6 +86,7 @@ let mod_A = ((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1"
 let inf = {
   mods = (( :: ) (("A", mod_A), []));
   asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono int_type)), []));
+  let_level = 0;
 }
 
 let pos = ((((Pos.make "<assertion>") 1) 0) 0)

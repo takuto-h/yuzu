@@ -6,8 +6,12 @@ type t =
   | Tuple of (t) list
 
 
-let rec map = begin fun func ->
-  begin fun t ->
+let rec make_var = begin fun let_level ->
+  (Var (let_level, (ref None)))
+end
+
+let rec map = begin fun t ->
+  begin fun func ->
     begin match t with
       | (Con(_)) ->
         t
@@ -16,32 +20,32 @@ let rec map = begin fun func ->
           | (None(_)) ->
             t
           | (Some(t_val)) ->
-            ((map func) t_val)
+            ((map t_val) func)
         end
       | (Gen(n)) ->
         (func n)
       | (App(typector, t_args)) ->
-        begin let t_args = ((map_list func) t_args) in
+        begin let t_args = ((map_list t_args) func) in
         (App (typector, t_args))
         end
       | (Tuple(ts)) ->
-        begin let ts = ((map_list func) ts) in
+        begin let ts = ((map_list ts) func) in
         (Tuple (ts))
         end
     end
   end
 end
 
-and map_list = begin fun func ->
-  begin fun ts ->
-    begin let ts_ary = ((Array.make 0) (Gen (0))) in
+and map_list = begin fun ts ->
+  begin fun func ->
+    begin let ts_ref = (ref []) in
     begin
     ((YzList.iteri ts) begin fun i ->
       begin fun t_elem ->
-        (((Array.set ts_ary) i) ((map func) t_elem))
+        ((( := ) ts_ref) (( :: ) (((map t_elem) func), (( ! ) ts_ref))))
       end
     end);
-    (Array.to_list ts_ary)
+    (List.rev (( ! ) ts_ref))
     end
     end
   end

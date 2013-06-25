@@ -4,10 +4,12 @@ open Printf
 type t:
   mods : list(Names.mod_name * Module.t)
   asp : list(Names.val_name * Scheme.t)
+  let_level : int
   
 def create(): {
   mods = [];
   asp = [];
+  let_level = 0;
 }
 
 var int_type = Type.Con([], "int")
@@ -20,6 +22,18 @@ def unbound_variable(pos, path):
     Pos.show(pos), Names.show_val_path(path)
   )
 
+def find_asp(inf, path):
+  match path:
+    case ([], name):
+      List.assoc(name, inf.asp)
+    case (mod_name::mod_path, name):
+      var modl = List.assoc(mod_name, inf.mods)
+      Module.find_asp(modl, mod_path, name)
+
+def instantiate(let_level, {Scheme.gen_num;Scheme.body}):
+  var type_vars = Array.init(gen_num)^(_): Type.make_var(let_level)
+  Type.map(body)^(n): Array.get(type_vars, n)
+
 def infer_literal(lit):
   match lit:
     case Literal.Int(_):
@@ -29,21 +43,13 @@ def infer_literal(lit):
     case Literal.Char(_):
       char_type
 
-def find_asp(inf, path):
-  match path:
-    case ([], name):
-      List.assoc(name, inf.asp)
-    case (mod_name::mod_path, name):
-      var modl = List.assoc(mod_name, inf.mods)
-      Module.find_asp(modl, mod_path, name)
-
 def infer(inf, expr):
   match expr.Expr.raw:
     case Expr.Con(lit):
       infer_literal(lit)
     case Expr.Var(path):
       try:
-        find_asp(inf, path).Scheme.body
+        instantiate(inf.let_level, find_asp(inf, path))
       with:
         case Not_found:
           failwith(unbound_variable(expr.Expr.pos, path))
@@ -62,6 +68,7 @@ var mod_A = Module.make(
 var inf = {
   mods = [("A", mod_A)];
   asp = [(Names.Id("ans"), Scheme.mono(int_type))];
+  let_level = 0;
 }
 var pos = Pos.make("<assertion>", 1, 0, 0)
 var int_expr = Expr.at(pos, Expr.Con(Literal.Int(123)))

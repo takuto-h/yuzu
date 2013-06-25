@@ -6,8 +6,11 @@ type t:
   def App(Names.typector * list(t))
   def Tuple(list(t))
 
+def make_var(let_level):
+  Var(let_level, ref(None))
+
 rec:
-  def map(func, t):
+  def map(t, func):
     match t:
       case Con(_):
         t
@@ -16,18 +19,18 @@ rec:
           case None:
             t
           case Some(t_val):
-            map(func, t_val)
+            map(t_val, func)
       case Gen(n):
         func(n)
       case App(typector,t_args):
-        var t_args = map_list(func, t_args)
+        var t_args = map_list(t_args, func)
         App(typector, t_args)
       case Tuple(ts):
-        var ts = map_list(func, ts)
+        var ts = map_list(ts, func)
         Tuple(ts)
 
-  def map_list(func, ts):
-    var ts_ary = Array.make(0, Gen(0))
+  def map_list(ts, func):
+    var ts_ref = ref([])
     YzList.iteri(ts)^(i, t_elem):
-      Array.set(ts_ary, i, map(func, t_elem))
-    Array.to_list(ts_ary)
+      ts_ref := map(t_elem, func)::!ts_ref
+    List.rev(!ts_ref)
