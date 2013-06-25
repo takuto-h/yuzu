@@ -1,2 +1,9 @@
 
-type t = Type.t
+type t:
+  gen_num : int
+  body : Type.t
+
+def mono(t): {
+  gen_num = 0;
+  body = t;
+}

@@ -821,12 +821,38 @@ and parse_unary_expr = begin fun parser ->
       end
       end
     | _ ->
-      (parse_prim_expr parser)
+      (parse_dot_expr parser)
+  end
+end
+
+and parse_dot_expr = begin fun parser ->
+  begin let expr = (parse_prim_expr parser) in
+  begin match parser.token with
+    | (Token.Reserved(".")) ->
+      begin let pos = parser.pos in
+      begin
+      (lookahead parser);
+      begin match parser.token with
+        | (Token.Reserved("{")) ->
+          begin
+          (lookahead parser);
+          ((Expr.at pos) (Expr.Update (expr, ((parse_braced_elems parser) parse_field_def))))
+          end
+        | _ ->
+          begin let path = ((parse_val_path parser) []) in
+          ((Expr.at pos) (Expr.Field (expr, path)))
+          end
+      end
+      end
+      end
+    | _ ->
+      expr
+  end
   end
 end
 
 and parse_prim_expr = begin fun parser ->
-  begin let fun_expr = (parse_dot_expr parser) in
+  begin let fun_expr = (parse_atomic_expr parser) in
   begin let rec loop = begin fun fun_expr ->
     begin match parser.token with
       | (Token.Reserved("(")) ->
@@ -852,32 +878,6 @@ and parse_prim_expr = begin fun parser ->
     end
   end in
   (loop fun_expr)
-  end
-  end
-end
-
-and parse_dot_expr = begin fun parser ->
-  begin let expr = (parse_atomic_expr parser) in
-  begin match parser.token with
-    | (Token.Reserved(".")) ->
-      begin let pos = parser.pos in
-      begin
-      (lookahead parser);
-      begin match parser.token with
-        | (Token.Reserved("{")) ->
-          begin
-          (lookahead parser);
-          ((Expr.at pos) (Expr.Update (expr, ((parse_braced_elems parser) parse_field_def))))
-          end
-        | _ ->
-          begin let path = ((parse_val_path parser) []) in
-          ((Expr.at pos) (Expr.Field (expr, path)))
-          end
-      end
-      end
-      end
-    | _ ->
-      expr
   end
   end
 end

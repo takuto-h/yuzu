@@ -55,7 +55,7 @@ let rec infer = begin fun inf ->
         (infer_literal lit)
       | (Expr.Var(path)) ->
         begin try
-          ((find_asp inf) path)
+          ((find_asp inf) path).Scheme.body
         with
 
           | (Not_found(_)) ->
@@ -65,13 +65,13 @@ let rec infer = begin fun inf ->
   end
 end
 
-let mod_B = ((Module.make []) (( :: ) (((Names.Id ("b1")), char_type), (( :: ) (((Names.Id ("b2")), int_type), [])))))
+let mod_B = ((Module.make []) (( :: ) (((Names.Id ("b1")), (Scheme.mono char_type)), (( :: ) (((Names.Id ("b2")), (Scheme.mono int_type)), [])))))
 
-let mod_A = ((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1")), int_type), (( :: ) (((Names.Id ("a2")), string_type), [])))))
+let mod_A = ((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1")), (Scheme.mono int_type)), (( :: ) (((Names.Id ("a2")), (Scheme.mono string_type)), [])))))
 
 let inf = {
   mods = (( :: ) (("A", mod_A), []));
-  asp = (( :: ) (((Names.Id ("ans")), int_type), []));
+  asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono int_type)), []));
 }
 
 let pos = ((((Pos.make "<assertion>") 1) 0) 0)

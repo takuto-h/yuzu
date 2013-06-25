@@ -43,7 +43,7 @@ def infer(inf, expr):
       infer_literal(lit)
     case Expr.Var(path):
       try:
-        find_asp(inf, path)
+        find_asp(inf, path).Scheme.body
       with:
         case Not_found:
           failwith(unbound_variable(expr.Expr.pos, path))
@@ -53,15 +53,15 @@ def infer(inf, expr):
 //
 var mod_B = Module.make(
   [],
-  [(Names.Id("b1"), char_type); (Names.Id("b2"), int_type)],
+  [(Names.Id("b1"), Scheme.mono(char_type)); (Names.Id("b2"), Scheme.mono(int_type))],
 )
 var mod_A = Module.make(
   [("B", mod_B)],
-  [(Names.Id("a1"), int_type); (Names.Id("a2"), string_type)],
+  [(Names.Id("a1"), Scheme.mono(int_type)); (Names.Id("a2"), Scheme.mono(string_type))],
 )
 var inf = {
   mods = [("A", mod_A)];
-  asp = [(Names.Id("ans"), int_type)];
+  asp = [(Names.Id("ans"), Scheme.mono(int_type))];
 }
 var pos = Pos.make("<assertion>", 1, 0, 0)
 var int_expr = Expr.at(pos, Expr.Con(Literal.Int(123)))

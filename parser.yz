@@ -509,10 +509,26 @@ rec:
         var expr = parse_unary_expr(parser)
         Expr.at(pos, Expr.App(Expr.at(pos, make_op_var("!")),expr))
       case _:
-        parse_prim_expr(parser)
-  
+        parse_dot_expr(parser)
+        
+  def parse_dot_expr(parser):
+    var expr = parse_prim_expr(parser)
+    match parser.token:
+      case Token.Reserved("."):
+        var pos = parser.pos
+        lookahead(parser)
+        match parser.token:
+          case Token.Reserved("{"):
+            lookahead(parser)
+            Expr.at(pos, Expr.Update(expr, parse_braced_elems(parser, parse_field_def)))
+          case _:
+            var path = parse_val_path(parser, [])
+            Expr.at(pos, Expr.Field(expr, path))
+      case _:
+        expr
+
   def parse_prim_expr(parser):
-    var fun_expr = parse_dot_expr(parser)
+    var fun_expr = parse_atomic_expr(parser)
     def loop(fun_expr):
       match parser.token:
         case Token.Reserved("("):
@@ -528,22 +544,6 @@ rec:
         case _:
           fun_expr
     loop(fun_expr)
-      
-  def parse_dot_expr(parser):
-    var expr = parse_atomic_expr(parser)
-    match parser.token:
-      case Token.Reserved("."):
-        var pos = parser.pos
-        lookahead(parser)
-        match parser.token:
-          case Token.Reserved("{"):
-            lookahead(parser)
-            Expr.at(pos, Expr.Update(expr, parse_braced_elems(parser, parse_field_def)))
-          case _:
-            var path = parse_val_path(parser, [])
-            Expr.at(pos, Expr.Field(expr, path))
-      case _:
-        expr
   
   def parse_atomic_expr(parser):
     match parser.token:
