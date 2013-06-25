@@ -7,13 +7,13 @@ type t = {
 }
 
 let rec create = begin fun fname ->
-  begin fun chan ->
+  begin fun strm ->
     {
       fname = fname;
       lnum = 1;
       cnum = 0;
       bol = 0;
-      strm = (Stream.of_channel chan);
+      strm = strm;
     }
   end
 end

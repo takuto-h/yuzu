@@ -319,7 +319,8 @@ def translate_file(fname_in, fname_out):
   with_open_in(fname_in)^(chan_in):
   with_open_out(fname_out)^(chan_out):
     try:
-      var src = Source.create(fname_in, chan_in)
+      var strm = Stream.of_channel(chan_in)
+      var src = Source.create(fname_in, strm)
       var lexer = Lexer.create(src)
       var parser = Parser.create(lexer)
       var trans = create(ocaml_basic_offset)

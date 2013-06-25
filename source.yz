@@ -6,12 +6,12 @@ type t:
   mutable bol : int
   strm : Stream.t(char)
 
-def create(fname, chan): {
+def create(fname, strm): {
   fname = fname;
   lnum = 1;
   cnum = 0;
   bol = 0;
-  strm = Stream.of_channel(chan);
+  strm = strm;
 }
 
 def pos({fname;lnum;cnum;bol}):

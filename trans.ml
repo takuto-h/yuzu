@@ -480,7 +480,8 @@ let rec translate_file = begin fun fname_in ->
     ((with_open_in fname_in) begin fun chan_in ->
       ((with_open_out fname_out) begin fun chan_out ->
         begin try
-          begin let src = ((Source.create fname_in) chan_in) in
+          begin let strm = (Stream.of_channel chan_in) in
+          begin let src = ((Source.create fname_in) strm) in
           begin let lexer = (Lexer.create src) in
           begin let parser = (Parser.create lexer) in
           begin let trans = (create ocaml_basic_offset) in
@@ -503,6 +504,7 @@ let rec translate_file = begin fun fname_in ->
           end
           end
           end
+          end
         with
 
           | (Failure (message)) ->
@@ -517,9 +519,5 @@ let rec translate_file = begin fun fname_in ->
       end)
     end)
   end
-end
-
-let rec test = begin fun (() _) ->
-  ((translate_file "test.yz") "test.out")
 end
 
