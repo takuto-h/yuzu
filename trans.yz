@@ -337,6 +337,3 @@ def translate_file(fname_in, fname_out):
         eprintf("%s", message)
         flush(stderr)
         false
-
-def test():
-  translate_file("test.yz", "test.out")
