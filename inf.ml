@@ -102,7 +102,7 @@ let rec infer_pattern = begin fun inf ->
   end
 end
 
-let rec infer = begin fun inf ->
+let rec infer_expr = begin fun inf ->
   begin fun expr ->
     begin match expr.Expr.raw with
       | (Expr.Con (lit)) ->
@@ -116,8 +116,8 @@ let rec infer = begin fun inf ->
             (failwith ((unbound_variable expr.Expr.pos) path))
         end
       | (Expr.App (fun_expr, arg_expr)) ->
-        begin let fun_type = ((infer inf) fun_expr) in
-        begin let arg_type = ((infer inf) arg_expr) in
+        begin let fun_type = ((infer_expr inf) fun_expr) in
+        begin let arg_type = ((infer_expr inf) arg_expr) in
         begin let ret_type = (Type.make_var inf.let_level) in
         begin
         begin try
@@ -134,7 +134,7 @@ let rec infer = begin fun inf ->
         end
       | (Expr.Abs (pat, body_expr)) ->
         begin let (inf, pat_type) = ((infer_pattern inf) pat) in
-        begin let body_type = ((infer inf) body_expr) in
+        begin let body_type = ((infer_expr inf) body_expr) in
         ((Type.at (Some (expr.Expr.pos))) (Type.Fun (pat_type, body_type)))
         end
         end
@@ -162,11 +162,11 @@ let string_expr = ((Expr.at pos) (Expr.Con ((Literal.String ("abc")))))
 
 let char_expr = ((Expr.at pos) (Expr.Con ((Literal.Char ("x")))))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer inf) int_expr))) "int"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) int_expr))) "int"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer inf) string_expr))) "string"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) string_expr))) "string"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer inf) char_expr))) "char"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) char_expr))) "char"))
 
 let ans = ((Expr.at pos) (Expr.Var ([], (Names.Id ("ans")))))
 
@@ -174,16 +174,16 @@ let _A_a2 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", [])), (Names.Id ("a2")))))
 
 let _A_B_b1 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", (( :: ) ("B", [])))), (Names.Id ("b1")))))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer inf) ans))) "int"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) ans))) "int"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer inf) _A_a2))) "string"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) _A_a2))) "string"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer inf) _A_B_b1))) "char"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) _A_B_b1))) "char"))
 
 let app_expr = ((Expr.at pos) (Expr.App (int_expr, string_expr)))
 
 let () = begin try
-  (ignore ((infer inf) app_expr))
+  (ignore ((infer_expr inf) app_expr))
 with
 
   | (Failure (got)) ->
