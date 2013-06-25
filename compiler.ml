@@ -39,10 +39,7 @@ let rec interactive = begin fun (() _) ->
       | (None _) ->
         ()
       | (Some (result)) ->
-        begin
-        ((printf "%s") result);
-        (flush stdout)
-        end
+        ((printf "%s") result)
     end;
     (interactive ())
     end

@@ -28,7 +28,6 @@ def interactive():
         ()
       case Some(result):
         printf("%s", result)
-        flush(stdout)
     interactive()
   with:
     case End_of_file:
