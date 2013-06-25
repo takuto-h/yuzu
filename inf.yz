@@ -3,7 +3,7 @@ open Printf
 
 type t:
   mods : list(Names.mod_name * Module.t)
-  asp : list(Names.val_name * Type.t)
+  asp : list(Names.val_name * Scheme.t)
   
 def create(): {
   mods = [];
@@ -29,28 +29,24 @@ def infer_literal(lit):
     case Literal.Char(_):
       char_type
 
-def infer_var(inf, pos, path):
+def find_asp(inf, path):
   match path:
     case ([], name):
-      try:
-        List.assoc(name, inf.asp)
-      with:
-        case Not_found:
-          failwith(unbound_variable(pos, path))
+      List.assoc(name, inf.asp)
     case (mod_name::mod_path, name):
-      try:
-        var modl = List.assoc(mod_name, inf.mods)
-        Module.find_asp(modl, mod_path, name)
-      with:
-        case Not_found:
-          failwith(unbound_variable(pos, path))
+      var modl = List.assoc(mod_name, inf.mods)
+      Module.find_asp(modl, mod_path, name)
 
 def infer(inf, expr):
   match expr.Expr.raw:
     case Expr.Con(lit):
       infer_literal(lit)
     case Expr.Var(path):
-      infer_var(inf, expr.Expr.pos, path)
+      try:
+        find_asp(inf, path)
+      with:
+        case Not_found:
+          failwith(unbound_variable(expr.Expr.pos, path))
 
 //      
 // assertions

@@ -1,7 +1,7 @@
 
 type t:
   mods : list(Names.mod_name * t)
-  asp : list(Names.val_name * Type.t)
+  asp : list(Names.val_name * Scheme.t)
 
 def make(mods, asp): {
   mods = mods;

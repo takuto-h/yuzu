@@ -1,6 +1,6 @@
 type t = {
   mods : ((Names.mod_name * t)) list;
-  asp : ((Names.val_name * Type.t)) list;
+  asp : ((Names.val_name * Scheme.t)) list;
 }
 
 let rec make = begin fun mods ->
