@@ -434,7 +434,23 @@ let rec parse_mod_path = begin fun parser ->
 end
 
 let rec parse_type = begin fun parser ->
-  (parse_tuple_type parser)
+  (parse_fun_type parser)
+end
+
+and parse_fun_type = begin fun parser ->
+  begin let lhs = (parse_tuple_type parser) in
+  begin match parser.token with
+    | (Token.AddOp ("->")) ->
+      begin
+      (lookahead parser);
+      begin let rhs = (parse_fun_type parser) in
+      (TypeExpr.Fun (lhs, rhs))
+      end
+      end
+    | _ ->
+      lhs
+  end
+  end
 end
 
 and parse_tuple_type = begin fun parser ->

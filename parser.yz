@@ -255,8 +255,18 @@ def parse_mod_path(parser, mod_names):
 
 rec:  
   def parse_type(parser):
-    parse_tuple_type(parser)
+    parse_fun_type(parser)
   
+  def parse_fun_type(parser):
+    var lhs = parse_tuple_type(parser)
+    match parser.token:
+      case Token.AddOp("->"):
+        lookahead(parser)
+        var rhs = parse_fun_type(parser)
+        TypeExpr.Fun(lhs, rhs)
+      case _:
+        lhs
+
   def parse_tuple_type(parser):
     var t = parse_atomic_type(parser)
     def loop(ts):
