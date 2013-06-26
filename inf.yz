@@ -92,6 +92,11 @@ def infer_expr(inf, expr):
       var body_type = infer_expr(inf, body_expr)
       Type.at(Some(expr.Expr.pos), Type.Fun(pat_type, body_type))
 
+def infer_top(inf, top):
+  match top.Top.raw:
+    case Top.Expr(expr):
+      (inf, infer_expr(inf, expr))
+
 //      
 // assertions
 //

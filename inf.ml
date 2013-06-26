@@ -142,6 +142,15 @@ let rec infer_expr = begin fun inf ->
   end
 end
 
+let rec infer_top = begin fun inf ->
+  begin fun top ->
+    begin match top.Top.raw with
+      | (Top.Expr (expr)) ->
+        (inf, ((infer_expr inf) expr))
+    end
+  end
+end
+
 let pos = ((((Pos.make "<assertion>") 1) 0) 0)
 
 let mod_B = ((Module.make []) (( :: ) (((Names.Id ("b1")), (Scheme.mono ((Type.at (Some (pos))) char_type))), (( :: ) (((Names.Id ("b2")), (Scheme.mono ((Type.at (Some (pos))) int_type))), [])))))
