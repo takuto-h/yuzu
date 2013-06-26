@@ -312,6 +312,12 @@ let rec translate_type_expr = begin fun t ->
       end
     | (TypeExpr.Tuple (([] _))) ->
       (assert false)
+    | (TypeExpr.Fun (t1, t2)) ->
+      begin let str_t1 = (translate_type_expr t1) in
+      begin let str_t2 = (translate_type_expr t2) in
+      (((sprintf "(%s -> %s)") str_t1) str_t2)
+      end
+      end
   end
 end
 

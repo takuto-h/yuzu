@@ -221,6 +221,10 @@ def translate_type_expr(t):
       sprintf("(%s)", str_types)
     case TypeExpr.Tuple([]):
       assert(false)
+    case TypeExpr.Fun(t1, t2):
+      var str_t1 = translate_type_expr(t1)
+      var str_t2 = translate_type_expr(t2)
+      sprintf("(%s -> %s)", str_t1, str_t2)
 
 def translate_ctor_decl(ctor_decl):
   match ctor_decl:

@@ -3,3 +3,4 @@ type t:
   def Con(Names.typector)
   def App(Names.typector * list(t))
   def Tuple(list(t))
+  def Fun(t * t)
