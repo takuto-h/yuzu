@@ -1543,6 +1543,28 @@ and parse_field_decl = begin fun parser ->
   end
 end
 
+let rec parse_decl = begin fun parser ->
+  begin
+  (lookahead parser);
+  begin
+  ((parse_token parser) (Token.Reserved ("def")));
+  begin let name = (parse_val_name parser) in
+  begin
+  ((parse_token parser) (Token.Reserved (":")));
+  begin let type_expr = (parse_type parser) in
+  begin match parser.token with
+    | (((Token.EOF _) | (Token.Newline _)) | (Token.Reserved (";"))) ->
+      (DeclExpr.Var (name, type_expr))
+    | _ ->
+      (failwith ((expected parser) "newline or ';'"))
+  end
+  end
+  end
+  end
+  end
+  end
+end
+
 let rec parse_stmt = begin fun parser ->
   begin let expr = (parse_top parser) in
   begin match parser.token with

@@ -925,6 +925,18 @@ rec:
 
 // END rec: def parse_top
 
+def parse_decl(parser):
+  lookahead(parser)
+  parse_token(parser, Token.Reserved("def"))
+  var name = parse_val_name(parser)
+  parse_token(parser, Token.Reserved(":"))
+  var type_expr = parse_type(parser)
+  match parser.token:
+    case Token.EOF | Token.Newline | Token.Reserved(";"):
+      DeclExpr.Var(name, type_expr)
+    case _:
+      failwith(expected(parser, "newline or ';'"))
+
 def parse_stmt(parser):
   var expr = parse_top(parser)
   match parser.token:

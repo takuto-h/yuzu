@@ -2,9 +2,9 @@
 open Printf
 
 type t:
-  def Anon(Scheme.t)
+  def Var(Names.val_name * Scheme.t)
 
 def show(decl):
   match decl:
-    case Anon(scm):
-      sprintf("def _ : %s\n", Scheme.show(scm))
+    case Var(name, scm):
+      sprintf("def %s : %s\n", Names.show_val_name(name), Scheme.show(scm))

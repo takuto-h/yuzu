@@ -95,7 +95,7 @@ def infer_expr(inf, expr):
 def infer_top(inf, top):
   match top.Top.raw:
     case Top.Expr(expr):
-      (inf, Decl.Anon(Scheme.mono(infer_expr(inf, expr))))
+      (inf, Decl.Var(Names.Id("_"), Scheme.mono(infer_expr(inf, expr))))
 
 //      
 // assertions
