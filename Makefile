@@ -2,7 +2,7 @@
 YZ_SRCS =\
   yzList.yz pos.yz source.yz token.yz lexer.yz\
   literal.yz names.yz pattern.yz typeExpr.yz expr.yz typeInfo.yz top.yz parser.yz\
-  type.yz scheme.yz module.yz inf.yz trans.yz compiler.yz main.yz
+  type.yz scheme.yz module.yz decl.yz inf.yz trans.yz compiler.yz main.yz
 
 ML_SRCS = $(addsuffix .ml, $(basename $(YZ_SRCS)))
 

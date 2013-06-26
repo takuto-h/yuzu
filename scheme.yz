@@ -7,3 +7,7 @@ def mono(t): {
   gen_num = 0;
   body = t;
 }
+
+def show({gen_num;body}):
+  var shower = Type.create_shower(gen_num)
+  Type.show(shower, body)

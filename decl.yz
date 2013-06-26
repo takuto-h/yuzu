@@ -1,0 +1,10 @@
+
+open Printf
+
+type t:
+  def Anon(Scheme.t)
+
+def show(decl):
+  match decl:
+    case Anon(scm):
+      sprintf("def _ : %s\n", Scheme.show(scm))
