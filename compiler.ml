@@ -11,7 +11,7 @@ let initial_buffer_size = 256
 
 let basic_offset = 2
 
-let rec create = begin fun (() _) ->
+let rec create = begin fun () ->
   {
     inf = (Inf.create ());
     dummy = ();

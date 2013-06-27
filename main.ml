@@ -1,6 +1,6 @@
 open Printf
 
-let rec main = begin fun (() _) ->
+let rec main = begin fun () ->
   begin let compiler = (Compiler.create ()) in
   begin let result = ((YzOption.bind ((Compiler.load_iface_file compiler) "pervasives.yzi")) begin fun compiler ->
     begin if ((( = ) (Array.length Sys.argv)) 1) then

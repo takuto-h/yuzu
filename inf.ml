@@ -9,7 +9,7 @@ type t = {
 
 let default_opens = (( :: ) (("Pervasives", []), []))
 
-let rec create = begin fun (() _) ->
+let rec create = begin fun () ->
   {
     mods = [];
     opens = default_opens;
