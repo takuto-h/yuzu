@@ -126,47 +126,53 @@ def infer_pattern(inf, pat):
         (inf, t::ts)
       (inf, Type.at(None, Type.Tuple(ts)))
 
-def infer_expr(inf, expr):
-  match expr.Expr.raw:
-    case Expr.Con(lit):
-      Type.at(Some(expr.Expr.pos), infer_literal(lit))
-    case Expr.Var(path):
-      try:
-        instantiate(inf.let_level, find_asp(inf, path))
-      with:
-        case Not_found:
-          failwith(unbound_variable(expr.Expr.pos, path))
-    case Expr.App(fun_expr, arg_expr):
-      var fun_type = infer_expr(inf, fun_expr)
-      var arg_type = infer_expr(inf, arg_expr)
-      var ret_type = Type.make_var(inf.let_level)
-      try:
-        Type.unify(fun_type, Type.at(None, Type.Fun(arg_type, ret_type)))
-      with:
-        case Type.Unification_error(t1, t2):
-          failwith(invalid_application(expr.Expr.pos, fun_type, arg_type, t1, t2))
-      ret_type
-    case Expr.Abs(pat, body_expr):
-      var (inf, pat_type) = infer_pattern(inf, pat)
-      var body_type = infer_expr(inf, body_expr)
-      Type.at(Some(expr.Expr.pos), Type.Fun(pat_type, body_type))
-    case Expr.If(cond_expr, then_expr, else_expr):
-      var cond_type = infer_expr(inf, cond_expr)
-      var then_type = infer_expr(inf, then_expr)
-      var else_type = infer_expr(inf, else_expr)
-      try:
-        Type.unify(Type.at(None, bool_type), cond_type)
-      with:
-        case Type.Unification_error(t1, t2):
-          failwith(required(expr.Expr.pos, Type.at(None, bool_type), cond_type, t1, t2))
-      try:
-        Type.unify(then_type, else_type)
-      with:
-        case Type.Unification_error(t1, t2):
-          failwith(invalid_if_expr(expr.Expr.pos, then_type, else_type, t1, t2))
-      else_type
-    case Expr.Tuple(exprs):
-      Type.at(Some(expr.Expr.pos), Type.Tuple(List.map(infer_expr(inf), exprs)))
+rec:
+  def infer_expr(inf, expr):
+    match expr.Expr.raw:
+      case Expr.Con(lit):
+        Type.at(Some(expr.Expr.pos), infer_literal(lit))
+      case Expr.Var(path):
+        try:
+          instantiate(inf.let_level, find_asp(inf, path))
+        with:
+          case Not_found:
+            failwith(unbound_variable(expr.Expr.pos, path))
+      case Expr.App(fun_expr, arg_expr):
+        var fun_type = infer_expr(inf, fun_expr)
+        var arg_type = infer_expr(inf, arg_expr)
+        var ret_type = Type.make_var(inf.let_level)
+        try:
+          Type.unify(fun_type, Type.at(None, Type.Fun(arg_type, ret_type)))
+        with:
+          case Type.Unification_error(t1, t2):
+            failwith(invalid_application(expr.Expr.pos, fun_type, arg_type, t1, t2))
+        ret_type
+      case Expr.Abs(pat, body_expr):
+        var (inf, pat_type) = infer_pattern(inf, pat)
+        var body_type = infer_expr(inf, body_expr)
+        Type.at(Some(expr.Expr.pos), Type.Fun(pat_type, body_type))
+      case Expr.If(cond_expr, then_expr, else_expr):
+        var cond_type = infer_expr(inf, cond_expr)
+        var then_type = infer_expr(inf, then_expr)
+        var else_type = infer_expr(inf, else_expr)
+        require(inf, expr.Expr.pos, bool_type, cond_expr)
+        try:
+          Type.unify(then_type, else_type)
+        with:
+          case Type.Unification_error(t1, t2):
+            failwith(invalid_if_expr(expr.Expr.pos, then_type, else_type, t1, t2))
+        else_type
+      case Expr.Tuple(exprs):
+        Type.at(Some(expr.Expr.pos), Type.Tuple(List.map(infer_expr(inf), exprs)))
+
+  def require(inf, pos, req_type_raw, got_expr):
+    var req_type = Type.at(None, req_type_raw)
+    var got_type = infer_expr(inf, got_expr)
+    try:
+      Type.unify(req_type, got_type)
+    with:
+      case Type.Unification_error(t1, t2):
+        failwith(required(pos, req_type, got_type, t1, t2))
 
 def infer_top(inf, top):
   match top.Top.raw:

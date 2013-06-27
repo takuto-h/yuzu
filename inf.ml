@@ -214,13 +214,7 @@ let rec infer_expr = begin fun inf ->
         begin let then_type = ((infer_expr inf) then_expr) in
         begin let else_type = ((infer_expr inf) else_expr) in
         begin
-        begin try
-          ((Type.unify ((Type.at None) bool_type)) cond_type)
-        with
-
-          | (Type.Unification_error (t1, t2)) ->
-            (failwith (((((required expr.Expr.pos) ((Type.at None) bool_type)) cond_type) t1) t2))
-        end;
+        ((((require inf) expr.Expr.pos) bool_type) cond_expr);
         begin
         begin try
           ((Type.unify then_type) else_type)
@@ -237,6 +231,26 @@ let rec infer_expr = begin fun inf ->
         end
       | (Expr.Tuple (exprs)) ->
         ((Type.at (Some (expr.Expr.pos))) (Type.Tuple (((List.map (infer_expr inf)) exprs))))
+    end
+  end
+end
+
+and require = begin fun inf ->
+  begin fun pos ->
+    begin fun req_type_raw ->
+      begin fun got_expr ->
+        begin let req_type = ((Type.at None) req_type_raw) in
+        begin let got_type = ((infer_expr inf) got_expr) in
+        begin try
+          ((Type.unify req_type) got_type)
+        with
+
+          | (Type.Unification_error (t1, t2)) ->
+            (failwith (((((required pos) req_type) got_type) t1) t2))
+        end
+        end
+        end
+      end
     end
   end
 end
