@@ -49,3 +49,9 @@ def show_source({fname;lnum;cnum;bol;source}):
         case Not_found:
           str
       sprintf("%s\n%s\n", str_line, str_anchor)
+
+def show_message(pos, message):
+  sprintf("%s: %s%s", show(pos), message, show_source(pos))
+
+def show_error(pos, message):
+  show_message(pos, sprintf("error: %s", message))

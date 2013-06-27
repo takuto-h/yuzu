@@ -21,18 +21,20 @@ var string_type = Type.Con([], "string")
 var char_type = Type.Con([], "char")
 
 def unbound_variable(pos, path):
-  sprintf(
-    "%s: error: unbound variable: %s\n%s",
-    Pos.show(pos), Names.show_val_path(path), Pos.show_source(pos)
-  )
+  Pos.show_error(pos, sprintf("unbound variable: %s\n", Names.show_val_path(path)))
 
 def invalid_application(pos, fun_type, arg_type, t1, t2):
   var shower = Type.create_shower(0)
   sprintf(
-    "%s: error: invalid application\n%s%s%s%s%s", Pos.show(pos),
-    sprintf("function type: %s\n", Type.show(shower, fun_type)),
-    sprintf("argument type: %s\n", Type.show(shower, arg_type)),
-    Pos.show_source(pos),
+    "%s%s%s",
+    Pos.show_error(
+      pos,
+      sprintf(
+        "invalid application\n%s%s",
+        sprintf("function type: %s\n", Type.show(shower, fun_type)),
+        sprintf("argument type: %s\n", Type.show(shower, arg_type)),
+      ),
+    ),
     Type.show_origin(shower, "function type", t1),
     Type.show_origin(shower, "argument type", t2),
   )

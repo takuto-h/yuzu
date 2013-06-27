@@ -41,10 +41,9 @@ def make_app(pos, fun_expr, arg_exprs):
   List.fold_left(mk_app, fun_expr, arg_exprs)
 
 def expected(parser, str_token):
-  sprintf(
-    "%s: error: unexpected %s, expected %s\n%s",
-    Pos.show(parser.pos), Token.show(parser.token), str_token,
-    Pos.show_source(parser.pos)
+  Pos.show_error(
+    parser.pos,
+    sprintf("unexpected %s, expected %s\n", Token.show(parser.token), str_token),
   )
 
 def lookahead(parser):

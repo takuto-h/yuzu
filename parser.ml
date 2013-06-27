@@ -70,7 +70,7 @@ end
 
 let rec expected = begin fun parser ->
   begin fun str_token ->
-    (((((sprintf "%s: error: unexpected %s, expected %s\n%s") (Pos.show parser.pos)) (Token.show parser.token)) str_token) (Pos.show_source parser.pos))
+    ((Pos.show_error parser.pos) (((sprintf "unexpected %s, expected %s\n") (Token.show parser.token)) str_token))
   end
 end
 

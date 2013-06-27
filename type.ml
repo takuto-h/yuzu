@@ -223,7 +223,7 @@ let rec show_origin = begin fun shower ->
         | (None _) ->
           ""
         | (Some (pos)) ->
-          (((((sprintf "%s: '%s' of %s\n%s") (Pos.show pos)) ((show shower) t)) descr) (Pos.show_source pos))
+          ((Pos.show_message pos) (((sprintf "'%s' of %s\n") ((show shower) t)) descr))
       end
     end
   end

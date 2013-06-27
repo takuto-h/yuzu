@@ -80,3 +80,15 @@ let rec show_source = begin fun {fname;lnum;cnum;bol;source;} ->
   end
 end
 
+let rec show_message = begin fun pos ->
+  begin fun message ->
+    ((((sprintf "%s: %s%s") (show pos)) message) (show_source pos))
+  end
+end
+
+let rec show_error = begin fun pos ->
+  begin fun message ->
+    ((show_message pos) ((sprintf "error: %s") message))
+  end
+end
+

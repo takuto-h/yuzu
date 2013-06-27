@@ -26,7 +26,7 @@ let char_type = (Type.Con ([], "char"))
 
 let rec unbound_variable = begin fun pos ->
   begin fun path ->
-    ((((sprintf "%s: error: unbound variable: %s\n%s") (Pos.show pos)) (Names.show_val_path path)) (Pos.show_source pos))
+    ((Pos.show_error pos) ((sprintf "unbound variable: %s\n") (Names.show_val_path path)))
   end
 end
 
@@ -36,7 +36,7 @@ let rec invalid_application = begin fun pos ->
       begin fun t1 ->
         begin fun t2 ->
           begin let shower = (Type.create_shower 0) in
-          (((((((sprintf "%s: error: invalid application\n%s%s%s%s%s") (Pos.show pos)) ((sprintf "function type: %s\n") ((Type.show shower) fun_type))) ((sprintf "argument type: %s\n") ((Type.show shower) arg_type))) (Pos.show_source pos)) (((Type.show_origin shower) "function type") t1)) (((Type.show_origin shower) "argument type") t2))
+          ((((sprintf "%s%s%s") ((Pos.show_error pos) (((sprintf "invalid application\n%s%s") ((sprintf "function type: %s\n") ((Type.show shower) fun_type))) ((sprintf "argument type: %s\n") ((Type.show shower) arg_type))))) (((Type.show_origin shower) "function type") t1)) (((Type.show_origin shower) "argument type") t2))
           end
         end
       end
