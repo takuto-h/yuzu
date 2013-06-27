@@ -140,6 +140,8 @@ let rec infer_literal = begin fun lit ->
       string_type
     | (Literal.Char (_)) ->
       char_type
+    | (Literal.Bool (_)) ->
+      bool_type
   end
 end
 

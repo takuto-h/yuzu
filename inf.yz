@@ -109,6 +109,8 @@ def infer_literal(lit):
       string_type
     case Literal.Char(_):
       char_type
+    case Literal.Bool(_):
+      bool_type
 
 def infer_pattern(inf, pat):
   match pat:

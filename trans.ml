@@ -37,6 +37,8 @@ let rec translate_literal = begin fun lit ->
       ((sprintf "\"%s\"") str)
     | (Literal.Char (str)) ->
       ((sprintf "'%s'") str)
+    | (Literal.Bool (bool)) ->
+      ((sprintf "%B") bool)
   end
 end
 

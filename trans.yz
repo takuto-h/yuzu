@@ -28,6 +28,8 @@ def translate_literal(lit):
       sprintf("\"%s\"", str)
     case Literal.Char(str):
       sprintf("'%s'", str)
+    case Literal.Bool(bool):
+      sprintf("%B", bool)
 
 rec:
   def translate_pattern(pat):

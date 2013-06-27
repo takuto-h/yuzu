@@ -5,3 +5,4 @@ type t:
   def Int(int)
   def String(string)
   def Char(string)
+  def Bool(bool)

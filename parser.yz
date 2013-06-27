@@ -180,6 +180,12 @@ def parse_literal(parser):
     case Token.Char(str):
       lookahead(parser)
       Literal.Char(str)
+    case Token.Reserved("true"):
+      lookahead(parser)
+      Literal.Bool(true)
+    case Token.Reserved("false"):
+      lookahead(parser)
+      Literal.Bool(false)
     case _:
       failwith(expected(parser, "literal"))
 
@@ -355,7 +361,8 @@ rec:
   
   def parse_atomic_pattern(parser):
     match parser.token:
-      case Token.Int(_) | Token.String(_) | Token.Char(_):
+      case Token.Int(_) | Token.String(_) | Token.Char(_) |
+           Token.Reserved("true") | Token.Reserved("false"):
         var lit = parse_literal(parser)
         Pattern.Con(lit)
       case Token.LowId(_):
@@ -562,7 +569,8 @@ rec:
   
   def parse_atomic_expr(parser):
     match parser.token:
-      case Token.Int(_) | Token.String(_) | Token.Char(_):
+      case Token.Int(_) | Token.String(_) | Token.Char(_) |
+           Token.Reserved("true") | Token.Reserved("false"):
         var pos = parser.pos
         var lit = parse_literal(parser)
         Expr.at(pos, Expr.Con(lit))

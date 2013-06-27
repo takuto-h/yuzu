@@ -317,6 +317,16 @@ let rec parse_literal = begin fun parser ->
       (lookahead parser);
       (Literal.Char (str))
       end
+    | (Token.Reserved ("true")) ->
+      begin
+      (lookahead parser);
+      (Literal.Bool (true))
+      end
+    | (Token.Reserved ("false")) ->
+      begin
+      (lookahead parser);
+      (Literal.Bool (false))
+      end
     | _ ->
       (failwith ((expected parser) "literal"))
   end
@@ -589,7 +599,7 @@ end
 
 and parse_atomic_pattern = begin fun parser ->
   begin match parser.token with
-    | (((Token.Int (_)) | (Token.String (_))) | (Token.Char (_))) ->
+    | (((((Token.Int (_)) | (Token.String (_))) | (Token.Char (_))) | (Token.Reserved ("true"))) | (Token.Reserved ("false"))) ->
       begin let lit = (parse_literal parser) in
       (Pattern.Con (lit))
       end
@@ -910,7 +920,7 @@ end
 
 and parse_atomic_expr = begin fun parser ->
   begin match parser.token with
-    | (((Token.Int (_)) | (Token.String (_))) | (Token.Char (_))) ->
+    | (((((Token.Int (_)) | (Token.String (_))) | (Token.Char (_))) | (Token.Reserved ("true"))) | (Token.Reserved ("false"))) ->
       begin let pos = parser.pos in
       begin let lit = (parse_literal parser) in
       ((Expr.at pos) (Expr.Con (lit)))

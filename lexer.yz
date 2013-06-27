@@ -11,22 +11,24 @@ type t:
 var initial_buffer_size = 16
 
 var reserved = [
-  "open";
-  "type";
-  "exception";
+  "as";
+  "case";
   "def";
+  "else";
+  "exception";
+  "false";
+  "if";
+  "match";
+  "mutable";
+  "open";
   "rec";
+  "try";
+  "true";
+  "type";
   "val";
   "var";
-  "if";
-  "else";
-  "match";
-  "case";
   "when";
-  "as";
-  "try";
   "with";
-  "mutable";
 ]
 
 def create(source): {
