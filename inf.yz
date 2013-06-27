@@ -19,6 +19,7 @@ def create(): {
 var int_type = Type.Con([], "int")
 var string_type = Type.Con([], "string")
 var char_type = Type.Con([], "char")
+var bool_type = Type.Con([], "bool")
 
 def unbound_variable(pos, path):
   Pos.show_error(pos, sprintf("unbound variable: %s\n", Names.show_val_path(path)))
@@ -37,6 +38,37 @@ def invalid_application(pos, fun_type, arg_type, t1, t2):
     ),
     Type.show_origin(shower, "function type", t1),
     Type.show_origin(shower, "argument type", t2),
+  )
+
+def invalid_if_expr(pos, then_type, else_type, t1, t2):
+  var shower = Type.create_shower(0)
+  sprintf(
+    "%s%s%s",
+    Pos.show_error(
+      pos,
+      sprintf(
+        "invalid if expression\n%s%s",
+        sprintf("then-clause type: %s\n", Type.show(shower, then_type)),
+        sprintf("else-clause type: %s\n", Type.show(shower, else_type)),
+      ),
+    ),
+    Type.show_origin(shower, "then-clause type", t1),
+    Type.show_origin(shower, "else-clause type", t2),
+  )
+
+def required(pos, req_type, got_type, t1, t2):
+  var shower = Type.create_shower(0)
+  sprintf(
+    "%s%s%s",
+    Pos.show_error(
+      pos,
+      sprintf(
+        "'%s' required, but got '%s'\n",
+        Type.show(shower, req_type), Type.show(shower, got_type)
+      )
+    ),
+    Type.show_origin(shower, "required type", t1),
+    Type.show_origin(shower, "got type", t2),
   )
 
 def find_mods(mods, mod_name, mod_path, name):
@@ -116,6 +148,21 @@ def infer_expr(inf, expr):
       var (inf, pat_type) = infer_pattern(inf, pat)
       var body_type = infer_expr(inf, body_expr)
       Type.at(Some(expr.Expr.pos), Type.Fun(pat_type, body_type))
+    case Expr.If(cond_expr, then_expr, else_expr):
+      var cond_type = infer_expr(inf, cond_expr)
+      var then_type = infer_expr(inf, then_expr)
+      var else_type = infer_expr(inf, else_expr)
+      try:
+        Type.unify(Type.at(None, bool_type), cond_type)
+      with:
+        case Type.Unification_error(t1, t2):
+          failwith(required(expr.Expr.pos, Type.at(None, bool_type), cond_type, t1, t2))
+      try:
+        Type.unify(then_type, else_type)
+      with:
+        case Type.Unification_error(t1, t2):
+          failwith(invalid_if_expr(expr.Expr.pos, then_type, else_type, t1, t2))
+      else_type
 
 def infer_top(inf, top):
   match top.Top.raw:

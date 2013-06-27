@@ -24,6 +24,8 @@ let string_type = (Type.Con ([], "string"))
 
 let char_type = (Type.Con ([], "char"))
 
+let bool_type = (Type.Con ([], "bool"))
+
 let rec unbound_variable = begin fun pos ->
   begin fun path ->
     ((Pos.show_error pos) ((sprintf "unbound variable: %s\n") (Names.show_val_path path)))
@@ -37,6 +39,34 @@ let rec invalid_application = begin fun pos ->
         begin fun t2 ->
           begin let shower = (Type.create_shower 0) in
           ((((sprintf "%s%s%s") ((Pos.show_error pos) (((sprintf "invalid application\n%s%s") ((sprintf "function type: %s\n") ((Type.show shower) fun_type))) ((sprintf "argument type: %s\n") ((Type.show shower) arg_type))))) (((Type.show_origin shower) "function type") t1)) (((Type.show_origin shower) "argument type") t2))
+          end
+        end
+      end
+    end
+  end
+end
+
+let rec invalid_if_expr = begin fun pos ->
+  begin fun then_type ->
+    begin fun else_type ->
+      begin fun t1 ->
+        begin fun t2 ->
+          begin let shower = (Type.create_shower 0) in
+          ((((sprintf "%s%s%s") ((Pos.show_error pos) (((sprintf "invalid if expression\n%s%s") ((sprintf "then-clause type: %s\n") ((Type.show shower) then_type))) ((sprintf "else-clause type: %s\n") ((Type.show shower) else_type))))) (((Type.show_origin shower) "then-clause type") t1)) (((Type.show_origin shower) "else-clause type") t2))
+          end
+        end
+      end
+    end
+  end
+end
+
+let rec required = begin fun pos ->
+  begin fun req_type ->
+    begin fun got_type ->
+      begin fun t1 ->
+        begin fun t2 ->
+          begin let shower = (Type.create_shower 0) in
+          ((((sprintf "%s%s%s") ((Pos.show_error pos) (((sprintf "'%s' required, but got '%s'\n") ((Type.show shower) req_type)) ((Type.show shower) got_type)))) (((Type.show_origin shower) "required type") t1)) (((Type.show_origin shower) "got type") t2))
           end
         end
       end
@@ -175,6 +205,32 @@ let rec infer_expr = begin fun inf ->
         begin let (inf, pat_type) = ((infer_pattern inf) pat) in
         begin let body_type = ((infer_expr inf) body_expr) in
         ((Type.at (Some (expr.Expr.pos))) (Type.Fun (pat_type, body_type)))
+        end
+        end
+      | (Expr.If (cond_expr, then_expr, else_expr)) ->
+        begin let cond_type = ((infer_expr inf) cond_expr) in
+        begin let then_type = ((infer_expr inf) then_expr) in
+        begin let else_type = ((infer_expr inf) else_expr) in
+        begin
+        begin try
+          ((Type.unify ((Type.at None) bool_type)) cond_type)
+        with
+
+          | (Type.Unification_error (t1, t2)) ->
+            (failwith (((((required expr.Expr.pos) ((Type.at None) bool_type)) cond_type) t1) t2))
+        end;
+        begin
+        begin try
+          ((Type.unify then_type) else_type)
+        with
+
+          | (Type.Unification_error (t1, t2)) ->
+            (failwith (((((invalid_if_expr expr.Expr.pos) then_type) else_type) t1) t2))
+        end;
+        else_type
+        end
+        end
+        end
         end
         end
     end
