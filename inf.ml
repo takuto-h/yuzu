@@ -479,7 +479,7 @@ let () = begin try
 with
 
   | (Failure (got)) ->
-    begin let req = (((((((((sprintf "%s%s%s%s%s%s%s%s") "<assertion>:1:0-0: error: invalid application\n") "function type: int\n") "argument type: string\n") "<assertion>\n") "^\n") "<assertion>:1:0-0: 'int' of function type\n") "<assertion>\n") "^\n") in
+    begin let req = (((((((((sprintf "%s%s%s%s%s%s%s%s") "<assertion>:1:0: error: invalid application\n") "function type: int\n") "argument type: string\n") "<assertion>\n") "^\n") "<assertion>:1:0: 'int' of function type\n") "<assertion>\n") "^\n") in
     (assert ((( = ) got) req))
     end
 end

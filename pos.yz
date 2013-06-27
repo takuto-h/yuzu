@@ -11,7 +11,6 @@ type t:
   lnum : int
   cnum : int
   bol : int
-  len : int
   source : source
 
 def make(fname, lnum, cnum, bol, source): {
@@ -19,20 +18,19 @@ def make(fname, lnum, cnum, bol, source): {
   lnum = lnum;
   cnum = cnum;
   bol = bol;
-  len = 1;
   source = source;
 }
 
 var dummy = make("<dummy>", 1, 0, 0, String("<dummy>"))
 
-def show({fname;lnum;cnum;bol;len}):
+def show({fname;lnum;cnum;bol}):
   var offset = cnum - bol
-  sprintf("%s:%d:%d-%d", fname, lnum, offset, offset + len - 1)
+  sprintf("%s:%d:%d", fname, lnum, offset)
 
-def show_source({fname;lnum;cnum;bol;len;source}):
+def show_source({fname;lnum;cnum;bol;source}):
   var offset = cnum - bol
   var str_anchor = String.make(offset + 1, ' ')
-  String.fill(str_anchor, offset, len, '^')
+  String.set(str_anchor, offset, '^')
   match source:
     case File:
       with_open_in(fname)^(chan_in):
