@@ -1,8 +1,17 @@
 
 open Printf
 
+type t:
+  inf : Inf.t
+  dummy : unit
+
 var initial_buffer_size = 256
 var basic_offset = 2
+
+def create(): {
+  inf = Inf.create();
+  dummy = ();
+}
 
 def with_open_in(fname_in, func):
   var chan_in = open_in(fname_in)
@@ -26,7 +35,7 @@ def with_open_out(fname_out, func):
       close_out_noerr(chan_out)
       raise(exn)
 
-def compile_file(fname_in, fname_out):
+def compile_file(compiler, fname_in, fname_out):
   with_open_in(fname_in)^(chan_in):
   with_open_out(fname_out)^(chan_out):
     var strm = Stream.of_channel(chan_in)
@@ -50,7 +59,7 @@ def compile_file(fname_in, fname_out):
         flush(stderr)
         false
 
-def compile_string(fname, str):
+def compile_string(compiler, fname, str):
   var decls = Buffer.create(initial_buffer_size)
   var output = Buffer.create(initial_buffer_size)
   var strm = Stream.of_string(str)
@@ -58,32 +67,31 @@ def compile_string(fname, str):
   var lexer = Lexer.create(src)
   var parser = Parser.create(lexer)
   var trans = Trans.create(basic_offset)
-  var inf = Inf.create()
   try:
-    def loop(inf):
+    def loop(compiler):
       match Parser.parse(parser):
         case None:
-          Some(Buffer.contents(decls), Buffer.contents(output))
+          Some(compiler, Buffer.contents(decls), Buffer.contents(output))
         case Some(top):
-          var (inf, decl) = Inf.infer_top(inf, top)
+          var (inf, decl) = Inf.infer_top(compiler.inf, top)
           Buffer.add_string(decls, Decl.show(decl))
           var result = Trans.translate_top(trans, top)
           Buffer.add_string(output, result)
-          loop(inf)
-    loop(inf)
+          loop(compiler.{inf = inf})
+    loop(compiler)
   with:
     case Failure(message):
       eprintf("%s", message)
       flush(stderr)
       None
 
-def compile(fnames):
+def compile(compiler, fnames):
   def comp(fname_in):
     var fname_out = if Filename.check_suffix(fname_in, ".yz"):
       sprintf("%s.ml", Filename.chop_suffix(fname_in, ".yz"))
     else:
       sprintf("%s.ml", fname_in)
-    compile_file(fname_in, fname_out)    
+    compile_file(compiler, fname_in, fname_out)    
   List.for_all(comp, fnames)
 
 def read(buf):
@@ -95,16 +103,16 @@ def read(buf):
     Buffer.add_string(buf, sprintf("%s\n", line))
     read(buf)
 
-def interactive():
+def interactive(compiler):
   try:
     var str = read(Buffer.create(initial_buffer_size))
-    match compile_string("<interactive>", str):
+    match compile_string(compiler, "<interactive>", str):
       case None:
-        ()
-      case Some(decls, output):
+        interactive(compiler)
+      case Some(compiler, decls, output):
         printf("decls:\n%s", decls)
         printf("output:\n%s", output)
-    interactive()
+        interactive(compiler)
   with:
     case End_of_file:
       ()
