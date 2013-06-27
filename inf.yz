@@ -158,7 +158,7 @@ rec:
         var cond_type = infer_expr(inf, cond_expr)
         var then_type = infer_expr(inf, then_expr)
         var else_type = infer_expr(inf, else_expr)
-        require(expr.Expr.pos, bool_type, cond_type)
+        require(expr.Expr.pos, Type.at(None, bool_type), cond_type)
         try:
           Type.unify(then_type, else_type)
         with:
@@ -180,11 +180,15 @@ rec:
       case Expr.Seq(lhs, rhs):
         var lhs_type = infer_expr(inf, lhs)
         var rhs_type = infer_expr(inf, rhs)
-        require(expr.Expr.pos, unit_type, lhs_type)
+        require(expr.Expr.pos, Type.at(None, unit_type), lhs_type)
         rhs_type
+      case Expr.LetVal(pat,val_expr,cont_expr):
+        var val_type = infer_expr(inf, val_expr)
+        var (inf, pat_type) = infer_pattern(inf, pat)
+        require(expr.Expr.pos, pat_type, val_type)
+        infer_expr(inf, cont_expr)
 
-  def require(pos, req_type_raw, got_type):
-    var req_type = Type.at(None, req_type_raw)
+  def require(pos, req_type, got_type):
     try:
       Type.unify(req_type, got_type)
     with:
