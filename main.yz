@@ -3,12 +3,13 @@ open Printf
 
 def main():
   var compiler = Compiler.create()
-  var result = if Array.length(Sys.argv) = 1:
+  var result =
     YzOption.bind(Compiler.load_iface_file(compiler, "pervasives.yzi"))^(compiler):
-    YzOption.return(Compiler.interactive(compiler))
-  else:
-    var fnames = Array.to_list(Array.sub(Sys.argv, 1, Array.length(Sys.argv) - 1))
-    Compiler.compile_files(compiler, fnames)
+    if Array.length(Sys.argv) = 1:
+      YzOption.return(Compiler.interactive(compiler))
+    else:
+      var fnames = Array.to_list(Array.sub(Sys.argv, 1, Array.length(Sys.argv) - 1))
+      Compiler.compile_files(compiler, fnames)
   match result:
     case None:
       exit(1)
