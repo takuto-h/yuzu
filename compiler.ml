@@ -174,11 +174,11 @@ let rec compile = begin fun compiler ->
   begin fun fnames ->
     begin match fnames with
       | ([] _) ->
-        true
+        (Some (compiler))
       | (( :: ) (fname_in, fnames)) ->
         begin match ((compile_file compiler) fname_in) with
           | (None _) ->
-            false
+            None
           | (Some (compiler)) ->
             ((compile compiler) fnames)
         end
@@ -221,7 +221,7 @@ let rec interactive = begin fun compiler ->
   with
 
     | (End_of_file _) ->
-      ()
+      compiler
   end
 end
 

@@ -3,13 +3,14 @@ open Printf
 let rec main = begin fun (() _) ->
   begin let compiler = (Compiler.create ()) in
   begin if ((( = ) (Array.length Sys.argv)) 1) then
-    (Compiler.interactive compiler)
+    (ignore (Compiler.interactive compiler))
   else
     begin let fnames = (Array.to_list (((Array.sub Sys.argv) 1) ((( - ) (Array.length Sys.argv)) 1))) in
-    begin if ((Compiler.compile compiler) fnames) then
-      (exit 0)
-    else
-      (exit 1)
+    begin match ((Compiler.compile compiler) fnames) with
+      | (None _) ->
+        (exit 1)
+      | (Some (compiler)) ->
+        (exit 0)
     end
     end
   end

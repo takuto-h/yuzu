@@ -93,11 +93,11 @@ def compile_string(compiler, fname_in, str):
 def compile(compiler, fnames):
   match fnames:
     case []:
-      true
+      Some(compiler)
     case fname_in::fnames:
       match compile_file(compiler, fname_in):
         case None:
-          false
+          None
         case Some(compiler):
           compile(compiler, fnames)
 
@@ -122,4 +122,4 @@ def interactive(compiler):
         interactive(compiler)
   with:
     case End_of_file:
-      ()
+      compiler
