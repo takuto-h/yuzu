@@ -185,7 +185,7 @@ let rec infer_top = begin fun inf ->
   begin fun top ->
     begin match top.Top.raw with
       | (Top.Expr (expr)) ->
-        (inf, (Decl.Var ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))))
+        (inf, (Decl.Val ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))))
     end
   end
 end
@@ -210,7 +210,7 @@ end
 let rec load_decl = begin fun inf ->
   begin fun decl ->
     begin match decl with
-      | (DeclExpr.Var (name, type_expr)) ->
+      | (DeclExpr.Val (name, type_expr)) ->
         begin let scm = (Scheme.mono ((eval inf) type_expr)) in
         {
           inf with

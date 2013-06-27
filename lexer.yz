@@ -16,6 +16,7 @@ var reserved = [
   "exception";
   "def";
   "rec";
+  "val";
   "var";
   "if";
   "else";

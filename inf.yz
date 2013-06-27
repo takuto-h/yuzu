@@ -118,7 +118,7 @@ def infer_expr(inf, expr):
 def infer_top(inf, top):
   match top.Top.raw:
     case Top.Expr(expr):
-      (inf, Decl.Var(Names.Id("_"), Scheme.mono(infer_expr(inf, expr))))
+      (inf, Decl.Val(Names.Id("_"), Scheme.mono(infer_expr(inf, expr))))
 
 def eval(inf, type_expr):
   var t = match type_expr.TypeExpr.raw:
@@ -134,7 +134,7 @@ def eval(inf, type_expr):
 
 def load_decl(inf, decl):
   match decl:
-    case DeclExpr.Var(name, type_expr):
+    case DeclExpr.Val(name, type_expr):
       var scm = Scheme.mono(eval(inf, type_expr))
       inf.{asp = (name, scm)::inf.asp}
 

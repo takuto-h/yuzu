@@ -935,13 +935,13 @@ def parse_decl(parser):
     case Token.EOF:
       None
     case _:
-      parse_token(parser, Token.Reserved("def"))
+      parse_token(parser, Token.Reserved("val"))
       var name = parse_val_name(parser)
       parse_token(parser, Token.Reserved(":"))
       var type_expr = parse_type(parser)
       match parser.token:
         case Token.EOF | Token.Newline | Token.Reserved(";"):
-          Some(DeclExpr.Var(name, type_expr))
+          Some(DeclExpr.Val(name, type_expr))
         case _:
           failwith(expected(parser, "newline or ';'"))
 

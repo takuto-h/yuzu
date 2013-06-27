@@ -1,4 +1,4 @@
 type t = 
-  | Var of (Names.val_name * TypeExpr.t)
+  | Val of (Names.val_name * TypeExpr.t)
 
 

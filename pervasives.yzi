@@ -1,2 +1,2 @@
 
-def $(+) : int -> int -> int
+val $(+) : int -> int -> int
