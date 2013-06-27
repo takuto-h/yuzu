@@ -2,6 +2,7 @@
 open Printf
 
 type t:
+  def Unit
   def Int(int)
   def String(string)
   def Char(string)

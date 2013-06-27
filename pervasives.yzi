@@ -1,3 +1,4 @@
 
 val $(+) : int -> int -> int
 val $(||) : bool -> bool -> bool
+val $(&&) : bool -> bool -> bool

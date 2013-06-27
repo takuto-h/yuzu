@@ -22,13 +22,13 @@ def make_cons_pattern(lhs, rhs):
 
 var wildcard_pattern = Pattern.Var(Names.Id("_"))
 var nil_pattern = Pattern.Variant(([], Names.Id("[]")), wildcard_pattern)
-var unit_pattern = Pattern.Variant(([], Names.Id("()")), wildcard_pattern)
+var unit_pattern = Pattern.Con(Literal.Unit)
 
 def make_op_var(str):
   Expr.Var([], Names.Op(str))
 
 var nil_expr = Expr.Var([], (Names.Id("[]")))
-var unit_expr = Expr.Var([], (Names.Id("()")))
+var unit_expr = Expr.Con(Literal.Unit)
 
 def make_abs(pos, params, body_expr):
   def mk_abs(param, expr):

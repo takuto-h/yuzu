@@ -31,6 +31,8 @@ end
 
 let rec translate_literal = begin fun lit ->
   begin match lit with
+    | (Literal.Unit _) ->
+      "()"
     | (Literal.Int (n)) ->
       ((sprintf "%d") n)
     | (Literal.String (str)) ->

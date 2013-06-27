@@ -22,6 +22,8 @@ def indent({basic_offset;indent_level}, str):
 
 def translate_literal(lit):
   match lit:
+    case Literal.Unit:
+      "()"
     case Literal.Int(n):
       sprintf("%d", n)
     case Literal.String(str):

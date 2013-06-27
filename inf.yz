@@ -16,6 +16,7 @@ def create(): {
   let_level = 0;
 }
 
+var unit_type = Type.Con([], "unit")
 var int_type = Type.Con([], "int")
 var string_type = Type.Con([], "string")
 var char_type = Type.Con([], "char")
@@ -103,6 +104,8 @@ def instantiate(let_level, {Scheme.gen_num;Scheme.body}):
 
 def infer_literal(lit):
   match lit:
+    case Literal.Unit:
+      unit_type
     case Literal.Int(_):
       int_type
     case Literal.String(_):
@@ -169,6 +172,16 @@ rec:
         var or_op = Expr.at(pos, Expr.Var([], Names.Op("||")))
         var or_expr = Expr.at(pos, Expr.App(Expr.at(pos, Expr.App(or_op, lhs)), rhs))
         infer_expr(inf, or_expr)
+      case Expr.And(lhs, rhs):
+        var pos = expr.Expr.pos
+        var and_op = Expr.at(pos, Expr.Var([], Names.Op("&&")))
+        var and_expr = Expr.at(pos, Expr.App(Expr.at(pos, Expr.App(and_op, lhs)), rhs))
+        infer_expr(inf, and_expr)
+      case Expr.Seq(lhs, rhs):
+        var lhs_type = infer_expr(inf, lhs)
+        var rhs_type = infer_expr(inf, rhs)
+        require(expr.Expr.pos, unit_type, lhs_type)
+        rhs_type
 
   def require(pos, req_type_raw, got_type):
     var req_type = Type.at(None, req_type_raw)

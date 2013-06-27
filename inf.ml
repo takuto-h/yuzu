@@ -18,6 +18,8 @@ let rec create = begin fun (() _) ->
   }
 end
 
+let unit_type = (Type.Con ([], "unit"))
+
 let int_type = (Type.Con ([], "int"))
 
 let string_type = (Type.Con ([], "string"))
@@ -134,6 +136,8 @@ end
 
 let rec infer_literal = begin fun lit ->
   begin match lit with
+    | (Literal.Unit _) ->
+      unit_type
     | (Literal.Int (_)) ->
       int_type
     | (Literal.String (_)) ->
@@ -236,6 +240,23 @@ let rec infer_expr = begin fun inf ->
         begin let or_op = ((Expr.at pos) (Expr.Var ([], (Names.Op ("||"))))) in
         begin let or_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (or_op, lhs))), rhs))) in
         ((infer_expr inf) or_expr)
+        end
+        end
+        end
+      | (Expr.And (lhs, rhs)) ->
+        begin let pos = expr.Expr.pos in
+        begin let and_op = ((Expr.at pos) (Expr.Var ([], (Names.Op ("&&"))))) in
+        begin let and_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (and_op, lhs))), rhs))) in
+        ((infer_expr inf) and_expr)
+        end
+        end
+        end
+      | (Expr.Seq (lhs, rhs)) ->
+        begin let lhs_type = ((infer_expr inf) lhs) in
+        begin let rhs_type = ((infer_expr inf) rhs) in
+        begin
+        (((require expr.Expr.pos) unit_type) lhs_type);
+        rhs_type
         end
         end
         end

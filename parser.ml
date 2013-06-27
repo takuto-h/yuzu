@@ -30,7 +30,7 @@ let wildcard_pattern = (Pattern.Var ((Names.Id ("_"))))
 
 let nil_pattern = (Pattern.Variant (([], (Names.Id ("[]"))), wildcard_pattern))
 
-let unit_pattern = (Pattern.Variant (([], (Names.Id ("()"))), wildcard_pattern))
+let unit_pattern = (Pattern.Con (Literal.Unit))
 
 let rec make_op_var = begin fun str ->
   (Expr.Var ([], (Names.Op (str))))
@@ -38,7 +38,7 @@ end
 
 let nil_expr = (Expr.Var ([], ((Names.Id ("[]")))))
 
-let unit_expr = (Expr.Var ([], ((Names.Id ("()")))))
+let unit_expr = (Expr.Con (Literal.Unit))
 
 let rec make_abs = begin fun pos ->
   begin fun params ->
