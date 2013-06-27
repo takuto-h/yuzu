@@ -2,6 +2,7 @@ open Printf
 
 type t = {
   mods : ((Names.mod_name * Module.t)) list;
+  opens : ((Names.mod_name * Names.mod_path)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   let_level : int;
 }
@@ -9,6 +10,7 @@ type t = {
 let rec create = begin fun (() _) ->
   {
     mods = [];
+    opens = [];
     asp = [];
     let_level = 0;
   }
@@ -40,15 +42,50 @@ let rec invalid_application = begin fun pos ->
   end
 end
 
+let rec find_mods = begin fun mods ->
+  begin fun mod_name ->
+    begin fun mod_path ->
+      begin fun name ->
+        begin let modl = ((List.assoc mod_name) mods) in
+        (((Module.find_asp modl) mod_path) name)
+        end
+      end
+    end
+  end
+end
+
+let rec find_opens = begin fun mods ->
+  begin fun opens ->
+    begin fun name ->
+      begin match opens with
+        | ([] _) ->
+          (raise Not_found)
+        | (( :: ) ((mod_name, mod_path), opens)) ->
+          begin try
+            ((((find_mods mods) mod_name) mod_path) name)
+          with
+
+            | (Not_found _) ->
+              (((find_opens mods) opens) name)
+          end
+      end
+    end
+  end
+end
+
 let rec find_asp = begin fun inf ->
   begin fun path ->
     begin match path with
       | (([] _), name) ->
-        ((List.assoc name) inf.asp)
-      | ((( :: ) (mod_name, mod_path)), name) ->
-        begin let modl = ((List.assoc mod_name) inf.mods) in
-        (((Module.find_asp modl) mod_path) name)
+        begin try
+          ((List.assoc name) inf.asp)
+        with
+
+          | (Not_found _) ->
+            (((find_opens inf.mods) inf.opens) name)
         end
+      | ((( :: ) (mod_name, mod_path)), name) ->
+        ((((find_mods inf.mods) mod_name) mod_path) name)
     end
   end
 end
@@ -159,6 +196,7 @@ let mod_A = ((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1"
 
 let inf = {
   mods = (( :: ) (("A", mod_A), []));
+  opens = [];
   asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono ((Type.at (Some (pos))) int_type))), []));
   let_level = 0;
 }
