@@ -1,6 +1,15 @@
 
-type t:
-  def Con(Names.typector)
-  def App(Names.typector * list(t))
-  def Tuple(list(t))
-  def Fun(t * t)
+rec:
+  type t:
+    pos : Pos.t
+    raw : raw
+  type raw:
+    def Con(Names.typector)
+    def App(Names.typector * list(t))
+    def Tuple(list(t))
+    def Fun(t * t)
+
+def at(pos, raw): {
+  pos = pos;
+  raw = raw;
+}

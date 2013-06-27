@@ -1,0 +1,10 @@
+
+def bind(option, func):
+  match option:
+    case None:
+      None
+    case Some(x):
+      func(x)
+
+def return(x):
+  Some(x)

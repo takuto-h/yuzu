@@ -225,3 +225,56 @@ let rec interactive = begin fun compiler ->
   end
 end
 
+let rec load_iface_file = begin fun compiler ->
+  begin fun fname_in ->
+    begin let mod_name = (String.capitalize begin try
+      (Filename.chop_extension fname_in)
+    with
+
+      | (Invalid_argument (_)) ->
+        fname_in
+    end) in
+    ((with_open_in fname_in) begin fun chan_in ->
+      begin let strm = (Stream.of_channel chan_in) in
+      begin let src = ((Source.create fname_in) strm) in
+      begin let lexer = (Lexer.create src) in
+      begin let parser = (Parser.create lexer) in
+      begin try
+        begin let rec loop = begin fun compiler ->
+          begin match (Parser.parse_decl parser) with
+            | (None _) ->
+              (Some ({
+                compiler with
+                inf = ((Inf.leave_module compiler.inf) mod_name);
+              }))
+            | (Some (decl)) ->
+              begin let inf = ((Inf.load_decl compiler.inf) decl) in
+              (loop {
+                compiler with
+                inf = inf;
+              })
+              end
+          end
+        end in
+        (loop compiler)
+        end
+      with
+
+        | (Failure (message)) ->
+          begin
+          ((eprintf "%s") message);
+          begin
+          (flush stderr);
+          None
+          end
+          end
+      end
+      end
+      end
+      end
+      end
+    end)
+    end
+  end
+end
+

@@ -205,7 +205,7 @@ rec:
         sprintf("\n%s\n%s", indent(trans, str_pat), indent(trans_body, str_body))
 
 def translate_type_expr(t):
-  match t:
+  match t.TypeExpr.raw:
     case TypeExpr.Con(typector):
       Names.show_typector(typector)
     case TypeExpr.App(typector,t::ts):

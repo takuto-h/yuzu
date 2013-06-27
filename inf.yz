@@ -6,10 +6,12 @@ type t:
   opens : list(Names.mod_name * Names.mod_path)
   asp : list(Names.val_name * Scheme.t)
   let_level : int
+
+var default_opens = [("Pervasives", [])]
   
 def create(): {
   mods = [];
-  opens = [];
+  opens = default_opens;
   asp = [];
   let_level = 0;
 }
@@ -116,6 +118,33 @@ def infer_top(inf, top):
   match top.Top.raw:
     case Top.Expr(expr):
       (inf, Decl.Var(Names.Id("_"), Scheme.mono(infer_expr(inf, expr))))
+
+def eval(inf, type_expr):
+  var t = match type_expr.TypeExpr.raw:
+    case TypeExpr.Con(typector):
+      Type.Con(typector)
+    case TypeExpr.App(typector,ts):
+      Type.App(typector, List.map(eval(inf), ts))
+    case TypeExpr.Tuple(ts):
+      Type.Tuple(List.map(eval(inf), ts))
+    case TypeExpr.Fun(t1, t2):
+      Type.Fun(eval(inf, t1), eval(inf, t2))
+  Type.at(Some(type_expr.TypeExpr.pos), t)
+
+def load_decl(inf, decl):
+  match decl:
+    case DeclExpr.Var(name, type_expr):
+      var scm = Scheme.mono(eval(inf, type_expr))
+      inf.{asp = (name, scm)::inf.asp}
+
+def leave_module(inf, mod_name):
+  var new_mod = Module.make([], inf.asp)
+  {
+    mods = (mod_name, new_mod)::inf.mods;
+    opens = default_opens;
+    asp = [];
+    let_level = 0;
+  }
 
 //      
 // assertions

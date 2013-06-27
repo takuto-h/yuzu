@@ -261,9 +261,10 @@ rec:
     var lhs = parse_tuple_type(parser)
     match parser.token:
       case Token.AddOp("->"):
+        var pos = parser.pos
         lookahead(parser)
         var rhs = parse_fun_type(parser)
-        TypeExpr.Fun(lhs, rhs)
+        TypeExpr.at(pos, TypeExpr.Fun(lhs, rhs))
       case _:
         lhs
 
@@ -279,20 +280,22 @@ rec:
           List.rev(ts)
     match parser.token:
       case Token.MulOp("*"):
-        TypeExpr.Tuple(loop([t]))
+        var pos = parser.pos
+        TypeExpr.at(pos, TypeExpr.Tuple(loop([t])))
       case _:
         t
   
   def parse_atomic_type(parser):
     match parser.token:
       case Token.LowId(_) | Token.CapId(_):
+        var pos = parser.pos
         var typector = parse_typector(parser, [])
         if parser.token = Token.Reserved("("):
           lookahead(parser)
           var args = parse_elems(parser, comma_or_rparen, parse_type)
-          TypeExpr.App(typector, args)
+          TypeExpr.at(pos, TypeExpr.App(typector, args))
         else:
-          TypeExpr.Con(typector)
+          TypeExpr.at(pos, TypeExpr.Con(typector))
       case Token.Reserved("("):
         lookahead(parser)
         var t = parse_type(parser)
@@ -927,15 +930,19 @@ rec:
 
 def parse_decl(parser):
   lookahead(parser)
-  parse_token(parser, Token.Reserved("def"))
-  var name = parse_val_name(parser)
-  parse_token(parser, Token.Reserved(":"))
-  var type_expr = parse_type(parser)
   match parser.token:
-    case Token.EOF | Token.Newline | Token.Reserved(";"):
-      DeclExpr.Var(name, type_expr)
+    case Token.EOF:
+      None
     case _:
-      failwith(expected(parser, "newline or ';'"))
+      parse_token(parser, Token.Reserved("def"))
+      var name = parse_val_name(parser)
+      parse_token(parser, Token.Reserved(":"))
+      var type_expr = parse_type(parser)
+      match parser.token:
+        case Token.EOF | Token.Newline | Token.Reserved(";"):
+          Some(DeclExpr.Var(name, type_expr))
+        case _:
+          failwith(expected(parser, "newline or ';'"))
 
 def parse_stmt(parser):
   var expr = parse_top(parser)

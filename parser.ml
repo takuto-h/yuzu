@@ -441,10 +441,12 @@ and parse_fun_type = begin fun parser ->
   begin let lhs = (parse_tuple_type parser) in
   begin match parser.token with
     | (Token.AddOp ("->")) ->
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
       begin let rhs = (parse_fun_type parser) in
-      (TypeExpr.Fun (lhs, rhs))
+      ((TypeExpr.at pos) (TypeExpr.Fun (lhs, rhs)))
+      end
       end
       end
     | _ ->
@@ -470,7 +472,9 @@ and parse_tuple_type = begin fun parser ->
   end in
   begin match parser.token with
     | (Token.MulOp ("*")) ->
-      (TypeExpr.Tuple ((loop (( :: ) (t, [])))))
+      begin let pos = parser.pos in
+      ((TypeExpr.at pos) (TypeExpr.Tuple ((loop (( :: ) (t, []))))))
+      end
     | _ ->
       t
   end
@@ -481,16 +485,18 @@ end
 and parse_atomic_type = begin fun parser ->
   begin match parser.token with
     | ((Token.LowId (_)) | (Token.CapId (_))) ->
+      begin let pos = parser.pos in
       begin let typector = ((parse_typector parser) []) in
       begin if ((( = ) parser.token) (Token.Reserved ("("))) then
         begin
         (lookahead parser);
         begin let args = (((parse_elems parser) comma_or_rparen) parse_type) in
-        (TypeExpr.App (typector, args))
+        ((TypeExpr.at pos) (TypeExpr.App (typector, args)))
         end
         end
       else
-        (TypeExpr.Con (typector))
+        ((TypeExpr.at pos) (TypeExpr.Con (typector)))
+      end
       end
       end
     | (Token.Reserved ("(")) ->
@@ -1546,21 +1552,26 @@ end
 let rec parse_decl = begin fun parser ->
   begin
   (lookahead parser);
-  begin
-  ((parse_token parser) (Token.Reserved ("def")));
-  begin let name = (parse_val_name parser) in
-  begin
-  ((parse_token parser) (Token.Reserved (":")));
-  begin let type_expr = (parse_type parser) in
   begin match parser.token with
-    | (((Token.EOF _) | (Token.Newline _)) | (Token.Reserved (";"))) ->
-      (DeclExpr.Var (name, type_expr))
+    | (Token.EOF _) ->
+      None
     | _ ->
-      (failwith ((expected parser) "newline or ';'"))
-  end
-  end
-  end
-  end
+      begin
+      ((parse_token parser) (Token.Reserved ("def")));
+      begin let name = (parse_val_name parser) in
+      begin
+      ((parse_token parser) (Token.Reserved (":")));
+      begin let type_expr = (parse_type parser) in
+      begin match parser.token with
+        | (((Token.EOF _) | (Token.Newline _)) | (Token.Reserved (";"))) ->
+          (Some ((DeclExpr.Var (name, type_expr))))
+        | _ ->
+          (failwith ((expected parser) "newline or ';'"))
+      end
+      end
+      end
+      end
+      end
   end
   end
 end

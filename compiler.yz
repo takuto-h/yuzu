@@ -123,3 +123,31 @@ def interactive(compiler):
   with:
     case End_of_file:
       compiler
+
+def load_iface_file(compiler, fname_in):
+  var mod_name = String.capitalize(
+    try{
+      Filename.chop_extension(fname_in)
+    }with{
+      case Invalid_argument(_){ fname_in }
+    }
+  )
+  with_open_in(fname_in)^(chan_in):
+    var strm = Stream.of_channel(chan_in)
+    var src = Source.create(fname_in, strm)
+    var lexer = Lexer.create(src)
+    var parser = Parser.create(lexer)
+    try:
+      def loop(compiler):
+        match Parser.parse_decl(parser):
+          case None:
+            Some(compiler.{inf = Inf.leave_module(compiler.inf, mod_name)})
+          case Some(decl):
+            var inf = Inf.load_decl(compiler.inf, decl)
+            loop(compiler.{inf = inf})
+      loop(compiler)
+    with:
+      case Failure(message):
+        eprintf("%s", message)
+        flush(stderr)
+        None

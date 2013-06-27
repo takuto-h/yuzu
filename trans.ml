@@ -287,7 +287,7 @@ and translate_case = begin fun trans ->
 end
 
 let rec translate_type_expr = begin fun t ->
-  begin match t with
+  begin match t.TypeExpr.raw with
     | (TypeExpr.Con (typector)) ->
       (Names.show_typector typector)
     | (TypeExpr.App (typector, (( :: ) (t, ts)))) ->

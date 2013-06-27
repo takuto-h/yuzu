@@ -7,10 +7,12 @@ type t = {
   let_level : int;
 }
 
+let default_opens = (( :: ) (("Pervasives", []), []))
+
 let rec create = begin fun (() _) ->
   {
     mods = [];
-    opens = [];
+    opens = default_opens;
     asp = [];
     let_level = 0;
   }
@@ -184,6 +186,50 @@ let rec infer_top = begin fun inf ->
     begin match top.Top.raw with
       | (Top.Expr (expr)) ->
         (inf, (Decl.Var ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))))
+    end
+  end
+end
+
+let rec eval = begin fun inf ->
+  begin fun type_expr ->
+    begin let t = begin match type_expr.TypeExpr.raw with
+      | (TypeExpr.Con (typector)) ->
+        (Type.Con (typector))
+      | (TypeExpr.App (typector, ts)) ->
+        (Type.App (typector, ((List.map (eval inf)) ts)))
+      | (TypeExpr.Tuple (ts)) ->
+        (Type.Tuple (((List.map (eval inf)) ts)))
+      | (TypeExpr.Fun (t1, t2)) ->
+        (Type.Fun (((eval inf) t1), ((eval inf) t2)))
+    end in
+    ((Type.at (Some (type_expr.TypeExpr.pos))) t)
+    end
+  end
+end
+
+let rec load_decl = begin fun inf ->
+  begin fun decl ->
+    begin match decl with
+      | (DeclExpr.Var (name, type_expr)) ->
+        begin let scm = (Scheme.mono ((eval inf) type_expr)) in
+        {
+          inf with
+          asp = (( :: ) ((name, scm), inf.asp));
+        }
+        end
+    end
+  end
+end
+
+let rec leave_module = begin fun inf ->
+  begin fun mod_name ->
+    begin let new_mod = ((Module.make []) inf.asp) in
+    {
+      mods = (( :: ) ((mod_name, new_mod), inf.mods));
+      opens = default_opens;
+      asp = [];
+      let_level = 0;
+    }
     end
   end
 end
