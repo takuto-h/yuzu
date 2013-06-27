@@ -235,6 +235,8 @@ let rec infer_expr = begin fun inf ->
         end
         end
         end
+      | (Expr.Tuple (exprs)) ->
+        ((Type.at (Some (expr.Expr.pos))) (Type.Tuple (((List.map (infer_expr inf)) exprs))))
     end
   end
 end

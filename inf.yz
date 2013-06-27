@@ -165,6 +165,8 @@ def infer_expr(inf, expr):
         case Type.Unification_error(t1, t2):
           failwith(invalid_if_expr(expr.Expr.pos, then_type, else_type, t1, t2))
       else_type
+    case Expr.Tuple(exprs):
+      Type.at(Some(expr.Expr.pos), Type.Tuple(List.map(infer_expr(inf), exprs)))
 
 def infer_top(inf, top):
   match top.Top.raw:
