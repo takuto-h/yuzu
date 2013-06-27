@@ -1,6 +1,6 @@
 
 YZ_SRCS =\
-  yzOption.yz yzList.yz pos.yz source.yz token.yz lexer.yz\
+  yzPervasives.yz yzOption.yz yzList.yz pos.yz source.yz token.yz lexer.yz\
   literal.yz names.yz pattern.yz typeExpr.yz declExpr.yz expr.yz typeInfo.yz top.yz\
   parser.yz type.yz scheme.yz module.yz decl.yz inf.yz trans.yz compiler.yz main.yz
 

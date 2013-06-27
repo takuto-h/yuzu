@@ -1,4 +1,5 @@
 
+open YzPervasives
 open Printf
 
 type t:
@@ -12,28 +13,6 @@ def create(): {
   inf = Inf.create();
   dummy = ();
 }
-
-def with_open_in(fname_in, func):
-  var chan_in = open_in(fname_in)
-  try:
-    var x = func(chan_in)
-    close_in(chan_in)
-    x
-  with:
-    case exn:
-      close_in_noerr(chan_in)
-      raise(exn)
-
-def with_open_out(fname_out, func):
-  var chan_out = open_out(fname_out)
-  try:
-    var x = func(chan_out)
-    close_out(chan_out)
-    x
-  with:
-    case exn:
-      close_out_noerr(chan_out)
-      raise(exn)
 
 def compile_file(compiler, fname_in):
   var fname_out = try:
