@@ -282,7 +282,7 @@ let rec infer_expr = begin fun inf ->
         begin let then_type = ((infer_expr inf) then_expr) in
         begin let else_type = ((infer_expr inf) else_expr) in
         begin
-        (((require expr.Expr.pos) ((Type.at None) bool_type)) cond_type);
+        (((require cond_expr.Expr.pos) ((Type.at None) bool_type)) cond_type);
         begin
         begin try
           ((Type.unify then_type) else_type)
@@ -319,7 +319,7 @@ let rec infer_expr = begin fun inf ->
         begin let lhs_type = ((infer_expr inf) lhs) in
         begin let rhs_type = ((infer_expr inf) rhs) in
         begin
-        (((require expr.Expr.pos) ((Type.at None) unit_type)) lhs_type);
+        (((require lhs.Expr.pos) ((Type.at None) unit_type)) lhs_type);
         rhs_type
         end
         end
@@ -328,7 +328,7 @@ let rec infer_expr = begin fun inf ->
         begin let val_type = ((infer_expr inf) val_expr) in
         begin let (inf, pat_type) = ((infer_pattern inf) pat) in
         begin
-        (((require expr.Expr.pos) pat_type) val_type);
+        (((require val_expr.Expr.pos) pat_type) val_type);
         ((infer_expr inf) cont_expr)
         end
         end
