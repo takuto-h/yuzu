@@ -29,34 +29,36 @@ let rec make_var = begin fun let_level ->
   ((at None) (Var (let_level, (ref None))))
 end
 
-let rec map = begin fun func ->
-  begin fun t ->
-    begin match t.raw with
-      | (Con (_)) ->
-        t
-      | (Var (_, t_ref)) ->
-        begin match (( ! ) t_ref) with
-          | (None _) ->
-            t
-          | (Some (t_val)) ->
-            ((map func) t_val)
-        end
-      | (Gen (n)) ->
-        (func n)
-      | (App (typector, t_args)) ->
-        begin let t_args = ((List.map (map func)) t_args) in
-        ((at t.pos) (App (typector, t_args)))
-        end
-      | (Tuple (ts)) ->
-        begin let ts = ((List.map (map func)) ts) in
-        ((at t.pos) (Tuple (ts)))
-        end
-      | (Fun (t_param, t_ret)) ->
-        begin let t_param = ((map func) t_param) in
-        begin let t_ret = ((map func) t_ret) in
-        ((at t.pos) (Fun (t_param, t_ret)))
-        end
-        end
+let rec map = begin fun var_func ->
+  begin fun gen_func ->
+    begin fun t ->
+      begin match t.raw with
+        | (Con (_)) ->
+          t
+        | (Var (let_level, t_ref)) ->
+          begin match (( ! ) t_ref) with
+            | (None _) ->
+              (((var_func t) let_level) t_ref)
+            | (Some (t_val)) ->
+              (((map var_func) gen_func) t_val)
+          end
+        | (Gen (n)) ->
+          ((gen_func t) n)
+        | (App (typector, t_args)) ->
+          begin let t_args = ((List.map ((map var_func) gen_func)) t_args) in
+          ((at t.pos) (App (typector, t_args)))
+          end
+        | (Tuple (ts)) ->
+          begin let ts = ((List.map ((map var_func) gen_func)) ts) in
+          ((at t.pos) (Tuple (ts)))
+          end
+        | (Fun (t_param, t_ret)) ->
+          begin let t_param = (((map var_func) gen_func) t_param) in
+          begin let t_ret = (((map var_func) gen_func) t_ret) in
+          ((at t.pos) (Fun (t_param, t_ret)))
+          end
+          end
+      end
     end
   end
 end

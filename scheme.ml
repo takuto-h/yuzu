@@ -10,6 +10,15 @@ let rec mono = begin fun t ->
   }
 end
 
+let rec poly = begin fun n ->
+  begin fun t ->
+    {
+      gen_num = n;
+      body = t;
+    }
+  end
+end
+
 let rec show = begin fun {gen_num;body;} ->
   begin let shower = (Type.create_shower gen_num) in
   ((Type.show shower) body)

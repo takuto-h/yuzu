@@ -22,27 +22,27 @@ def at(pos, raw): {
 def make_var(let_level):
   at(None, Var(let_level, ref(None)))
 
-def map(func, t):
+def map(var_func, gen_func, t):
   match t.raw:
     case Con(_):
       t
-    case Var(_,t_ref):
+    case Var(let_level, t_ref):
       match !t_ref:
         case None:
-          t
+          var_func(t, let_level, t_ref)
         case Some(t_val):
-          map(func, t_val)
+          map(var_func, gen_func, t_val)
     case Gen(n):
-      func(n)
+      gen_func(t, n)
     case App(typector,t_args):
-      var t_args = List.map(map(func), t_args)
+      var t_args = List.map(map(var_func, gen_func), t_args)
       at(t.pos, App(typector, t_args))
     case Tuple(ts):
-      var ts = List.map(map(func), ts)
+      var ts = List.map(map(var_func, gen_func), ts)
       at(t.pos, Tuple(ts))
     case Fun(t_param, t_ret):
-      var t_param = map(func, t_param)
-      var t_ret = map(func, t_ret)
+      var t_param = map(var_func, gen_func, t_param)
+      var t_ret = map(var_func, gen_func, t_ret)
       at(t.pos, Fun(t_param, t_ret))
 
 def occurs(t_ref0, t):

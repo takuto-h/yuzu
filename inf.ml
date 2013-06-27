@@ -18,6 +18,13 @@ let rec create = begin fun () ->
   }
 end
 
+let rec incr_let_level = begin fun inf ->
+  {
+    inf with
+    let_level = ((( + ) inf.let_level) 1);
+  }
+end
+
 let unit_type = (Type.Con ([], "unit"))
 
 let int_type = (Type.Con ([], "int"))
@@ -129,7 +136,21 @@ let rec instantiate = begin fun let_level ->
     begin let type_vars = ((Array.init gen_num) begin fun _ ->
       (Type.make_var let_level)
     end) in
-    ((Type.map (Array.get type_vars)) body)
+    begin let rec var_func = begin fun t ->
+      begin fun _ ->
+        begin fun _ ->
+          t
+        end
+      end
+    end in
+    begin let rec gen_func = begin fun t ->
+      begin fun n ->
+        ((Array.get type_vars) n)
+      end
+    end in
+    (((Type.map var_func) gen_func) body)
+    end
+    end
     end
   end
 end
@@ -149,20 +170,26 @@ let rec infer_literal = begin fun lit ->
   end
 end
 
+let rec add_asp = begin fun inf ->
+  begin fun name ->
+    begin let t = (Type.make_var inf.let_level) in
+    begin let inf = {
+      inf with
+      asp = (( :: ) ((name, (Scheme.mono t)), inf.asp));
+    } in
+    (inf, t)
+    end
+    end
+  end
+end
+
 let rec infer_pattern = begin fun inf ->
   begin fun pat ->
     begin match pat with
       | (Pattern.Con (lit)) ->
         (inf, ((Type.at None) (infer_literal lit)))
       | (Pattern.Var (name)) ->
-        begin let t = (Type.make_var inf.let_level) in
-        begin let inf = {
-          inf with
-          asp = (( :: ) ((name, (Scheme.mono t)), inf.asp));
-        } in
-        (inf, t)
-        end
-        end
+        ((add_asp inf) name)
       | (Pattern.Tuple (pats)) ->
         begin let (inf, ts) = (((YzList.fold_right pats) (inf, [])) begin fun elem ->
           begin fun (inf, ts) ->
@@ -173,6 +200,43 @@ let rec infer_pattern = begin fun inf ->
         end) in
         (inf, ((Type.at None) (Type.Tuple (ts))))
         end
+    end
+  end
+end
+
+let rec generalize = begin fun let_level ->
+  begin fun t ->
+    begin let alist_ref = (ref []) in
+    begin let rec var_func = begin fun t ->
+      begin fun lv ->
+        begin fun ref ->
+          begin if ((( > ) lv) let_level) then
+            begin try
+              ((List.assq ref) (( ! ) alist_ref))
+            with
+
+              | (Not_found _) ->
+                begin let gen = ((Type.at t.Type.pos) (Type.Gen ((List.length (( ! ) alist_ref))))) in
+                begin
+                ((( := ) alist_ref) (( :: ) ((ref, gen), (( ! ) alist_ref))));
+                gen
+                end
+                end
+            end
+          else
+            t
+          end
+        end
+      end
+    end in
+    begin let rec gen_func = begin fun t ->
+      begin fun _ ->
+        (assert false)
+      end
+    end in
+    ((Scheme.poly (List.length (( ! ) alist_ref))) (((Type.map var_func) gen_func) t))
+    end
+    end
     end
   end
 end
@@ -266,6 +330,33 @@ let rec infer_expr = begin fun inf ->
         begin
         (((require expr.Expr.pos) pat_type) val_type);
         ((infer_expr inf) cont_expr)
+        end
+        end
+        end
+      | (Expr.LetFun (defs, cont_expr)) ->
+        begin let let_level = inf.let_level in
+        begin let tmp_inf = (incr_let_level inf) in
+        begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
+          begin fun (name, val_expr) ->
+            begin let (tmp_inf, t) = ((add_asp tmp_inf) name) in
+            tmp_inf
+            end
+          end
+        end) in
+        begin let inf = (((YzList.fold_left inf) defs) begin fun inf ->
+          begin fun (name, val_expr) ->
+            begin let val_type = ((infer_expr tmp_inf) val_expr) in
+            begin let scm = ((generalize let_level) val_type) in
+            {
+              inf with
+              asp = (( :: ) ((name, scm), inf.asp));
+            }
+            end
+            end
+          end
+        end) in
+        ((infer_expr inf) cont_expr)
+        end
         end
         end
         end

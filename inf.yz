@@ -16,6 +16,10 @@ def create(): {
   let_level = 0;
 }
 
+def incr_let_level(inf): inf.{
+  let_level = inf.let_level + 1;
+}
+
 var unit_type = Type.Con([], "unit")
 var int_type = Type.Con([], "int")
 var string_type = Type.Con([], "string")
@@ -100,7 +104,11 @@ def find_asp(inf, path):
 
 def instantiate(let_level, {Scheme.gen_num;Scheme.body}):
   var type_vars = Array.init(gen_num)^(_): Type.make_var(let_level)
-  Type.map(Array.get(type_vars), body)
+  def var_func(t, _, _):
+    t
+  def gen_func(t, n):
+    Array.get(type_vars, n)
+  Type.map(var_func, gen_func, body)
 
 def infer_literal(lit):
   match lit:
@@ -115,19 +123,39 @@ def infer_literal(lit):
     case Literal.Bool(_):
       bool_type
 
+def add_asp(inf, name):
+  var t = Type.make_var(inf.let_level)
+  var inf = inf.{asp = (name,Scheme.mono(t))::inf.asp}
+  (inf, t)
+
 def infer_pattern(inf, pat):
   match pat:
     case Pattern.Con(lit):
       (inf, Type.at(None, infer_literal(lit)))
     case Pattern.Var(name):
-      var t = Type.make_var(inf.let_level)
-      var inf = inf.{asp = (name,Scheme.mono(t))::inf.asp}
-      (inf, t)
+      add_asp(inf, name)
     case Pattern.Tuple(pats):
       var (inf, ts) = YzList.fold_right(pats, (inf, []))^(elem, (inf, ts)):
         var (inf, t) = infer_pattern(inf, elem)
         (inf, t::ts)
       (inf, Type.at(None, Type.Tuple(ts)))
+
+def generalize(let_level, t):
+  var alist_ref = ref([])
+  def var_func(t, lv, ref):
+    if lv > let_level:
+      try:
+        List.assq(ref, !alist_ref)
+      with:
+        case Not_found:
+          var gen = Type.at(t.Type.pos, Type.Gen(List.length(!alist_ref)))
+          alist_ref := (ref, gen)::!alist_ref
+          gen
+    else:
+      t
+  def gen_func(t, _):
+    assert(false)
+  Scheme.poly(List.length(!alist_ref), Type.map(var_func, gen_func, t))
 
 rec:
   def infer_expr(inf, expr):
@@ -186,6 +214,17 @@ rec:
         var val_type = infer_expr(inf, val_expr)
         var (inf, pat_type) = infer_pattern(inf, pat)
         require(expr.Expr.pos, pat_type, val_type)
+        infer_expr(inf, cont_expr)
+      case Expr.LetFun(defs, cont_expr):
+        var let_level = inf.let_level
+        var tmp_inf = incr_let_level(inf)
+        var tmp_inf = YzList.fold_left(tmp_inf, defs)^(tmp_inf, (name, val_expr)):
+          var (tmp_inf, t) = add_asp(tmp_inf, name)
+          tmp_inf
+        var inf = YzList.fold_left(inf, defs)^(inf, (name, val_expr)):
+          var val_type = infer_expr(tmp_inf, val_expr)
+          var scm = generalize(let_level, val_type)
+          inf.{asp = (name, scm)::inf.asp}
         infer_expr(inf, cont_expr)
 
   def require(pos, req_type, got_type):
