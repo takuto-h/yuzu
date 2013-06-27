@@ -15,11 +15,13 @@ def create(): {
 }
 
 def compile_file(compiler, fname_in):
-  var fname_out = try:
-    sprintf("%s.ml", Filename.chop_extension(fname_in))
+  var chopped = try:
+    Filename.chop_extension(fname_in)
   with:
     case Invalid_argument(_):
-      sprintf("%s.ml", fname_in)
+      fname_in
+  var fname_out = sprintf("%s.ml", chopped)
+  var mod_name = String.capitalize(chopped)
   with_open_in(fname_in)^(chan_in):
   with_open_out(fname_out)^(chan_out):
     var strm = Stream.of_channel(chan_in)
@@ -31,11 +33,13 @@ def compile_file(compiler, fname_in):
       def loop(compiler):
         match Parser.parse(parser):
           case None:
-            Some(compiler)
+            Some(compiler.{inf = Inf.leave_module(compiler.inf, mod_name)})
           case Some(top):
+            //var (inf, decl) = Inf.infer_top(compiler.inf, top)
+            var inf = compiler.inf
             var result = Trans.translate_top(trans, top)
             fprintf(chan_out, "%s\n", result)
-            loop(compiler)
+            loop(compiler.{inf = inf})
       loop(compiler)
     with:
       case Failure(message):
@@ -104,13 +108,12 @@ def interactive(compiler):
       compiler
 
 def load_iface_file(compiler, fname_in):
-  var mod_name = String.capitalize(
-    try{
-      Filename.chop_extension(fname_in)
-    }with{
-      case Invalid_argument(_){ fname_in }
-    }
-  )
+  var chopped = try:
+    Filename.chop_extension(fname_in)
+  with:
+    case Invalid_argument(_):
+      fname_in
+  var mod_name = String.capitalize(chopped)
   with_open_in(fname_in)^(chan_in):
     var strm = Stream.of_channel(chan_in)
     var src = Source.create(fname_in, strm, Pos.File)

@@ -20,13 +20,15 @@ end
 
 let rec compile_file = begin fun compiler ->
   begin fun fname_in ->
-    begin let fname_out = begin try
-      ((sprintf "%s.ml") (Filename.chop_extension fname_in))
+    begin let chopped = begin try
+      (Filename.chop_extension fname_in)
     with
 
       | (Invalid_argument (_)) ->
-        ((sprintf "%s.ml") fname_in)
+        fname_in
     end in
+    begin let fname_out = ((sprintf "%s.ml") chopped) in
+    begin let mod_name = (String.capitalize chopped) in
     ((with_open_in fname_in) begin fun chan_in ->
       ((with_open_out fname_out) begin fun chan_out ->
         begin let strm = (Stream.of_channel chan_in) in
@@ -38,12 +40,20 @@ let rec compile_file = begin fun compiler ->
           begin let rec loop = begin fun compiler ->
             begin match (Parser.parse parser) with
               | (None _) ->
-                (Some (compiler))
+                (Some ({
+                  compiler with
+                  inf = ((Inf.leave_module compiler.inf) mod_name);
+                }))
               | (Some (top)) ->
+                begin let inf = compiler.inf in
                 begin let result = ((Trans.translate_top trans) top) in
                 begin
                 (((fprintf chan_out) "%s\n") result);
-                (loop compiler)
+                (loop {
+                  compiler with
+                  inf = inf;
+                })
+                end
                 end
                 end
             end
@@ -68,6 +78,8 @@ let rec compile_file = begin fun compiler ->
         end
       end)
     end)
+    end
+    end
     end
   end
 end
@@ -185,13 +197,14 @@ end
 
 let rec load_iface_file = begin fun compiler ->
   begin fun fname_in ->
-    begin let mod_name = (String.capitalize begin try
+    begin let chopped = begin try
       (Filename.chop_extension fname_in)
     with
 
       | (Invalid_argument (_)) ->
         fname_in
-    end) in
+    end in
+    begin let mod_name = (String.capitalize chopped) in
     ((with_open_in fname_in) begin fun chan_in ->
       begin let strm = (Stream.of_channel chan_in) in
       begin let src = (((Source.create fname_in) strm) Pos.File) in
@@ -232,6 +245,7 @@ let rec load_iface_file = begin fun compiler ->
       end
       end
     end)
+    end
     end
   end
 end
