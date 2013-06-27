@@ -41,7 +41,12 @@ def indent(lexer):
     lexer.is_bob <- true
   else:
     var pos = Source.pos(lexer.source)
-    failwith(sprintf("%s: error: layout inside parentheses\n", Pos.show(pos)))
+    failwith(
+      sprintf(
+        "%s: error: layout inside parentheses\n%s",
+        Pos.show(pos), Pos.show_source(pos)
+      )
+    )
 
 def is_digit(c):
   String.contains("0123456789", c)
@@ -67,7 +72,10 @@ def int_of_digit(c):
 def lex_close_paren(lexer, pos, open_paren, close_paren):
   if Stack.is_empty(lexer.parens) || Stack.top(lexer.parens) <> open_paren:
     failwith(
-      sprintf("%s: error: unmatched parentheses: '%s'\n", Pos.show(pos), close_paren)
+      sprintf(
+        "%s: error: unmatched parentheses: '%s'\n%s",
+        Pos.show(pos), close_paren, Pos.show_source(pos)
+      )
     )
   else:
     ignore(Stack.pop(lexer.parens))
@@ -109,14 +117,24 @@ def lex_string(lexer, buf):
           lex_string(lexer, buf)
         case None:
           var pos_eof = Source.pos(lexer.source)
-          failwith(sprintf("%s: error: EOF inside a string literal\n", Pos.show(pos_eof)))
+          failwith(
+            sprintf(
+              "%s: error: EOF inside a string literal\n%s",
+              Pos.show(pos_eof), Pos.show_source(pos_eof)
+            )
+          )
     case Some(c):
       Source.junk(lexer.source)
       Buffer.add_char(buf, c)
       lex_string(lexer, buf)
     case None:
       var pos_eof = Source.pos(lexer.source)
-      failwith(sprintf("%s: error: EOF inside a string literal\n", Pos.show(pos_eof)))
+      failwith(
+        sprintf(
+          "%s: error: EOF inside a string literal\n%s",
+          Pos.show(pos_eof), Pos.show_source(pos_eof)
+        )
+      )
 
 def lex_char(lexer, buf):
   match Source.peek(lexer.source):
@@ -137,14 +155,24 @@ def lex_char(lexer, buf):
           lex_char(lexer, buf)
         case None:
           var pos_eof = Source.pos(lexer.source)
-          failwith(sprintf("%s: error: EOF inside a string literal\n", Pos.show(pos_eof)))
+          failwith(
+            sprintf(
+              "%s: error: EOF inside a string literal\n%s",
+              Pos.show(pos_eof), Pos.show_source(pos_eof)
+            )
+          )
     case Some(c):
       Source.junk(lexer.source)
       Buffer.add_char(buf, c)
       lex_char(lexer, buf)
     case None:
       var pos_eof = Source.pos(lexer.source)
-      failwith(sprintf("%s: error: EOF inside a character literal\n", Pos.show(pos_eof)))
+      failwith(
+        sprintf(
+          "%s: error: EOF inside a character literal\n%s",
+          Pos.show(pos_eof), Pos.show_source(pos_eof)
+        )
+      )
 
 def lowid_or_reserved(str):
   if List.mem(str, reserved):
@@ -267,7 +295,12 @@ def lex_visible_token(lexer, pos, c):
       Buffer.add_char(buf, c)
       lex_capid(lexer, buf)
     case _:
-      failwith(sprintf("%s: error: unknown character: '%c'\n", Pos.show(pos), c))
+      failwith(
+        sprintf(
+          "%s: error: unknown character: '%c'\n%s",
+          Pos.show(pos), c, Pos.show_source(pos)
+        )
+      )
 
 def lex_token(lexer, pos, c):
   var offset = pos.Pos.cnum - pos.Pos.bol

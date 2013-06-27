@@ -168,4 +168,7 @@ def show_origin(shower, descr, t):
     case None:
       ""
     case Some(pos):
-      sprintf("%s: '%s' of %s\n", Pos.show(pos), show(shower, t), descr)
+      sprintf(
+        "%s: '%s' of %s\n%s",
+        Pos.show(pos), show(shower, t), descr, Pos.show_source(pos)
+      )

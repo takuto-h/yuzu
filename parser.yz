@@ -42,8 +42,9 @@ def make_app(pos, fun_expr, arg_exprs):
 
 def expected(parser, str_token):
   sprintf(
-    "%s: error: unexpected %s, expected %s\n",
-    Pos.show(parser.pos), Token.show(parser.token), str_token
+    "%s: error: unexpected %s, expected %s\n%s",
+    Pos.show(parser.pos), Token.show(parser.token), str_token,
+    Pos.show_source(parser.pos)
   )
 
 def lookahead(parser):

@@ -27,7 +27,7 @@ let rec indent = begin fun lexer ->
     (lexer.is_bob <- true)
   else
     begin let pos = (Source.pos lexer.source) in
-    (failwith ((sprintf "%s: error: layout inside parentheses\n") (Pos.show pos)))
+    (failwith (((sprintf "%s: error: layout inside parentheses\n%s") (Pos.show pos)) (Pos.show_source pos)))
     end
   end
 end
@@ -65,7 +65,7 @@ let rec lex_close_paren = begin fun lexer ->
     begin fun open_paren ->
       begin fun close_paren ->
         begin if ((Stack.is_empty lexer.parens) || ((( <> ) (Stack.top lexer.parens)) open_paren)) then
-          (failwith (((sprintf "%s: error: unmatched parentheses: '%s'\n") (Pos.show pos)) close_paren))
+          (failwith ((((sprintf "%s: error: unmatched parentheses: '%s'\n%s") (Pos.show pos)) close_paren) (Pos.show_source pos)))
         else
           begin
           (ignore (Stack.pop lexer.parens));
@@ -141,7 +141,7 @@ let rec lex_string = begin fun lexer ->
             end
           | (None _) ->
             begin let pos_eof = (Source.pos lexer.source) in
-            (failwith ((sprintf "%s: error: EOF inside a string literal\n") (Pos.show pos_eof)))
+            (failwith (((sprintf "%s: error: EOF inside a string literal\n%s") (Pos.show pos_eof)) (Pos.show_source pos_eof)))
             end
         end
         end
@@ -155,7 +155,7 @@ let rec lex_string = begin fun lexer ->
         end
       | (None _) ->
         begin let pos_eof = (Source.pos lexer.source) in
-        (failwith ((sprintf "%s: error: EOF inside a string literal\n") (Pos.show pos_eof)))
+        (failwith (((sprintf "%s: error: EOF inside a string literal\n%s") (Pos.show pos_eof)) (Pos.show_source pos_eof)))
         end
     end
   end
@@ -194,7 +194,7 @@ let rec lex_char = begin fun lexer ->
             end
           | (None _) ->
             begin let pos_eof = (Source.pos lexer.source) in
-            (failwith ((sprintf "%s: error: EOF inside a string literal\n") (Pos.show pos_eof)))
+            (failwith (((sprintf "%s: error: EOF inside a string literal\n%s") (Pos.show pos_eof)) (Pos.show_source pos_eof)))
             end
         end
         end
@@ -208,7 +208,7 @@ let rec lex_char = begin fun lexer ->
         end
       | (None _) ->
         begin let pos_eof = (Source.pos lexer.source) in
-        (failwith ((sprintf "%s: error: EOF inside a character literal\n") (Pos.show pos_eof)))
+        (failwith (((sprintf "%s: error: EOF inside a character literal\n%s") (Pos.show pos_eof)) (Pos.show_source pos_eof)))
         end
     end
   end
@@ -408,7 +408,7 @@ let rec lex_visible_token = begin fun lexer ->
           end
           end
         | _ ->
-          (failwith (((sprintf "%s: error: unknown character: '%c'\n") (Pos.show pos)) c))
+          (failwith ((((sprintf "%s: error: unknown character: '%c'\n%s") (Pos.show pos)) c) (Pos.show_source pos)))
       end
       end
     end

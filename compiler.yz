@@ -23,7 +23,7 @@ def compile_file(compiler, fname_in):
   with_open_in(fname_in)^(chan_in):
   with_open_out(fname_out)^(chan_out):
     var strm = Stream.of_channel(chan_in)
-    var src = Source.create(fname_in, strm)
+    var src = Source.create(true, fname_in, strm)
     var lexer = Lexer.create(src)
     var parser = Parser.create(lexer)
     var trans = Trans.create(basic_offset)
@@ -47,7 +47,7 @@ def compile_string(compiler, fname_in, str):
   var decls = Buffer.create(initial_buffer_size)
   var output = Buffer.create(initial_buffer_size)
   var strm = Stream.of_string(str)
-  var src = Source.create(fname_in, strm)
+  var src = Source.create(false, fname_in, strm)
   var lexer = Lexer.create(src)
   var parser = Parser.create(lexer)
   var trans = Trans.create(basic_offset)
@@ -113,7 +113,7 @@ def load_iface_file(compiler, fname_in):
   )
   with_open_in(fname_in)^(chan_in):
     var strm = Stream.of_channel(chan_in)
-    var src = Source.create(fname_in, strm)
+    var src = Source.create(true, fname_in, strm)
     var lexer = Lexer.create(src)
     var parser = Parser.create(lexer)
     try:

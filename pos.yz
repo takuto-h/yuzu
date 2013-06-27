@@ -1,21 +1,38 @@
 
+open YzPervasives
 open Printf
 
 type t:
+  is_file : bool
   fname : string
   lnum : int
   cnum : int
   bol : int
 
-def make(fname, lnum, cnum, bol): {
+def make(is_file, fname, lnum, cnum, bol): {
+  is_file = is_file;
   fname = fname;
   lnum = lnum;
   cnum = cnum;
   bol = bol;
 }
 
-var dummy = make("<dummy>", 1, 0, 0)
+var dummy = make(false, "<dummy>", 1, 0, 0)
 
 def show({fname;lnum;cnum;bol}):
   var offset = cnum - bol
   sprintf("%s:%d:%d", fname, lnum, offset)
+
+def show_source({is_file;fname;lnum;cnum;bol}):
+  if not(is_file){ "" }else:
+  var offset = cnum - bol
+  with_open_in(fname)^(chan_in):
+    try:
+      seek_in(chan_in, bol)
+      var str_line = input_line(chan_in)
+      var str_anchor = String.make(offset + 1, ' ')
+      String.set(str_anchor, offset, '^')
+      sprintf("%s\n%s\n", str_line, str_anchor)
+    with:
+      case End_of_file:
+        ""

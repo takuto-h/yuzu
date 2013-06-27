@@ -30,7 +30,7 @@ let rec compile_file = begin fun compiler ->
     ((with_open_in fname_in) begin fun chan_in ->
       ((with_open_out fname_out) begin fun chan_out ->
         begin let strm = (Stream.of_channel chan_in) in
-        begin let src = ((Source.create fname_in) strm) in
+        begin let src = (((Source.create true) fname_in) strm) in
         begin let lexer = (Lexer.create src) in
         begin let parser = (Parser.create lexer) in
         begin let trans = (Trans.create basic_offset) in
@@ -78,7 +78,7 @@ let rec compile_string = begin fun compiler ->
       begin let decls = (Buffer.create initial_buffer_size) in
       begin let output = (Buffer.create initial_buffer_size) in
       begin let strm = (Stream.of_string str) in
-      begin let src = ((Source.create fname_in) strm) in
+      begin let src = (((Source.create false) fname_in) strm) in
       begin let lexer = (Lexer.create src) in
       begin let parser = (Parser.create lexer) in
       begin let trans = (Trans.create basic_offset) in
@@ -194,7 +194,7 @@ let rec load_iface_file = begin fun compiler ->
     end) in
     ((with_open_in fname_in) begin fun chan_in ->
       begin let strm = (Stream.of_channel chan_in) in
-      begin let src = ((Source.create fname_in) strm) in
+      begin let src = (((Source.create true) fname_in) strm) in
       begin let lexer = (Lexer.create src) in
       begin let parser = (Parser.create lexer) in
       begin try

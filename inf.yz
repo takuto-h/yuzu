@@ -22,14 +22,14 @@ var char_type = Type.Con([], "char")
 
 def unbound_variable(pos, path):
   sprintf(
-    "%s: error: unbound variable: %s\n",
-    Pos.show(pos), Names.show_val_path(path)
+    "%s: error: unbound variable: %s\n%s",
+    Pos.show(pos), Names.show_val_path(path), Pos.show_source(pos)
   )
 
 def invalid_application(pos, fun_type, arg_type, t1, t2):
   var shower = Type.create_shower(0)
   sprintf(
-    "%s: error: invalid application\n%s%s%s%s", Pos.show(pos),
+    "%s: error: invalid application\n%s%s%s%s%s", Pos.show(pos), Pos.show_source(pos),
     sprintf("function type: %s\n", Type.show(shower, fun_type)),
     sprintf("argument type: %s\n", Type.show(shower, arg_type)),
     Type.show_origin(shower, "function type", t1),
@@ -149,7 +149,7 @@ def leave_module(inf, mod_name):
 //      
 // assertions
 //
-var pos = Pos.make("<assertion>", 1, 0, 0)
+var pos = Pos.make(false, "<assertion>", 1, 0, 0)
 var mod_B = Module.make(
   [],
   [(Names.Id("b1"), Scheme.mono(Type.at(Some(pos),char_type)));
