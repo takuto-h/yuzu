@@ -133,9 +133,22 @@ var mod_A = Module.make(
    (Names.Id("a2"), Scheme.mono(Type.at(Some(pos),string_type)));
   ],
 )
+var mod_Pervasives = Module.make(
+  [],
+  [(Names.Op("+"),
+    Scheme.mono(
+      Type.at(Some(pos),Type.Fun(
+        Type.at(Some(pos),int_type),
+        Type.at(Some(pos),Type.Fun(
+          Type.at(Some(pos),int_type),Type.at(Some(pos),int_type)))))));
+  ],
+)
 var inf = {
-  mods = [("A", mod_A)];
-  opens = [];
+  mods = [
+    ("A", mod_A);
+    ("Pervasives", mod_Pervasives);
+  ];
+  opens = [("Pervasives", [])];
   asp = [(Names.Id("ans"), Scheme.mono(Type.at(Some(pos),int_type)))];
   let_level = 0;
 }
@@ -165,3 +178,9 @@ with:
       "<assertion>:1:0: 'int' of function type\n",
     )
     assert(got = req)
+var add = Expr.at(pos, Expr.Var([], Names.Op("+")))
+var add_int = Expr.at(pos, Expr.App(add, int_expr))
+var add_int_int = Expr.at(pos,Expr.App(add_int, int_expr))
+assert(Type.show(shower, infer_expr(inf, add)) = "(int -> (int -> int))")
+assert(Type.show(shower, infer_expr(inf, add_int)) = "(int -> int)")
+assert(Type.show(shower, infer_expr(inf, add_int_int)) = "int")

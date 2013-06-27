@@ -194,9 +194,11 @@ let mod_B = ((Module.make []) (( :: ) (((Names.Id ("b1")), (Scheme.mono ((Type.a
 
 let mod_A = ((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1")), (Scheme.mono ((Type.at (Some (pos))) int_type))), (( :: ) (((Names.Id ("a2")), (Scheme.mono ((Type.at (Some (pos))) string_type))), [])))))
 
+let mod_Pervasives = ((Module.make []) (( :: ) (((Names.Op ("+")), (Scheme.mono ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) int_type))))))))), [])))
+
 let inf = {
-  mods = (( :: ) (("A", mod_A), []));
-  opens = [];
+  mods = (( :: ) (("A", mod_A), (( :: ) (("Pervasives", mod_Pervasives), []))));
+  opens = (( :: ) (("Pervasives", []), []));
   asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono ((Type.at (Some (pos))) int_type))), []));
   let_level = 0;
 }
@@ -238,4 +240,16 @@ with
     (assert ((( = ) got) req))
     end
 end
+
+let add = ((Expr.at pos) (Expr.Var ([], (Names.Op ("+")))))
+
+let add_int = ((Expr.at pos) (Expr.App (add, int_expr)))
+
+let add_int_int = ((Expr.at pos) (Expr.App (add_int, int_expr)))
+
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) add))) "(int -> (int -> int))"))
+
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) add_int))) "(int -> int)"))
+
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) add_int_int))) "int"))
 
