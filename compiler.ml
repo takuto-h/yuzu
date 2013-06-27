@@ -62,59 +62,65 @@ end
 
 let rec compile_file = begin fun compiler ->
   begin fun fname_in ->
-    begin fun fname_out ->
-      ((with_open_in fname_in) begin fun chan_in ->
-        ((with_open_out fname_out) begin fun chan_out ->
-          begin let strm = (Stream.of_channel chan_in) in
-          begin let src = ((Source.create fname_in) strm) in
-          begin let lexer = (Lexer.create src) in
-          begin let parser = (Parser.create lexer) in
-          begin let trans = (Trans.create basic_offset) in
-          begin try
-            begin let rec loop = begin fun (() _) ->
-              begin match (Parser.parse parser) with
-                | (None _) ->
-                  true
-                | (Some (top)) ->
-                  begin let result = ((Trans.translate_top trans) top) in
-                  begin
-                  (((fprintf chan_out) "%s\n") result);
-                  (loop ())
-                  end
-                  end
-              end
-            end in
-            (loop ())
-            end
-          with
+    begin let fname_out = begin try
+      ((sprintf "%s.ml") (Filename.chop_extension fname_in))
+    with
 
-            | (Failure (message)) ->
-              begin
-              ((eprintf "%s") message);
-              begin
-              (flush stderr);
-              false
-              end
-              end
+      | (Invalid_argument (_)) ->
+        ((sprintf "%s.ml") fname_in)
+    end in
+    ((with_open_in fname_in) begin fun chan_in ->
+      ((with_open_out fname_out) begin fun chan_out ->
+        begin let strm = (Stream.of_channel chan_in) in
+        begin let src = ((Source.create fname_in) strm) in
+        begin let lexer = (Lexer.create src) in
+        begin let parser = (Parser.create lexer) in
+        begin let trans = (Trans.create basic_offset) in
+        begin try
+          begin let rec loop = begin fun compiler ->
+            begin match (Parser.parse parser) with
+              | (None _) ->
+                (Some (compiler))
+              | (Some (top)) ->
+                begin let result = ((Trans.translate_top trans) top) in
+                begin
+                (((fprintf chan_out) "%s\n") result);
+                (loop compiler)
+                end
+                end
+            end
+          end in
+          (loop compiler)
           end
-          end
-          end
-          end
-          end
-          end
-        end)
+        with
+
+          | (Failure (message)) ->
+            begin
+            ((eprintf "%s") message);
+            begin
+            (flush stderr);
+            None
+            end
+            end
+        end
+        end
+        end
+        end
+        end
+        end
       end)
+    end)
     end
   end
 end
 
 let rec compile_string = begin fun compiler ->
-  begin fun fname ->
+  begin fun fname_in ->
     begin fun str ->
       begin let decls = (Buffer.create initial_buffer_size) in
       begin let output = (Buffer.create initial_buffer_size) in
       begin let strm = (Stream.of_string str) in
-      begin let src = ((Source.create fname) strm) in
+      begin let src = ((Source.create fname_in) strm) in
       begin let lexer = (Lexer.create src) in
       begin let parser = (Parser.create lexer) in
       begin let trans = (Trans.create basic_offset) in
@@ -166,16 +172,16 @@ end
 
 let rec compile = begin fun compiler ->
   begin fun fnames ->
-    begin let rec comp = begin fun fname_in ->
-      begin let fname_out = begin if ((Filename.check_suffix fname_in) ".yz") then
-        ((sprintf "%s.ml") ((Filename.chop_suffix fname_in) ".yz"))
-      else
-        ((sprintf "%s.ml") fname_in)
-      end in
-      (((compile_file compiler) fname_in) fname_out)
-      end
-    end in
-    ((List.for_all comp) fnames)
+    begin match fnames with
+      | ([] _) ->
+        true
+      | (( :: ) (fname_in, fnames)) ->
+        begin match ((compile_file compiler) fname_in) with
+          | (None _) ->
+            false
+          | (Some (compiler)) ->
+            ((compile compiler) fnames)
+        end
     end
   end
 end

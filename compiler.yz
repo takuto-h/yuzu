@@ -35,7 +35,12 @@ def with_open_out(fname_out, func):
       close_out_noerr(chan_out)
       raise(exn)
 
-def compile_file(compiler, fname_in, fname_out):
+def compile_file(compiler, fname_in):
+  var fname_out = try:
+    sprintf("%s.ml", Filename.chop_extension(fname_in))
+  with:
+    case Invalid_argument(_):
+      sprintf("%s.ml", fname_in)
   with_open_in(fname_in)^(chan_in):
   with_open_out(fname_out)^(chan_out):
     var strm = Stream.of_channel(chan_in)
@@ -44,26 +49,26 @@ def compile_file(compiler, fname_in, fname_out):
     var parser = Parser.create(lexer)
     var trans = Trans.create(basic_offset)
     try:
-      def loop():
+      def loop(compiler):
         match Parser.parse(parser):
           case None:
-            true
+            Some(compiler)
           case Some(top):
             var result = Trans.translate_top(trans, top)
             fprintf(chan_out, "%s\n", result)
-            loop()
-      loop()
+            loop(compiler)
+      loop(compiler)
     with:
       case Failure(message):
         eprintf("%s", message)
         flush(stderr)
-        false
+        None
 
-def compile_string(compiler, fname, str):
+def compile_string(compiler, fname_in, str):
   var decls = Buffer.create(initial_buffer_size)
   var output = Buffer.create(initial_buffer_size)
   var strm = Stream.of_string(str)
-  var src = Source.create(fname, strm)
+  var src = Source.create(fname_in, strm)
   var lexer = Lexer.create(src)
   var parser = Parser.create(lexer)
   var trans = Trans.create(basic_offset)
@@ -86,13 +91,15 @@ def compile_string(compiler, fname, str):
       None
 
 def compile(compiler, fnames):
-  def comp(fname_in):
-    var fname_out = if Filename.check_suffix(fname_in, ".yz"):
-      sprintf("%s.ml", Filename.chop_suffix(fname_in, ".yz"))
-    else:
-      sprintf("%s.ml", fname_in)
-    compile_file(compiler, fname_in, fname_out)    
-  List.for_all(comp, fnames)
+  match fnames:
+    case []:
+      true
+    case fname_in::fnames:
+      match compile_file(compiler, fname_in):
+        case None:
+          false
+        case Some(compiler):
+          compile(compiler, fnames)
 
 def read(buf):
   printf("> ")
