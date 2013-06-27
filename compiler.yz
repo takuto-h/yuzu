@@ -90,7 +90,7 @@ def compile_string(compiler, fname_in, str):
       flush(stderr)
       None
 
-def compile(compiler, fnames):
+def compile_files(compiler, fnames):
   match fnames:
     case []:
       Some(compiler)
@@ -99,7 +99,7 @@ def compile(compiler, fnames):
         case None:
           None
         case Some(compiler):
-          compile(compiler, fnames)
+          compile_files(compiler, fnames)
 
 def read(buf):
   printf("> ")

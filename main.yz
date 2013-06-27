@@ -7,7 +7,7 @@ def main():
     ignore(Compiler.interactive(compiler))
   else:
     var fnames = Array.to_list(Array.sub(Sys.argv, 1, Array.length(Sys.argv) - 1))
-    match Compiler.compile(compiler, fnames):
+    match Compiler.compile_files(compiler, fnames):
       case None:
         exit(1)
       case Some(compiler):

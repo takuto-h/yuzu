@@ -170,7 +170,7 @@ let rec compile_string = begin fun compiler ->
   end
 end
 
-let rec compile = begin fun compiler ->
+let rec compile_files = begin fun compiler ->
   begin fun fnames ->
     begin match fnames with
       | ([] _) ->
@@ -180,7 +180,7 @@ let rec compile = begin fun compiler ->
           | (None _) ->
             None
           | (Some (compiler)) ->
-            ((compile compiler) fnames)
+            ((compile_files compiler) fnames)
         end
     end
   end

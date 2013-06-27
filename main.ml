@@ -6,7 +6,7 @@ let rec main = begin fun (() _) ->
     (ignore (Compiler.interactive compiler))
   else
     begin let fnames = (Array.to_list (((Array.sub Sys.argv) 1) ((( - ) (Array.length Sys.argv)) 1))) in
-    begin match ((Compiler.compile compiler) fnames) with
+    begin match ((Compiler.compile_files compiler) fnames) with
       | (None _) ->
         (exit 1)
       | (Some (compiler)) ->
