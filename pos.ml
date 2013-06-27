@@ -12,6 +12,7 @@ type t = {
   lnum : int;
   cnum : int;
   bol : int;
+  len : int;
   source : source;
 }
 
@@ -25,6 +26,7 @@ let rec make = begin fun fname ->
             lnum = lnum;
             cnum = cnum;
             bol = bol;
+            len = 1;
             source = source;
           }
         end
@@ -35,17 +37,17 @@ end
 
 let dummy = (((((make "<dummy>") 1) 0) 0) (String ("<dummy>")))
 
-let rec show = begin fun {fname;lnum;cnum;bol;} ->
+let rec show = begin fun {fname;lnum;cnum;bol;len;} ->
   begin let offset = ((( - ) cnum) bol) in
-  ((((sprintf "%s:%d:%d") fname) lnum) offset)
+  (((((sprintf "%s:%d:%d-%d") fname) lnum) offset) ((( - ) ((( + ) offset) len)) 1))
   end
 end
 
-let rec show_source = begin fun {fname;lnum;cnum;bol;source;} ->
+let rec show_source = begin fun {fname;lnum;cnum;bol;len;source;} ->
   begin let offset = ((( - ) cnum) bol) in
   begin let str_anchor = ((String.make ((( + ) offset) 1)) ' ') in
   begin
-  (((String.set str_anchor) offset) '^');
+  ((((String.fill str_anchor) offset) len) '^');
   begin match source with
     | (File _) ->
       ((with_open_in fname) begin fun chan_in ->

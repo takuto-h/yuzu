@@ -321,12 +321,12 @@ with:
   case Failure(got):
     var req = sprintf(
       "%s%s%s%s%s%s%s%s",
-      "<assertion>:1:0: error: invalid application\n",
+      "<assertion>:1:0-0: error: invalid application\n",
       "function type: int\n",
       "argument type: string\n",
       "<assertion>\n",
       "^\n",
-      "<assertion>:1:0: 'int' of function type\n",
+      "<assertion>:1:0-0: 'int' of function type\n",
       "<assertion>\n",
       "^\n",
     )
