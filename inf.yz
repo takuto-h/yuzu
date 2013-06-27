@@ -155,7 +155,7 @@ rec:
         var cond_type = infer_expr(inf, cond_expr)
         var then_type = infer_expr(inf, then_expr)
         var else_type = infer_expr(inf, else_expr)
-        require(inf, expr.Expr.pos, bool_type, cond_expr)
+        require(expr.Expr.pos, bool_type, cond_type)
         try:
           Type.unify(then_type, else_type)
         with:
@@ -164,10 +164,14 @@ rec:
         else_type
       case Expr.Tuple(exprs):
         Type.at(Some(expr.Expr.pos), Type.Tuple(List.map(infer_expr(inf), exprs)))
+      case Expr.Or(lhs, rhs):
+        var pos = expr.Expr.pos
+        var or_op = Expr.at(pos, Expr.Var([], Names.Op("||")))
+        var or_expr = Expr.at(pos, Expr.App(Expr.at(pos, Expr.App(or_op, lhs)), rhs))
+        infer_expr(inf, or_expr)
 
-  def require(inf, pos, req_type_raw, got_expr):
+  def require(pos, req_type_raw, got_type):
     var req_type = Type.at(None, req_type_raw)
-    var got_type = infer_expr(inf, got_expr)
     try:
       Type.unify(req_type, got_type)
     with:
