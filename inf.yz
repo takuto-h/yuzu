@@ -29,9 +29,10 @@ def unbound_variable(pos, path):
 def invalid_application(pos, fun_type, arg_type, t1, t2):
   var shower = Type.create_shower(0)
   sprintf(
-    "%s: error: invalid application\n%s%s%s%s%s", Pos.show(pos), Pos.show_source(pos),
+    "%s: error: invalid application\n%s%s%s%s%s", Pos.show(pos),
     sprintf("function type: %s\n", Type.show(shower, fun_type)),
     sprintf("argument type: %s\n", Type.show(shower, arg_type)),
+    Pos.show_source(pos),
     Type.show_origin(shower, "function type", t1),
     Type.show_origin(shower, "argument type", t2),
   )
@@ -149,7 +150,7 @@ def leave_module(inf, mod_name):
 //      
 // assertions
 //
-var pos = Pos.make(false, "<assertion>", 1, 0, 0)
+var pos = Pos.make("<assertion>", 1, 0, 0, Pos.String("<assertion>"))
 var mod_B = Module.make(
   [],
   [(Names.Id("b1"), Scheme.mono(Type.at(Some(pos),char_type)));
@@ -200,11 +201,15 @@ try:
 with:
   case Failure(got):
     var req = sprintf(
-      "%s%s%s%s",
+      "%s%s%s%s%s%s%s%s",
       "<assertion>:1:0: error: invalid application\n",
       "function type: int\n",
       "argument type: string\n",
+      "<assertion>\n",
+      "^\n",
       "<assertion>:1:0: 'int' of function type\n",
+      "<assertion>\n",
+      "^\n",
     )
     assert(got = req)
 var add = Expr.at(pos, Expr.Var([], Names.Op("+")))

@@ -36,7 +36,7 @@ let rec invalid_application = begin fun pos ->
       begin fun t1 ->
         begin fun t2 ->
           begin let shower = (Type.create_shower 0) in
-          (((((((sprintf "%s: error: invalid application\n%s%s%s%s%s") (Pos.show pos)) (Pos.show_source pos)) ((sprintf "function type: %s\n") ((Type.show shower) fun_type))) ((sprintf "argument type: %s\n") ((Type.show shower) arg_type))) (((Type.show_origin shower) "function type") t1)) (((Type.show_origin shower) "argument type") t2))
+          (((((((sprintf "%s: error: invalid application\n%s%s%s%s%s") (Pos.show pos)) ((sprintf "function type: %s\n") ((Type.show shower) fun_type))) ((sprintf "argument type: %s\n") ((Type.show shower) arg_type))) (Pos.show_source pos)) (((Type.show_origin shower) "function type") t1)) (((Type.show_origin shower) "argument type") t2))
           end
         end
       end
@@ -234,7 +234,7 @@ let rec leave_module = begin fun inf ->
   end
 end
 
-let pos = (((((Pos.make false) "<assertion>") 1) 0) 0)
+let pos = (((((Pos.make "<assertion>") 1) 0) 0) (Pos.String ("<assertion>")))
 
 let mod_B = ((Module.make []) (( :: ) (((Names.Id ("b1")), (Scheme.mono ((Type.at (Some (pos))) char_type))), (( :: ) (((Names.Id ("b2")), (Scheme.mono ((Type.at (Some (pos))) int_type))), [])))))
 
@@ -282,7 +282,7 @@ let () = begin try
 with
 
   | (Failure (got)) ->
-    begin let req = (((((sprintf "%s%s%s%s") "<assertion>:1:0: error: invalid application\n") "function type: int\n") "argument type: string\n") "<assertion>:1:0: 'int' of function type\n") in
+    begin let req = (((((((((sprintf "%s%s%s%s%s%s%s%s") "<assertion>:1:0: error: invalid application\n") "function type: int\n") "argument type: string\n") "<assertion>\n") "^\n") "<assertion>:1:0: 'int' of function type\n") "<assertion>\n") "^\n") in
     (assert ((( = ) got) req))
     end
 end

@@ -2,37 +2,50 @@
 open YzPervasives
 open Printf
 
+type source:
+  def File
+  def String(string)
+
 type t:
-  is_file : bool
   fname : string
   lnum : int
   cnum : int
   bol : int
+  source : source
 
-def make(is_file, fname, lnum, cnum, bol): {
-  is_file = is_file;
+def make(fname, lnum, cnum, bol, source): {
   fname = fname;
   lnum = lnum;
   cnum = cnum;
   bol = bol;
+  source = source;
 }
 
-var dummy = make(false, "<dummy>", 1, 0, 0)
+var dummy = make("<dummy>", 1, 0, 0, String("<dummy>"))
 
 def show({fname;lnum;cnum;bol}):
   var offset = cnum - bol
   sprintf("%s:%d:%d", fname, lnum, offset)
 
-def show_source({is_file;fname;lnum;cnum;bol}):
-  if not(is_file){ "" }else:
+def show_source({fname;lnum;cnum;bol;source}):
   var offset = cnum - bol
-  with_open_in(fname)^(chan_in):
-    try:
-      seek_in(chan_in, bol)
-      var str_line = input_line(chan_in)
-      var str_anchor = String.make(offset + 1, ' ')
-      String.set(str_anchor, offset, '^')
+  var str_anchor = String.make(offset + 1, ' ')
+  String.set(str_anchor, offset, '^')
+  match source:
+    case File:
+      with_open_in(fname)^(chan_in):
+        try:
+          seek_in(chan_in, bol)
+          var str_line = input_line(chan_in)
+          sprintf("%s\n%s\n", str_line, str_anchor)
+        with:
+          case End_of_file:
+            ""
+    case String(str):
+      var str = String.sub(str, bol, String.length(str) - bol)
+      var str_line = try:
+        String.sub(str, 0, String.index(str, '\n'))
+      with:
+        case Not_found:
+          str
       sprintf("%s\n%s\n", str_line, str_anchor)
-    with:
-      case End_of_file:
-        ""

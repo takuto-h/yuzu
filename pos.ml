@@ -2,25 +2,30 @@ open YzPervasives
 
 open Printf
 
+type source = 
+  | File
+  | String of string
+
+
 type t = {
-  is_file : bool;
   fname : string;
   lnum : int;
   cnum : int;
   bol : int;
+  source : source;
 }
 
-let rec make = begin fun is_file ->
-  begin fun fname ->
-    begin fun lnum ->
-      begin fun cnum ->
-        begin fun bol ->
+let rec make = begin fun fname ->
+  begin fun lnum ->
+    begin fun cnum ->
+      begin fun bol ->
+        begin fun source ->
           {
-            is_file = is_file;
             fname = fname;
             lnum = lnum;
             cnum = cnum;
             bol = bol;
+            source = source;
           }
         end
       end
@@ -28,7 +33,7 @@ let rec make = begin fun is_file ->
   end
 end
 
-let dummy = (((((make false) "<dummy>") 1) 0) 0)
+let dummy = (((((make "<dummy>") 1) 0) 0) (String ("<dummy>")))
 
 let rec show = begin fun {fname;lnum;cnum;bol;} ->
   begin let offset = ((( - ) cnum) bol) in
@@ -36,31 +41,42 @@ let rec show = begin fun {fname;lnum;cnum;bol;} ->
   end
 end
 
-let rec show_source = begin fun {is_file;fname;lnum;cnum;bol;} ->
-  begin if (not is_file) then
-    ""
-  else
-    begin let offset = ((( - ) cnum) bol) in
-    ((with_open_in fname) begin fun chan_in ->
-      begin try
-        begin
-        ((seek_in chan_in) bol);
-        begin let str_line = (input_line chan_in) in
-        begin let str_anchor = ((String.make ((( + ) offset) 1)) ' ') in
-        begin
-        (((String.set str_anchor) offset) '^');
-        (((sprintf "%s\n%s\n") str_line) str_anchor)
+let rec show_source = begin fun {fname;lnum;cnum;bol;source;} ->
+  begin let offset = ((( - ) cnum) bol) in
+  begin let str_anchor = ((String.make ((( + ) offset) 1)) ' ') in
+  begin
+  (((String.set str_anchor) offset) '^');
+  begin match source with
+    | (File _) ->
+      ((with_open_in fname) begin fun chan_in ->
+        begin try
+          begin
+          ((seek_in chan_in) bol);
+          begin let str_line = (input_line chan_in) in
+          (((sprintf "%s\n%s\n") str_line) str_anchor)
+          end
+          end
+        with
+
+          | (End_of_file _) ->
+            ""
         end
-        end
-        end
-        end
+      end)
+    | (String (str)) ->
+      begin let str = (((String.sub str) bol) ((( - ) (String.length str)) bol)) in
+      begin let str_line = begin try
+        (((String.sub str) 0) ((String.index str) '\n'))
       with
 
-        | (End_of_file _) ->
-          ""
+        | (Not_found _) ->
+          str
+      end in
+      (((sprintf "%s\n%s\n") str_line) str_anchor)
       end
-    end)
-    end
+      end
+  end
+  end
+  end
   end
 end
 

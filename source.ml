@@ -1,29 +1,29 @@
 type t = {
-  is_file : bool;
   fname : string;
   mutable lnum : int;
   mutable cnum : int;
   mutable bol : int;
   strm : (char) Stream.t;
+  source : Pos.source;
 }
 
-let rec create = begin fun is_file ->
-  begin fun fname ->
-    begin fun strm ->
+let rec create = begin fun fname ->
+  begin fun strm ->
+    begin fun source ->
       {
-        is_file = is_file;
         fname = fname;
         lnum = 1;
         cnum = 0;
         bol = 0;
         strm = strm;
+        source = source;
       }
     end
   end
 end
 
-let rec pos = begin fun {is_file;fname;lnum;cnum;bol;} ->
-  (((((Pos.make is_file) fname) lnum) cnum) bol)
+let rec pos = begin fun {fname;lnum;cnum;bol;source;} ->
+  (((((Pos.make fname) lnum) cnum) bol) source)
 end
 
 let rec peek = begin fun {strm;} ->

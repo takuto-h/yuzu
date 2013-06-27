@@ -1,23 +1,23 @@
 
 type t:
-  is_file : bool
   fname : string
   mutable lnum : int
   mutable cnum : int
   mutable bol : int
   strm : Stream.t(char)
+  source : Pos.source
 
-def create(is_file, fname, strm): {
-  is_file = is_file;
+def create(fname, strm, source): {
   fname = fname;
   lnum = 1;
   cnum = 0;
   bol = 0;
   strm = strm;
+  source = source;
 }
 
-def pos({is_file;fname;lnum;cnum;bol}):
-  Pos.make(is_file, fname, lnum, cnum, bol)
+def pos({fname;lnum;cnum;bol;source}):
+  Pos.make(fname, lnum, cnum, bol, source)
 
 def peek({strm}):
   Stream.peek(strm)
