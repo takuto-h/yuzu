@@ -1,11 +1,15 @@
 
+type require_argument = bool
+
 type t:
   mods : list(Names.mod_name * t)
   asp : list(Names.val_name * Scheme.t)
+  ctors : list(Names.ctor_name * (require_argument * Scheme.t))
 
-def make(mods, asp): {
+def make(mods, asp, ctors): {
   mods = mods;
   asp = asp;
+  ctors = ctors;
 }
 
 def find_asp(modl, mod_path, name):
@@ -15,3 +19,11 @@ def find_asp(modl, mod_path, name):
     case mod_name::mod_path:
       var modl = List.assoc(mod_name, modl.mods)
       find_asp(modl, mod_path, name)
+
+def find_ctor(modl, mod_path, name):
+  match mod_path:
+    case []:
+      List.assoc(name, modl.ctors)
+    case mod_name::mod_path:
+      var modl = List.assoc(mod_name, modl.mods)
+      find_ctor(modl, mod_path, name)

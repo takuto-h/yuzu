@@ -2,10 +2,13 @@ open Printf
 
 module ValNameMap = Map.Make(ValName)
 
+type require_argument = bool
+
 type t = {
   mods : ((Names.mod_name * Module.t)) list;
   opens : ((Names.mod_name * Names.mod_path)) list;
   asp : ((Names.val_name * Scheme.t)) list;
+  ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
   let_level : int;
 }
 
@@ -16,6 +19,7 @@ let rec create = begin fun () ->
     mods = [];
     opens = default_opens;
     asp = [];
+    ctors = [];
     let_level = 0;
   }
 end
@@ -43,6 +47,12 @@ let rec unbound_variable = begin fun pos ->
   end
 end
 
+let rec unbound_constructor = begin fun pos ->
+  begin fun ctor ->
+    ((Pos.show_error pos) ((sprintf "unbound constructor: %s\n") (Names.show_ctor ctor)))
+  end
+end
+
 let rec invalid_application = begin fun pos ->
   begin fun fun_type ->
     begin fun arg_type ->
@@ -53,6 +63,14 @@ let rec invalid_application = begin fun pos ->
           end
         end
       end
+    end
+  end
+end
+
+let rec wrong_number_of_arguments = begin fun pos ->
+  begin fun got ->
+    begin fun req ->
+      ((Pos.show_error pos) (((sprintf "wrong number of arguments (%d for %d)\n") got) req))
     end
   end
 end
@@ -85,7 +103,7 @@ let rec required = begin fun pos ->
   end
 end
 
-let rec find_mods = begin fun mods ->
+let rec find_asp_mods = begin fun mods ->
   begin fun mod_name ->
     begin fun mod_path ->
       begin fun name ->
@@ -97,7 +115,7 @@ let rec find_mods = begin fun mods ->
   end
 end
 
-let rec find_opens = begin fun mods ->
+let rec find_asp_opens = begin fun mods ->
   begin fun opens ->
     begin fun name ->
       begin match opens with
@@ -105,11 +123,11 @@ let rec find_opens = begin fun mods ->
           (raise Not_found)
         | (( :: ) ((mod_name, mod_path), opens)) ->
           begin try
-            ((((find_mods mods) mod_name) mod_path) name)
+            ((((find_asp_mods mods) mod_name) mod_path) name)
           with
 
             | (Not_found _) ->
-              (((find_opens mods) opens) name)
+              (((find_asp_opens mods) opens) name)
           end
       end
     end
@@ -125,10 +143,10 @@ let rec find_asp = begin fun inf ->
         with
 
           | (Not_found _) ->
-            (((find_opens inf.mods) inf.opens) name)
+            (((find_asp_opens inf.mods) inf.opens) name)
         end
       | ((( :: ) (mod_name, mod_path)), name) ->
-        ((((find_mods inf.mods) mod_name) mod_path) name)
+        ((((find_asp_mods inf.mods) mod_name) mod_path) name)
     end
   end
 end
@@ -249,6 +267,75 @@ let rec generalize = begin fun let_level ->
   end
 end
 
+let rec apply = begin fun let_level ->
+  begin fun pos ->
+    begin fun fun_type ->
+      begin fun arg_type ->
+        begin let ret_type = (Type.make_var let_level) in
+        begin
+        begin try
+          ((Type.unify fun_type) ((Type.at None) (Type.Fun (arg_type, ret_type))))
+        with
+
+          | (Type.Unification_error (t1, t2)) ->
+            (failwith (((((invalid_application pos) fun_type) arg_type) t1) t2))
+        end;
+        ret_type
+        end
+        end
+      end
+    end
+  end
+end
+
+let rec find_ctor_mods = begin fun mods ->
+  begin fun mod_name ->
+    begin fun mod_path ->
+      begin fun name ->
+        begin let modl = ((List.assoc mod_name) mods) in
+        (((Module.find_ctor modl) mod_path) name)
+        end
+      end
+    end
+  end
+end
+
+let rec find_ctor_opens = begin fun mods ->
+  begin fun opens ->
+    begin fun name ->
+      begin match opens with
+        | ([] _) ->
+          (raise Not_found)
+        | (( :: ) ((mod_name, mod_path), opens)) ->
+          begin try
+            ((((find_ctor_mods mods) mod_name) mod_path) name)
+          with
+
+            | (Not_found _) ->
+              (((find_ctor_opens mods) opens) name)
+          end
+      end
+    end
+  end
+end
+
+let rec find_ctor = begin fun inf ->
+  begin fun ctor ->
+    begin match ctor with
+      | (([] _), name) ->
+        begin try
+          ((List.assoc name) inf.ctors)
+        with
+
+          | (Not_found _) ->
+            (((find_ctor_opens inf.mods) inf.opens) name)
+        end
+      | ((( :: ) (mod_name, mod_path)), name) ->
+        ((((find_ctor_mods inf.mods) mod_name) mod_path) name)
+    end
+  end
+end
+
 let rec infer_expr = begin fun inf ->
   begin fun expr ->
     begin match expr.Expr.raw with
@@ -262,28 +349,36 @@ let rec infer_expr = begin fun inf ->
           | (Not_found _) ->
             (failwith ((unbound_variable expr.Expr.pos) path))
         end
-      | (Expr.App (fun_expr, arg_expr)) ->
-        begin let fun_type = ((infer_expr inf) fun_expr) in
-        begin let arg_type = ((infer_expr inf) arg_expr) in
-        begin let ret_type = (Type.make_var inf.let_level) in
-        begin
-        begin try
-          ((Type.unify fun_type) ((Type.at None) (Type.Fun (arg_type, ret_type))))
-        with
-
-          | (Type.Unification_error (t1, t2)) ->
-            (failwith (((((invalid_application expr.Expr.pos) fun_type) arg_type) t1) t2))
-        end;
-        ret_type
-        end
-        end
-        end
-        end
       | (Expr.Abs (pat, body_expr)) ->
         begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
         begin let body_type = ((infer_expr inf) body_expr) in
         ((Type.at (Some (expr.Expr.pos))) (Type.Fun (pat_type, body_type)))
         end
+        end
+      | (Expr.App (fun_expr, arg_expr)) ->
+        begin let fun_type = ((infer_expr inf) fun_expr) in
+        begin let arg_type = ((infer_expr inf) arg_expr) in
+        ((((apply inf.let_level) expr.Expr.pos) fun_type) arg_type)
+        end
+        end
+      | (Expr.Ctor (ctor, opt_arg_expr)) ->
+        begin try
+          begin match (((find_ctor inf) ctor), opt_arg_expr) with
+            | ((false, scm), (None _)) ->
+              ((instantiate inf.let_level) scm)
+            | ((false, scm), (Some (arg_expr))) ->
+              (failwith (((wrong_number_of_arguments expr.Expr.pos) 1) 0))
+            | ((true, scm), (None _)) ->
+              (failwith (((wrong_number_of_arguments expr.Expr.pos) 0) 1))
+            | ((true, scm), (Some (arg_expr))) ->
+              begin let arg_type = ((infer_expr inf) arg_expr) in
+              ((((apply inf.let_level) expr.Expr.pos) ((instantiate inf.let_level) scm)) arg_type)
+              end
+          end
+        with
+
+          | (Not_found _) ->
+            (failwith ((unbound_constructor expr.Expr.pos) ctor))
         end
       | (Expr.If (cond_expr, then_expr, else_expr)) ->
         begin let cond_type = ((infer_expr inf) cond_expr) in
@@ -474,11 +569,12 @@ end
 
 let rec leave_module = begin fun inf ->
   begin fun mod_name ->
-    begin let new_mod = ((Module.make []) inf.asp) in
+    begin let new_mod = (((Module.make []) inf.asp) inf.ctors) in
     {
       mods = (( :: ) ((mod_name, new_mod), inf.mods));
       opens = default_opens;
       asp = [];
+      ctors = [];
       let_level = 0;
     }
     end
@@ -487,16 +583,17 @@ end
 
 let pos = (((((Pos.make "<assertion>") 1) 0) 0) (Pos.String ("<assertion>")))
 
-let mod_B = ((Module.make []) (( :: ) (((Names.Id ("b1")), (Scheme.mono ((Type.at (Some (pos))) char_type))), (( :: ) (((Names.Id ("b2")), (Scheme.mono ((Type.at (Some (pos))) int_type))), [])))))
+let mod_B = (((Module.make []) (( :: ) (((Names.Id ("b1")), (Scheme.mono ((Type.at (Some (pos))) char_type))), (( :: ) (((Names.Id ("b2")), (Scheme.mono ((Type.at (Some (pos))) int_type))), []))))) [])
 
-let mod_A = ((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1")), (Scheme.mono ((Type.at (Some (pos))) int_type))), (( :: ) (((Names.Id ("a2")), (Scheme.mono ((Type.at (Some (pos))) string_type))), [])))))
+let mod_A = (((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1")), (Scheme.mono ((Type.at (Some (pos))) int_type))), (( :: ) (((Names.Id ("a2")), (Scheme.mono ((Type.at (Some (pos))) string_type))), []))))) [])
 
-let mod_Pervasives = ((Module.make []) (( :: ) (((Names.Op ("+")), (Scheme.mono ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) int_type))))))))), [])))
+let mod_Pervasives = (((Module.make []) (( :: ) (((Names.Op ("+")), (Scheme.mono ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) int_type))))))))), []))) [])
 
 let inf = {
   mods = (( :: ) (("A", mod_A), (( :: ) (("Pervasives", mod_Pervasives), []))));
   opens = (( :: ) (("Pervasives", []), []));
   asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono ((Type.at (Some (pos))) int_type))), []));
+  ctors = [];
   let_level = 0;
 }
 

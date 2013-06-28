@@ -3,10 +3,13 @@ open Printf
 
 module ValNameMap = Map.Make(ValName)
 
+type require_argument = bool
+
 type t:
   mods : list(Names.mod_name * Module.t)
   opens : list(Names.mod_name * Names.mod_path)
   asp : list(Names.val_name * Scheme.t)
+  ctors : list(Names.ctor_name * (require_argument * Scheme.t))
   let_level : int
 
 var default_opens = [("Pervasives", [])]
@@ -15,6 +18,7 @@ def create(): {
   mods = [];
   opens = default_opens;
   asp = [];
+  ctors = [];
   let_level = 0;
 }
 
@@ -31,6 +35,9 @@ var bool_type = Type.Con([], "bool")
 def unbound_variable(pos, path):
   Pos.show_error(pos, sprintf("unbound variable: %s\n", Names.show_val_path(path)))
 
+def unbound_constructor(pos, ctor):
+  Pos.show_error(pos, sprintf("unbound constructor: %s\n", Names.show_ctor(ctor)))
+
 def invalid_application(pos, fun_type, arg_type, t1, t2):
   var shower = Type.create_shower(0)
   sprintf(
@@ -46,6 +53,9 @@ def invalid_application(pos, fun_type, arg_type, t1, t2):
     Type.show_origin(shower, "function type", t1),
     Type.show_origin(shower, "argument type", t2),
   )
+
+def wrong_number_of_arguments(pos, got, req):
+  Pos.show_error(pos, sprintf("wrong number of arguments (%d for %d)\n", got, req))
 
 def invalid_if_expr(pos, then_type, else_type, t1, t2):
   var shower = Type.create_shower(0)
@@ -78,20 +88,20 @@ def required(pos, req_type, got_type, t1, t2):
     Type.show_origin(shower, "got type", t2),
   )
 
-def find_mods(mods, mod_name, mod_path, name):
+def find_asp_mods(mods, mod_name, mod_path, name):
   var modl = List.assoc(mod_name, mods)
   Module.find_asp(modl, mod_path, name)
 
-def find_opens(mods, opens, name):
+def find_asp_opens(mods, opens, name):
   match opens:
     case []:
       raise(Not_found)
     case (mod_name, mod_path)::opens:
       try:
-        find_mods(mods, mod_name, mod_path, name)
+        find_asp_mods(mods, mod_name, mod_path, name)
       with:
         case Not_found:
-          find_opens(mods, opens, name)
+          find_asp_opens(mods, opens, name)
 
 def find_asp(inf, path):
   match path:
@@ -100,9 +110,9 @@ def find_asp(inf, path):
         List.assoc(name, inf.asp)
       with:
         case Not_found:
-          find_opens(inf.mods, inf.opens, name)
+          find_asp_opens(inf.mods, inf.opens, name)
     case (mod_name::mod_path, name):
-      find_mods(inf.mods, mod_name, mod_path, name)
+      find_asp_mods(inf.mods, mod_name, mod_path, name)
 
 def instantiate(let_level, {Scheme.gen_num;Scheme.body}):
   var type_vars = Array.init(gen_num)^(_): Type.make_var(let_level)
@@ -161,6 +171,41 @@ def generalize(let_level, t):
     assert(false)
   Scheme.poly(List.length(!alist_ref), Type.map(var_func, gen_func, t))
 
+def apply(let_level, pos, fun_type, arg_type):
+  var ret_type = Type.make_var(let_level)
+  try:
+    Type.unify(fun_type, Type.at(None, Type.Fun(arg_type, ret_type)))
+  with:
+    case Type.Unification_error(t1, t2):
+      failwith(invalid_application(pos, fun_type, arg_type, t1, t2))
+  ret_type
+
+def find_ctor_mods(mods, mod_name, mod_path, name):
+  var modl = List.assoc(mod_name, mods)
+  Module.find_ctor(modl, mod_path, name)
+
+def find_ctor_opens(mods, opens, name):
+  match opens:
+    case []:
+      raise(Not_found)
+    case (mod_name, mod_path)::opens:
+      try:
+        find_ctor_mods(mods, mod_name, mod_path, name)
+      with:
+        case Not_found:
+          find_ctor_opens(mods, opens, name)
+
+def find_ctor(inf, ctor):
+  match ctor:
+    case ([], name):
+      try:
+        List.assoc(name, inf.ctors)
+      with:
+        case Not_found:
+          find_ctor_opens(inf.mods, inf.opens, name)
+    case (mod_name::mod_path, name):
+      find_ctor_mods(inf.mods, mod_name, mod_path, name)
+
 rec:
   def infer_expr(inf, expr):
     match expr.Expr.raw:
@@ -172,20 +217,29 @@ rec:
         with:
           case Not_found:
             failwith(unbound_variable(expr.Expr.pos, path))
-      case Expr.App(fun_expr, arg_expr):
-        var fun_type = infer_expr(inf, fun_expr)
-        var arg_type = infer_expr(inf, arg_expr)
-        var ret_type = Type.make_var(inf.let_level)
-        try:
-          Type.unify(fun_type, Type.at(None, Type.Fun(arg_type, ret_type)))
-        with:
-          case Type.Unification_error(t1, t2):
-            failwith(invalid_application(expr.Expr.pos, fun_type, arg_type, t1, t2))
-        ret_type
       case Expr.Abs(pat, body_expr):
         var (inf, pat_type, map) = infer_pattern(inf, pat)
         var body_type = infer_expr(inf, body_expr)
         Type.at(Some(expr.Expr.pos), Type.Fun(pat_type, body_type))
+      case Expr.App(fun_expr, arg_expr):
+        var fun_type = infer_expr(inf, fun_expr)
+        var arg_type = infer_expr(inf, arg_expr)
+        apply(inf.let_level, expr.Expr.pos, fun_type, arg_type)
+      case Expr.Ctor(ctor, opt_arg_expr):
+        try:
+          match (find_ctor(inf, ctor), opt_arg_expr):
+            case ((false, scm), None):
+              instantiate(inf.let_level, scm)
+            case ((false, scm), Some(arg_expr)):
+              failwith(wrong_number_of_arguments(expr.Expr.pos, 1, 0))
+            case ((true, scm), None):
+              failwith(wrong_number_of_arguments(expr.Expr.pos, 0, 1))
+            case ((true, scm), Some(arg_expr)):
+              var arg_type = infer_expr(inf, arg_expr)
+              apply(inf.let_level, expr.Expr.pos, instantiate(inf.let_level, scm), arg_type)
+        with:
+          case Not_found:
+            failwith(unbound_constructor(expr.Expr.pos, ctor))
       case Expr.If(cond_expr, then_expr, else_expr):
         var cond_type = infer_expr(inf, cond_expr)
         var then_type = infer_expr(inf, then_expr)
@@ -281,11 +335,12 @@ def load_decl(inf, decl):
       inf.{asp = (name, scm)::inf.asp}
 
 def leave_module(inf, mod_name):
-  var new_mod = Module.make([], inf.asp)
+  var new_mod = Module.make([], inf.asp, inf.ctors)
   {
     mods = (mod_name, new_mod)::inf.mods;
     opens = default_opens;
     asp = [];
+    ctors = [];
     let_level = 0;
   }
 
@@ -298,12 +353,14 @@ var mod_B = Module.make(
   [(Names.Id("b1"), Scheme.mono(Type.at(Some(pos),char_type)));
    (Names.Id("b2"), Scheme.mono(Type.at(Some(pos),int_type)));
   ],
+  [],
 )
 var mod_A = Module.make(
   [("B", mod_B)],
   [(Names.Id("a1"), Scheme.mono(Type.at(Some(pos),int_type)));
    (Names.Id("a2"), Scheme.mono(Type.at(Some(pos),string_type)));
   ],
+  [],
 )
 var mod_Pervasives = Module.make(
   [],
@@ -314,6 +371,7 @@ var mod_Pervasives = Module.make(
         Type.at(Some(pos),Type.Fun(
           Type.at(Some(pos),int_type),Type.at(Some(pos),int_type)))))));
   ],
+  [],
 )
 var inf = {
   mods = [
@@ -322,6 +380,7 @@ var inf = {
   ];
   opens = [("Pervasives", [])];
   asp = [(Names.Id("ans"), Scheme.mono(Type.at(Some(pos),int_type)))];
+  ctors = [];
   let_level = 0;
 }
 var shower = Type.create_shower(0)
