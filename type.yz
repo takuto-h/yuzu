@@ -153,7 +153,9 @@ rec:
       case Tuple(ts):
         sprintf("(%s)", show_list(shower, " * ", ts))
       case Fun(t_param, t_ret):
-        sprintf("(%s -> %s)", show(shower, t_param), show(shower, t_ret))
+        var str_param = show(shower, t_param)
+        var str_ret = show(shower, t_ret)
+        sprintf("(%s -> %s)", str_param, str_ret)
 
   def show_list(shower, sep, ts):
     match ts:

@@ -308,6 +308,11 @@ rec:
         var t = parse_type(parser)
         parse_token(parser, Token.Reserved(")"))
         t
+      case Token.Reserved("`"):
+        var pos = parser.pos
+        lookahead(parser)
+        var name = parse_lowid(parser)
+        TypeExpr.at(pos, TypeExpr.Var(name))
       case _:
         failwith(expected(parser, "type"))
   

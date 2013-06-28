@@ -305,6 +305,8 @@ let rec translate_type_expr = begin fun t ->
   begin match t.TypeExpr.raw with
     | (TypeExpr.Con (typector)) ->
       (Names.show_typector typector)
+    | (TypeExpr.Var (name)) ->
+      ((sprintf "'%s") name)
     | (TypeExpr.App (typector, (( :: ) (t, ts)))) ->
       begin let str_typector = (Names.show_typector typector) in
       begin let str_types = (((YzList.fold_left (translate_type_expr t)) ts) begin fun acc ->

@@ -521,6 +521,15 @@ and parse_atomic_type = begin fun parser ->
       end
       end
       end
+    | (Token.Reserved ("`")) ->
+      begin let pos = parser.pos in
+      begin
+      (lookahead parser);
+      begin let name = (parse_lowid parser) in
+      ((TypeExpr.at pos) (TypeExpr.Var (name)))
+      end
+      end
+      end
     | _ ->
       (failwith ((expected parser) "type"))
   end

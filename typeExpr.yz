@@ -5,6 +5,7 @@ rec:
     raw : raw
   type raw:
     def Con(Names.typector)
+    def Var(string)
     def App(Names.typector * list(t))
     def Tuple(list(t))
     def Fun(t * t)

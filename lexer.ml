@@ -262,7 +262,7 @@ let rec lex_visible_token = begin fun lexer ->
       begin
       (Source.junk lexer.source);
       begin match c with
-        | ((((';' | ',') | '^') | '.') | '$') ->
+        | (((((';' | ',') | '^') | '.') | '$') | '`') ->
           (Token.Reserved (((sprintf "%c") c)))
         | (('(' | '{') | '[') ->
           begin

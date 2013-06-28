@@ -536,19 +536,34 @@ let rec infer_top = begin fun inf ->
   end
 end
 
-let rec eval = begin fun inf ->
-  begin fun type_expr ->
-    begin let t = begin match type_expr.TypeExpr.raw with
-      | (TypeExpr.Con (typector)) ->
-        (Type.Con (typector))
-      | (TypeExpr.App (typector, ts)) ->
-        (Type.App (typector, ((List.map (eval inf)) ts)))
-      | (TypeExpr.Tuple (ts)) ->
-        (Type.Tuple (((List.map (eval inf)) ts)))
-      | (TypeExpr.Fun (t1, t2)) ->
-        (Type.Fun (((eval inf) t1), ((eval inf) t2)))
-    end in
-    ((Type.at (Some (type_expr.TypeExpr.pos))) t)
+let rec eval = begin fun env_ref ->
+  begin fun let_level ->
+    begin fun type_expr ->
+      begin let t = begin match type_expr.TypeExpr.raw with
+        | (TypeExpr.Con (typector)) ->
+          (Type.Con (typector))
+        | (TypeExpr.Var (name)) ->
+          begin try
+            ((List.assoc name) (( ! ) env_ref))
+          with
+
+            | (Not_found _) ->
+              begin let t = (Type.make_var let_level).Type.raw in
+              begin
+              ((( := ) env_ref) (( :: ) ((name, t), (( ! ) env_ref))));
+              t
+              end
+              end
+          end
+        | (TypeExpr.App (typector, ts)) ->
+          (Type.App (typector, ((List.map ((eval env_ref) let_level)) ts)))
+        | (TypeExpr.Tuple (ts)) ->
+          (Type.Tuple (((List.map ((eval env_ref) let_level)) ts)))
+        | (TypeExpr.Fun (t1, t2)) ->
+          (Type.Fun ((((eval env_ref) let_level) t1), (((eval env_ref) let_level) t2)))
+      end in
+      ((Type.at (Some (type_expr.TypeExpr.pos))) t)
+      end
     end
   end
 end
@@ -557,7 +572,7 @@ let rec load_decl = begin fun inf ->
   begin fun decl ->
     begin match decl with
       | (DeclExpr.Val (name, type_expr)) ->
-        begin let scm = (Scheme.mono ((eval inf) type_expr)) in
+        begin let scm = (Scheme.mono (((eval (ref [])) inf.let_level) type_expr)) in
         {
           inf with
           asp = (( :: ) ((name, scm), inf.asp));

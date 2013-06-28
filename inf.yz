@@ -316,22 +316,30 @@ def infer_top(inf, top):
         (inf.{asp = (name, scm)::inf.asp}, Decl.Val(name, scm)::decls)
       (inf, decls)
 
-def eval(inf, type_expr):
+def eval(env_ref, let_level, type_expr):
   var t = match type_expr.TypeExpr.raw:
     case TypeExpr.Con(typector):
       Type.Con(typector)
+    case TypeExpr.Var(name):
+      try:
+        List.assoc(name, !env_ref)
+      with:
+        case Not_found:
+          var t = Type.make_var(let_level).Type.raw
+          env_ref := (name, t)::!env_ref
+          t
     case TypeExpr.App(typector,ts):
-      Type.App(typector, List.map(eval(inf), ts))
+      Type.App(typector, List.map(eval(env_ref, let_level), ts))
     case TypeExpr.Tuple(ts):
-      Type.Tuple(List.map(eval(inf), ts))
+      Type.Tuple(List.map(eval(env_ref, let_level), ts))
     case TypeExpr.Fun(t1, t2):
-      Type.Fun(eval(inf, t1), eval(inf, t2))
+      Type.Fun(eval(env_ref, let_level, t1), eval(env_ref, let_level, t2))
   Type.at(Some(type_expr.TypeExpr.pos), t)
 
 def load_decl(inf, decl):
   match decl:
     case DeclExpr.Val(name, type_expr):
-      var scm = Scheme.mono(eval(inf, type_expr))
+      var scm = Scheme.mono(eval(ref([]), inf.let_level, type_expr))
       inf.{asp = (name, scm)::inf.asp}
 
 def leave_module(inf, mod_name):

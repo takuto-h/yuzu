@@ -220,6 +220,8 @@ def translate_type_expr(t):
   match t.TypeExpr.raw:
     case TypeExpr.Con(typector):
       Names.show_typector(typector)
+    case TypeExpr.Var(name):
+      sprintf("'%s", name)
     case TypeExpr.App(typector,t::ts):
       var str_typector = Names.show_typector(typector)
       var str_types = YzList.fold_left(translate_type_expr(t), ts)^(acc, elem):

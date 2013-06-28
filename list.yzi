@@ -1,2 +1,2 @@
 
-val map : (int -> int) -> list(int) -> list(int)
+val map : (`a -> `b) -> list(`a) -> list(`b)

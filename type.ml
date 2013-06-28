@@ -196,7 +196,11 @@ let rec show = begin fun shower ->
       | (Tuple (ts)) ->
         ((sprintf "(%s)") (((show_list shower) " * ") ts))
       | (Fun (t_param, t_ret)) ->
-        (((sprintf "(%s -> %s)") ((show shower) t_param)) ((show shower) t_ret))
+        begin let str_param = ((show shower) t_param) in
+        begin let str_ret = ((show shower) t_ret) in
+        (((sprintf "(%s -> %s)") str_param) str_ret)
+        end
+        end
     end
   end
 end

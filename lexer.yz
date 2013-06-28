@@ -175,7 +175,7 @@ def lex_capid(lexer, buf):
 def lex_visible_token(lexer, pos, c):
   Source.junk(lexer.source)
   match c:
-    case ';' | ',' | '^' | '.' | '$':
+    case ';' | ',' | '^' | '.' | '$' | '`':
       Token.Reserved(sprintf("%c", c))
     case '(' | '{' | '[':
       Stack.push(sprintf("%c", c), lexer.parens)

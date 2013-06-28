@@ -5,6 +5,7 @@ type t = {
 
 and raw = 
   | Con of Names.typector
+  | Var of string
   | App of (Names.typector * (t) list)
   | Tuple of (t) list
   | Fun of (t * t)
