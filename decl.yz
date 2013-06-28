@@ -7,4 +7,4 @@ type t:
 def show(decl):
   match decl:
     case Val(name, scm):
-      sprintf("def %s : %s\n", Names.show_val_name(name), Scheme.show(scm))
+      sprintf("val %s : %s\n", Names.show_val_name(name), Scheme.show(scm))

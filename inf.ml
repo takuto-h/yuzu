@@ -386,11 +386,30 @@ and require = begin fun pos ->
   end
 end
 
+let rec make_decls = begin fun map ->
+  (List.rev (((ValNameMap.fold begin fun name ->
+    begin fun t ->
+      begin fun acc ->
+        (( :: ) ((Decl.Val (name, (Scheme.mono t))), acc))
+      end
+    end
+  end) map) []))
+end
+
 let rec infer_top = begin fun inf ->
   begin fun top ->
     begin match top.Top.raw with
       | (Top.Expr (expr)) ->
         (inf, (( :: ) ((Decl.Val ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))), [])))
+      | (Top.LetVal (pat, val_expr)) ->
+        begin let val_type = ((infer_expr inf) val_expr) in
+        begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+        begin
+        (((require val_expr.Expr.pos) pat_type) val_type);
+        (inf, (make_decls map))
+        end
+        end
+        end
     end
   end
 end

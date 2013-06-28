@@ -238,10 +238,18 @@ rec:
       case Type.Unification_error(t1, t2):
         failwith(required(pos, req_type, got_type, t1, t2))
 
+def make_decls(map):
+  List.rev(ValNameMap.fold^(name, t, acc){Decl.Val(name, Scheme.mono(t))::acc}(map, []))
+
 def infer_top(inf, top):
   match top.Top.raw:
     case Top.Expr(expr):
       (inf, [Decl.Val(Names.Id("_"), Scheme.mono(infer_expr(inf, expr)))])
+    case Top.LetVal(pat,val_expr):
+      var val_type = infer_expr(inf, val_expr)
+      var (inf, pat_type, map) = infer_pattern(inf, pat)
+      require(val_expr.Expr.pos, pat_type, val_type)
+      (inf, make_decls(map))
 
 def eval(inf, type_expr):
   var t = match type_expr.TypeExpr.raw:
