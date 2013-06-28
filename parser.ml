@@ -359,17 +359,30 @@ end
 let rec parse_op = begin fun parser ->
   begin
   ((parse_token parser) (Token.Reserved ("(")));
-  begin match (Token.get_op parser.token) with
-    | (Some (str)) ->
-      begin
-      (lookahead parser);
-      begin
-      ((parse_token parser) (Token.Reserved (")")));
-      str
-      end
-      end
-    | None ->
-      (failwith ((expected parser) "operator"))
+  begin if ((( = ) parser.token) (Token.Reserved ("["))) then
+    begin
+    (lookahead parser);
+    begin
+    ((parse_token parser) (Token.Reserved ("]")));
+    begin
+    ((parse_token parser) (Token.Reserved (")")));
+    "[]"
+    end
+    end
+    end
+  else
+    begin match (Token.get_op parser.token) with
+      | (Some (str)) ->
+        begin
+        (lookahead parser);
+        begin
+        ((parse_token parser) (Token.Reserved (")")));
+        str
+        end
+        end
+      | None ->
+        (failwith ((expected parser) "operator"))
+    end
   end
   end
 end
@@ -378,6 +391,20 @@ let rec parse_val_name = begin fun parser ->
   begin match parser.token with
     | (Token.LowId (_)) ->
       (Names.Id ((parse_lowid parser)))
+    | (Token.Reserved ("$")) ->
+      begin
+      (lookahead parser);
+      (Names.Op ((parse_op parser)))
+      end
+    | _ ->
+      (failwith ((expected parser) "identifier"))
+  end
+end
+
+let rec parse_ctor_name = begin fun parser ->
+  begin match parser.token with
+    | (Token.CapId (_)) ->
+      (Names.Id ((parse_capid parser)))
     | (Token.Reserved ("$")) ->
       begin
       (lookahead parser);
@@ -411,6 +438,10 @@ end
 let rec parse_ctor = begin fun parser ->
   begin fun mod_names ->
     begin match parser.token with
+      | (Token.Reserved ("$")) ->
+        begin let ctor_name = (parse_ctor_name parser) in
+        ((List.rev mod_names), ctor_name)
+        end
       | (Token.CapId (_)) ->
         begin let capid = (parse_capid parser) in
         begin if ((( = ) parser.token) (Token.Reserved ("."))) then
@@ -1558,7 +1589,7 @@ end
 and parse_ctor_decl = begin fun parser ->
   begin
   ((parse_token parser) (Token.Reserved ("def")));
-  begin let ctor_name = (Names.Id ((parse_capid parser))) in
+  begin let ctor_name = (parse_ctor_name parser) in
   begin if ((( = ) parser.token) (Token.Reserved ("("))) then
     begin
     (lookahead parser);

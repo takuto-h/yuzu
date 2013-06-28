@@ -207,6 +207,12 @@ def parse_lowid(parser):
 
 def parse_op(parser):
   parse_token(parser, Token.Reserved("("))
+  if parser.token = Token.Reserved("["):
+    lookahead(parser)
+    parse_token(parser, Token.Reserved("]"))
+    parse_token(parser, Token.Reserved(")"))
+    "[]"
+  else:
   match Token.get_op(parser.token):
     case Some(str):
       lookahead(parser)
@@ -219,6 +225,16 @@ def parse_val_name(parser):
   match parser.token:
     case Token.LowId(_):
       Names.Id(parse_lowid(parser))
+    case Token.Reserved("$"):
+      lookahead(parser)
+      Names.Op(parse_op(parser))
+    case _:
+      failwith(expected(parser, "identifier"))
+
+def parse_ctor_name(parser):
+  match parser.token:
+    case Token.CapId(_):
+      Names.Id(parse_capid(parser))
     case Token.Reserved("$"):
       lookahead(parser)
       Names.Op(parse_op(parser))
@@ -239,6 +255,9 @@ def parse_val_path(parser, mod_names):
   
 def parse_ctor(parser, mod_names):
   match parser.token:
+    case Token.Reserved("$"):
+      var ctor_name = parse_ctor_name(parser)
+      (List.rev(mod_names), ctor_name)
     case Token.CapId(_):
       var capid = parse_capid(parser)
       if parser.token = Token.Reserved("."):
@@ -932,7 +951,7 @@ rec:
   
   def parse_ctor_decl(parser):
     parse_token(parser, Token.Reserved("def"))
-    var ctor_name = Names.Id(parse_capid(parser))
+    var ctor_name = parse_ctor_name(parser)
     if parser.token = Token.Reserved("("):
       lookahead(parser)
       var t = parse_type(parser)
