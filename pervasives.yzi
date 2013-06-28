@@ -1,4 +1,8 @@
 
+type int
+type bool
+type list
+
 val $(+) : int -> int -> int
 val $(-) : int -> int -> int
 val $(*) : int -> int -> int

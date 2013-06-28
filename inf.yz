@@ -10,7 +10,7 @@ type t:
   opens : list(Names.mod_name * Names.mod_path)
   asp : list(Names.val_name * Scheme.t)
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
-  typectors : list(Names.typector * int)
+  typectors : list(Names.typector_name * int)
   let_level : int
 
 var default_opens = [("Pervasives", [])]
@@ -343,6 +343,8 @@ def load_decl(inf, decl):
     case DeclExpr.Val(name, type_expr):
       var scm = Scheme.mono(eval(ref([]), inf.let_level, type_expr))
       inf.{asp = (name, scm)::inf.asp}
+    case DeclExpr.AbstrType(name, param_num):
+      inf.{typectors = (name, param_num)::inf.typectors}
 
 def leave_module(inf, mod_name):
   var new_mod = Module.make([], inf.asp, inf.ctors, inf.typectors)

@@ -309,10 +309,7 @@ rec:
         parse_token(parser, Token.Reserved(")"))
         t
       case Token.Reserved("`"):
-        var pos = parser.pos
-        lookahead(parser)
-        var name = parse_lowid(parser)
-        TypeExpr.at(pos, TypeExpr.Var(name))
+        parse_type_var(parser)
       case _:
         failwith(expected(parser, "type"))
   
@@ -327,6 +324,12 @@ rec:
         parse_typector(parser, capid::mod_names)
       case _:
         failwith(expected(parser, "identifier"))
+
+  def parse_type_var(parser):
+    var pos = parser.pos
+    parse_token(parser, Token.Reserved("`"))
+    var name = parse_lowid(parser)
+    TypeExpr.at(pos, TypeExpr.Var(name))
 
 // END rec: def parse_type
 
@@ -958,13 +961,26 @@ def parse_decl(parser):
     case Token.EOF:
       None
     case _:
-      parse_token(parser, Token.Reserved("val"))
-      var name = parse_val_name(parser)
-      parse_token(parser, Token.Reserved(":"))
-      var type_expr = parse_type(parser)
+      var decl_expr = match parser.token:
+        case Token.Reserved("val"):
+          lookahead(parser)
+          var name = parse_val_name(parser)
+          parse_token(parser, Token.Reserved(":"))
+          var type_expr = parse_type(parser)
+          DeclExpr.Val(name, type_expr)
+        case Token.Reserved("type"):
+          lookahead(parser)
+          var name = parse_lowid(parser)
+          if parser.token <> Token.Reserved("("):
+            DeclExpr.AbstrType(name, 0)
+          else:
+            var type_params = parse_elems(parser, comma_or_rparen, parse_type_var)
+            DeclExpr.AbstrType(name, List.length(type_params))
+        case _:
+          failwith(expected(parser, "'type' or 'val'"))
       match parser.token:
         case Token.EOF | Token.Newline | Token.Reserved(";"):
-          Some(DeclExpr.Val(name, type_expr))
+          Some(decl_expr)
         case _:
           failwith(expected(parser, "newline or ';'"))
 

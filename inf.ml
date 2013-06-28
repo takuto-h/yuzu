@@ -9,7 +9,7 @@ type t = {
   opens : ((Names.mod_name * Names.mod_path)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
-  typectors : ((Names.typector * int)) list;
+  typectors : ((Names.typector_name * int)) list;
   let_level : int;
 }
 
@@ -580,6 +580,11 @@ let rec load_decl = begin fun inf ->
           asp = (( :: ) ((name, scm), inf.asp));
         }
         end
+      | (DeclExpr.AbstrType (name, param_num)) ->
+        {
+          inf with
+          typectors = (( :: ) ((name, param_num), inf.typectors));
+        }
     end
   end
 end
