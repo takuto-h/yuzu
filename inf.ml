@@ -13,15 +13,15 @@ type t = {
   let_level : int;
 }
 
-let default_opens = (( :: ) (("Pervasives", []), []))
+let default_opens = (( :: ) (("Pervasives", ( [] )), ( [] )))
 
 let rec create = begin fun () ->
   {
-    mods = [];
+    mods = ( [] );
     opens = default_opens;
-    asp = [];
-    ctors = [];
-    typectors = [];
+    asp = ( [] );
+    ctors = ( [] );
+    typectors = ( [] );
     let_level = 0;
   }
 end
@@ -33,15 +33,15 @@ let rec incr_let_level = begin fun inf ->
   }
 end
 
-let unit_type = (Type.Con ([], "unit"))
+let unit_type = (Type.Con (( [] ), "unit"))
 
-let int_type = (Type.Con ([], "int"))
+let int_type = (Type.Con (( [] ), "int"))
 
-let string_type = (Type.Con ([], "string"))
+let string_type = (Type.Con (( [] ), "string"))
 
-let char_type = (Type.Con ([], "char"))
+let char_type = (Type.Con (( [] ), "char"))
 
-let bool_type = (Type.Con ([], "bool"))
+let bool_type = (Type.Con (( [] ), "bool"))
 
 let rec unbound_variable = begin fun pos ->
   begin fun path ->
@@ -130,14 +130,14 @@ let rec search_opens = begin fun search_mod ->
     begin fun opens ->
       begin fun name ->
         begin match opens with
-          | ([] _) ->
+          | ( [] ) ->
             (raise Not_found)
           | (( :: ) ((mod_name, mod_path), opens)) ->
             begin try
               (((((search_mods search_mod) mods) mod_name) mod_path) name)
             with
 
-              | (Not_found _) ->
+              | Not_found ->
                 ((((search_opens search_mod) mods) opens) name)
             end
         end
@@ -151,12 +151,12 @@ let rec search_alist = begin fun search_mod ->
     begin fun inf ->
       begin fun path ->
         begin match path with
-          | (([] _), name) ->
+          | (( [] ), name) ->
             begin try
               ((List.assoc name) alist)
             with
 
-              | (Not_found _) ->
+              | Not_found ->
                 ((((search_opens search_mod) inf.mods) inf.opens) name)
             end
           | ((( :: ) (mod_name, mod_path)), name) ->
@@ -211,7 +211,7 @@ end
 
 let rec infer_literal = begin fun lit ->
   begin match lit with
-    | (Literal.Unit _) ->
+    | Literal.Unit ->
       unit_type
     | (Literal.Int (_)) ->
       int_type
@@ -247,7 +247,7 @@ let rec infer_pattern = begin fun inf ->
         (inf, t, ((ValNameMap.singleton name) t))
         end
       | (Pattern.Tuple (pats)) ->
-        begin let init = (inf, [], ValNameMap.empty) in
+        begin let init = (inf, ( [] ), ValNameMap.empty) in
         begin let (inf, ts, map) = (((YzList.fold_right pats) init) begin fun elem ->
           begin fun (inf, ts, map1) ->
             begin let (inf, t, map2) = ((infer_pattern inf) elem) in
@@ -266,7 +266,7 @@ end
 
 let rec generalize = begin fun let_level ->
   begin fun t ->
-    begin let alist_ref = (ref []) in
+    begin let alist_ref = (ref ( [] )) in
     begin let rec var_func = begin fun t ->
       begin fun lv ->
         begin fun ref ->
@@ -275,7 +275,7 @@ let rec generalize = begin fun let_level ->
               ((List.assq ref) (( ! ) alist_ref))
             with
 
-              | (Not_found _) ->
+              | Not_found ->
                 begin let gen = ((Type.at t.Type.pos) (Type.Gen ((List.length (( ! ) alist_ref))))) in
                 begin
                 ((( := ) alist_ref) (( :: ) ((ref, gen), (( ! ) alist_ref))));
@@ -332,7 +332,7 @@ let rec infer_expr = begin fun inf ->
           ((instantiate inf.let_level) ((search_asp inf) path))
         with
 
-          | (Not_found _) ->
+          | Not_found ->
             (failwith ((unbound_variable expr.Expr.pos) path))
         end
       | (Expr.Abs (pat, body_expr)) ->
@@ -350,11 +350,11 @@ let rec infer_expr = begin fun inf ->
       | (Expr.Ctor (ctor, opt_arg_expr)) ->
         begin try
           begin match (((search_ctors inf) ctor), opt_arg_expr) with
-            | ((false, scm), (None _)) ->
+            | ((false, scm), None) ->
               ((instantiate inf.let_level) scm)
             | ((false, scm), (Some (arg_expr))) ->
               (failwith (((wrong_number_of_arguments expr.Expr.pos) 1) 0))
-            | ((true, scm), (None _)) ->
+            | ((true, scm), None) ->
               (failwith (((wrong_number_of_arguments expr.Expr.pos) 0) 1))
             | ((true, scm), (Some (arg_expr))) ->
               begin let arg_type = ((infer_expr inf) arg_expr) in
@@ -363,7 +363,7 @@ let rec infer_expr = begin fun inf ->
           end
         with
 
-          | (Not_found _) ->
+          | Not_found ->
             (failwith ((unbound_constructor expr.Expr.pos) ctor))
         end
       | (Expr.If (cond_expr, then_expr, else_expr)) ->
@@ -390,7 +390,7 @@ let rec infer_expr = begin fun inf ->
         ((Type.at (Some (expr.Expr.pos))) (Type.Tuple (((List.map (infer_expr inf)) exprs))))
       | (Expr.Or (lhs, rhs)) ->
         begin let pos = expr.Expr.pos in
-        begin let or_op = ((Expr.at pos) (Expr.Var ([], (Names.Op ("||"))))) in
+        begin let or_op = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op ("||"))))) in
         begin let or_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (or_op, lhs))), rhs))) in
         ((infer_expr inf) or_expr)
         end
@@ -398,7 +398,7 @@ let rec infer_expr = begin fun inf ->
         end
       | (Expr.And (lhs, rhs)) ->
         begin let pos = expr.Expr.pos in
-        begin let and_op = ((Expr.at pos) (Expr.Var ([], (Names.Op ("&&"))))) in
+        begin let and_op = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op ("&&"))))) in
         begin let and_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (and_op, lhs))), rhs))) in
         ((infer_expr inf) and_expr)
         end
@@ -474,14 +474,14 @@ let rec make_decls = begin fun map ->
         (( :: ) ((Decl.Val (name, (Scheme.mono t))), acc))
       end
     end
-  end) map) []))
+  end) map) ( [] )))
 end
 
 let rec infer_top = begin fun inf ->
   begin fun top ->
     begin match top.Top.raw with
       | (Top.Expr (expr)) ->
-        (inf, (( :: ) ((Decl.Val ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))), [])))
+        (inf, (( :: ) ((Decl.Val ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))), ( [] ))))
       | (Top.LetVal (pat, val_expr)) ->
         begin let val_type = ((infer_expr inf) val_expr) in
         begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
@@ -501,7 +501,7 @@ let rec infer_top = begin fun inf ->
             end
           end
         end) in
-        begin let (inf, decls) = (((YzList.fold_left (inf, [])) defs) begin fun (inf, decls) ->
+        begin let (inf, decls) = (((YzList.fold_left (inf, ( [] ))) defs) begin fun (inf, decls) ->
           begin fun (name, val_expr) ->
             begin let val_type = ((infer_expr tmp_inf) val_expr) in
             begin let scm = ((generalize let_level) val_type) in
@@ -537,7 +537,7 @@ let rec eval = begin fun inf ->
             end
           with
 
-            | (Not_found _) ->
+            | Not_found ->
               (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
           end
         | (TypeExpr.Var (name)) ->
@@ -545,7 +545,7 @@ let rec eval = begin fun inf ->
             ((List.assoc name) (( ! ) env_ref))
           with
 
-            | (Not_found _) ->
+            | Not_found ->
               begin let t = (Type.make_var inf.let_level).Type.raw in
               begin
               ((( := ) env_ref) (( :: ) ((name, t), (( ! ) env_ref))));
@@ -566,7 +566,7 @@ let rec eval = begin fun inf ->
             end
           with
 
-            | (Not_found _) ->
+            | Not_found ->
               (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
           end
         | (TypeExpr.Tuple (ts)) ->
@@ -588,7 +588,7 @@ let rec load_decl = begin fun inf ->
   begin fun decl ->
     begin match decl with
       | (DeclExpr.Val (name, type_expr)) ->
-        begin let scm = (Scheme.mono (((eval inf) (ref [])) type_expr)) in
+        begin let scm = (Scheme.mono (((eval inf) (ref ( [] ))) type_expr)) in
         {
           inf with
           asp = (( :: ) ((name, scm), inf.asp));
@@ -605,13 +605,13 @@ end
 
 let rec leave_module = begin fun inf ->
   begin fun mod_name ->
-    begin let new_mod = ((((Module.make []) inf.asp) inf.ctors) inf.typectors) in
+    begin let new_mod = ((((Module.make ( [] )) inf.asp) inf.ctors) inf.typectors) in
     {
       mods = (( :: ) ((mod_name, new_mod), inf.mods));
       opens = default_opens;
-      asp = [];
-      ctors = [];
-      typectors = [];
+      asp = ( [] );
+      ctors = ( [] );
+      typectors = ( [] );
       let_level = 0;
     }
     end
@@ -620,18 +620,18 @@ end
 
 let pos = (((((Pos.make "<assertion>") 1) 0) 0) (Pos.String ("<assertion>")))
 
-let mod_B = ((((Module.make []) (( :: ) (((Names.Id ("b1")), (Scheme.mono ((Type.at (Some (pos))) char_type))), (( :: ) (((Names.Id ("b2")), (Scheme.mono ((Type.at (Some (pos))) int_type))), []))))) []) [])
+let mod_B = ((((Module.make ( [] )) (( :: ) (((Names.Id ("b1")), (Scheme.mono ((Type.at (Some (pos))) char_type))), (( :: ) (((Names.Id ("b2")), (Scheme.mono ((Type.at (Some (pos))) int_type))), ( [] )))))) ( [] )) ( [] ))
 
-let mod_A = ((((Module.make (( :: ) (("B", mod_B), []))) (( :: ) (((Names.Id ("a1")), (Scheme.mono ((Type.at (Some (pos))) int_type))), (( :: ) (((Names.Id ("a2")), (Scheme.mono ((Type.at (Some (pos))) string_type))), []))))) []) [])
+let mod_A = ((((Module.make (( :: ) (("B", mod_B), ( [] )))) (( :: ) (((Names.Id ("a1")), (Scheme.mono ((Type.at (Some (pos))) int_type))), (( :: ) (((Names.Id ("a2")), (Scheme.mono ((Type.at (Some (pos))) string_type))), ( [] )))))) ( [] )) ( [] ))
 
-let mod_Pervasives = ((((Module.make []) (( :: ) (((Names.Op ("+")), (Scheme.mono ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) int_type))))))))), []))) []) [])
+let mod_Pervasives = ((((Module.make ( [] )) (( :: ) (((Names.Op ("+")), (Scheme.mono ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) int_type))))))))), ( [] )))) ( [] )) ( [] ))
 
 let inf = {
-  mods = (( :: ) (("A", mod_A), (( :: ) (("Pervasives", mod_Pervasives), []))));
-  opens = (( :: ) (("Pervasives", []), []));
-  asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono ((Type.at (Some (pos))) int_type))), []));
-  ctors = [];
-  typectors = [];
+  mods = (( :: ) (("A", mod_A), (( :: ) (("Pervasives", mod_Pervasives), ( [] )))));
+  opens = (( :: ) (("Pervasives", ( [] )), ( [] )));
+  asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono ((Type.at (Some (pos))) int_type))), ( [] )));
+  ctors = ( [] );
+  typectors = ( [] );
   let_level = 0;
 }
 
@@ -649,11 +649,11 @@ let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) string_expr))) "s
 
 let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) char_expr))) "char"))
 
-let ans = ((Expr.at pos) (Expr.Var ([], (Names.Id ("ans")))))
+let ans = ((Expr.at pos) (Expr.Var (( [] ), (Names.Id ("ans")))))
 
-let _A_a2 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", [])), (Names.Id ("a2")))))
+let _A_a2 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", ( [] ))), (Names.Id ("a2")))))
 
-let _A_B_b1 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", (( :: ) ("B", [])))), (Names.Id ("b1")))))
+let _A_B_b1 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", (( :: ) ("B", ( [] ))))), (Names.Id ("b1")))))
 
 let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) ans))) "int"))
 
@@ -673,7 +673,7 @@ with
     end
 end
 
-let add = ((Expr.at pos) (Expr.Var ([], (Names.Op ("+")))))
+let add = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op ("+")))))
 
 let add_int = ((Expr.at pos) (Expr.App (add, int_expr)))
 

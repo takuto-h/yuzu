@@ -14,7 +14,7 @@ let rec main = begin fun () ->
     end)
   end) in
   begin match result with
-    | (None _) ->
+    | None ->
       (exit 1)
     | (Some (compiler)) ->
       (exit 0)

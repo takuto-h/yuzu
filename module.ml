@@ -27,7 +27,7 @@ let rec search_alist = begin fun get_alist ->
     begin fun mod_path ->
       begin fun name ->
         begin match mod_path with
-          | ([] _) ->
+          | ( [] ) ->
             ((List.assoc name) (get_alist modl))
           | (( :: ) (mod_name, mod_path)) ->
             begin let modl = ((List.assoc mod_name) modl.mods) in

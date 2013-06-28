@@ -31,11 +31,11 @@ end
 
 let rec show = begin fun token ->
   begin match token with
-    | (EOF _) ->
+    | EOF ->
       "EOF"
-    | (Newline _) ->
+    | Newline ->
       "newline"
-    | (Undent _) ->
+    | Undent ->
       "undent"
     | (Int (_)) ->
       "integer"

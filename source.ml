@@ -32,7 +32,7 @@ end
 
 let rec junk = begin fun src ->
   begin match (peek src) with
-    | (None _) ->
+    | None ->
       ()
     | (Some ('\n')) ->
       begin

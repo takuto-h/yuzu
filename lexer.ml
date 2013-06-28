@@ -10,7 +10,7 @@ type t = {
 
 let initial_buffer_size = 16
 
-let reserved = (( :: ) ("as", (( :: ) ("case", (( :: ) ("def", (( :: ) ("else", (( :: ) ("exception", (( :: ) ("false", (( :: ) ("if", (( :: ) ("match", (( :: ) ("module", (( :: ) ("mutable", (( :: ) ("open", (( :: ) ("rec", (( :: ) ("try", (( :: ) ("true", (( :: ) ("type", (( :: ) ("val", (( :: ) ("var", (( :: ) ("when", (( :: ) ("with", []))))))))))))))))))))))))))))))))))))))
+let reserved = (( :: ) ("as", (( :: ) ("case", (( :: ) ("def", (( :: ) ("else", (( :: ) ("exception", (( :: ) ("false", (( :: ) ("if", (( :: ) ("match", (( :: ) ("module", (( :: ) ("mutable", (( :: ) ("open", (( :: ) ("rec", (( :: ) ("try", (( :: ) ("true", (( :: ) ("type", (( :: ) ("val", (( :: ) ("var", (( :: ) ("when", (( :: ) ("with", ( [] )))))))))))))))))))))))))))))))))))))))
 
 let rec create = begin fun source ->
   {
@@ -88,7 +88,7 @@ let rec lex_op = begin fun lexer ->
         ((lex_op lexer) buf)
         end
         end
-      | ((Some (_)) | (None _)) ->
+      | ((Some (_)) | None) ->
         (Buffer.contents buf)
     end
   end
@@ -102,7 +102,7 @@ let rec lex_int = begin fun lexer ->
         (Source.junk lexer.source);
         ((lex_int lexer) ((( + ) ((( * ) n) 10)) (int_of_digit c)))
         end
-      | ((Some (_)) | (None _)) ->
+      | ((Some (_)) | None) ->
         (Token.Int (n))
     end
   end
@@ -139,7 +139,7 @@ let rec lex_string = begin fun lexer ->
             end
             end
             end
-          | (None _) ->
+          | None ->
             begin let pos_eof = (Source.pos lexer.source) in
             (failwith ((Pos.show_error pos_eof) "EOF inside a string literal\n"))
             end
@@ -153,7 +153,7 @@ let rec lex_string = begin fun lexer ->
         ((lex_string lexer) buf)
         end
         end
-      | (None _) ->
+      | None ->
         begin let pos_eof = (Source.pos lexer.source) in
         (failwith ((Pos.show_error pos_eof) "EOF inside a string literal\n"))
         end
@@ -192,7 +192,7 @@ let rec lex_char = begin fun lexer ->
             end
             end
             end
-          | (None _) ->
+          | None ->
             begin let pos_eof = (Source.pos lexer.source) in
             (failwith ((Pos.show_error pos_eof) "EOF inside a string literal\n"))
             end
@@ -206,7 +206,7 @@ let rec lex_char = begin fun lexer ->
         ((lex_char lexer) buf)
         end
         end
-      | (None _) ->
+      | None ->
         begin let pos_eof = (Source.pos lexer.source) in
         (failwith ((Pos.show_error pos_eof) "EOF inside a character literal\n"))
         end
@@ -233,7 +233,7 @@ let rec lex_lowid = begin fun lexer ->
         ((lex_lowid lexer) buf)
         end
         end
-      | ((Some (_)) | (None _)) ->
+      | ((Some (_)) | None) ->
         (lowid_or_reserved (Buffer.contents buf))
     end
   end
@@ -250,7 +250,7 @@ let rec lex_capid = begin fun lexer ->
         ((lex_capid lexer) buf)
         end
         end
-      | ((Some (_)) | (None _)) ->
+      | ((Some (_)) | None) ->
         (Token.CapId ((Buffer.contents buf)))
     end
   end
@@ -282,7 +282,7 @@ let rec lex_visible_token = begin fun lexer ->
               (Source.junk lexer.source);
               (Token.AssignOp ("<-"))
               end
-            | ((Some (_)) | (None _)) ->
+            | ((Some (_)) | None) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
@@ -297,7 +297,7 @@ let rec lex_visible_token = begin fun lexer ->
               (Source.junk lexer.source);
               (Token.OrOp ("||"))
               end
-            | ((Some (_)) | (None _)) ->
+            | ((Some (_)) | None) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
@@ -312,7 +312,7 @@ let rec lex_visible_token = begin fun lexer ->
               (Source.junk lexer.source);
               (Token.AndOp ("&&"))
               end
-            | ((Some (_)) | (None _)) ->
+            | ((Some (_)) | None) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
@@ -343,7 +343,7 @@ let rec lex_visible_token = begin fun lexer ->
               (Token.CmpOp (((lex_op lexer) buf)))
               end
               end
-            | ((Some (_)) | (None _)) ->
+            | ((Some (_)) | None) ->
               (Token.Reserved ("!"))
           end
         | '%' ->
@@ -360,7 +360,7 @@ let rec lex_visible_token = begin fun lexer ->
               (Source.junk lexer.source);
               (Token.PowOp ("**"))
               end
-            | ((Some (_)) | (None _)) ->
+            | ((Some (_)) | None) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
@@ -380,7 +380,7 @@ let rec lex_visible_token = begin fun lexer ->
               (Source.junk lexer.source);
               (Token.AssignOp (":="))
               end
-            | ((Some (_)) | (None _)) ->
+            | ((Some (_)) | None) ->
               (Token.Reserved (":"))
           end
         | '"' ->
@@ -463,7 +463,7 @@ end
 
 let rec skip_single_line_comment = begin fun lexer ->
   begin match (Source.peek lexer.source) with
-    | ((None _) | (Some ('\n'))) ->
+    | (None | (Some ('\n'))) ->
       ()
     | (Some (_)) ->
       begin
@@ -476,9 +476,9 @@ end
 let rec next = begin fun lexer ->
   begin let pos = (Source.pos lexer.source) in
   begin match (Source.peek lexer.source) with
-    | (None _) when ((( <= ) (Stack.length lexer.offside_lines)) 1) ->
+    | None when ((( <= ) (Stack.length lexer.offside_lines)) 1) ->
       (None, pos)
-    | (None _) ->
+    | None ->
       begin
       (ignore (Stack.pop lexer.offside_lines));
       ((Some (Token.Undent)), pos)
@@ -508,7 +508,7 @@ let rec next = begin fun lexer ->
           (next lexer)
           end
           end
-        | ((Some (_)) | (None _)) ->
+        | ((Some (_)) | None) ->
           begin let buf = (Buffer.create initial_buffer_size) in
           begin
           ((Buffer.add_char buf) '/');

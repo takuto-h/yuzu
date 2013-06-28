@@ -40,10 +40,14 @@ rec:
         translate_literal(lit)
       case Pattern.Var(name):
         Names.show_val_name(name)
-      case Pattern.Variant(ctor,pat):
+      case Pattern.Ctor(ctor,opt_pat):
         var str_ctor = Names.show_ctor(ctor)
-        var str_pat = translate_pattern(pat)
-        sprintf("(%s %s)", str_ctor, str_pat)
+        match opt_pat:
+          case None:
+            str_ctor
+          case Some(pat):
+            var str_pat = translate_pattern(pat)
+            sprintf("(%s %s)", str_ctor, str_pat)
       case Pattern.Tuple(pat::pats):
         var str_pat_list = YzList.fold_left(translate_pattern(pat), pats)^(acc, elem):
           sprintf("%s, %s", acc, translate_pattern(elem))

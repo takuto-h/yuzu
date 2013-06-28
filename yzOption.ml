@@ -1,7 +1,7 @@
 let rec bind = begin fun opt ->
   begin fun func ->
     begin match opt with
-      | (None _) ->
+      | None ->
         None
       | (Some (x)) ->
         (func x)
@@ -18,7 +18,7 @@ let rec or_ = begin fun opt1 ->
     begin match opt1 with
       | (Some (x)) ->
         opt1
-      | (None _) ->
+      | None ->
         opt2
     end
   end

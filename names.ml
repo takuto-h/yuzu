@@ -30,7 +30,7 @@ end
 
 let rec show_mod_path = begin fun path ->
   begin match path with
-    | ([] _) ->
+    | ( [] ) ->
       ""
     | (( :: ) (name, names)) ->
       (((List.fold_left (sprintf "%s.%s")) name) names)
@@ -39,7 +39,7 @@ end
 
 let rec show_val_path = begin fun path ->
   begin match path with
-    | (([] _), val_name) ->
+    | (( [] ), val_name) ->
       (show_val_name val_name)
     | (mod_path, val_name) ->
       (((sprintf "%s.%s") (show_mod_path mod_path)) (show_val_name val_name))
@@ -48,7 +48,7 @@ end
 
 let rec show_typector = begin fun typector ->
   begin match typector with
-    | (([] _), typector_name) ->
+    | (( [] ), typector_name) ->
       typector_name
     | (mod_path, typector_name) ->
       (((sprintf "%s.%s") (show_mod_path mod_path)) typector_name)

@@ -47,7 +47,7 @@ let rec show_source = begin fun {fname;lnum;cnum;bol;source;} ->
   begin
   (((String.set str_anchor) offset) '^');
   begin match source with
-    | (File _) ->
+    | File ->
       ((with_open_in fname) begin fun chan_in ->
         begin try
           begin
@@ -58,7 +58,7 @@ let rec show_source = begin fun {fname;lnum;cnum;bol;source;} ->
           end
         with
 
-          | (End_of_file _) ->
+          | End_of_file ->
             ""
         end
       end)
@@ -68,7 +68,7 @@ let rec show_source = begin fun {fname;lnum;cnum;bol;source;} ->
         (((String.sub str) 0) ((String.index str) '\n'))
       with
 
-        | (Not_found _) ->
+        | Not_found ->
           str
       end in
       (((sprintf "%s\n%s\n") str_line) str_anchor)

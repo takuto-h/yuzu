@@ -39,7 +39,7 @@ let rec compile_file = begin fun compiler ->
         begin try
           begin let rec loop = begin fun compiler ->
             begin match (Parser.parse parser) with
-              | (None _) ->
+              | None ->
                 (Some ({
                   compiler with
                   inf = ((Inf.leave_module compiler.inf) mod_name);
@@ -97,7 +97,7 @@ let rec compile_string = begin fun compiler ->
       begin try
         begin let rec loop = begin fun compiler ->
           begin match (Parser.parse parser) with
-            | (None _) ->
+            | None ->
               (Some (compiler, (Buffer.contents buf_decls), (Buffer.contents buf_output)))
             | (Some (top)) ->
               begin let (inf, decls) = ((Inf.infer_top compiler.inf) top) in
@@ -145,11 +145,11 @@ end
 let rec compile_files = begin fun compiler ->
   begin fun fnames ->
     begin match fnames with
-      | ([] _) ->
+      | ( [] ) ->
         (Some (compiler))
       | (( :: ) (fname_in, fnames)) ->
         begin match ((compile_file compiler) fname_in) with
-          | (None _) ->
+          | None ->
             None
           | (Some (compiler)) ->
             ((compile_files compiler) fnames)
@@ -177,7 +177,7 @@ let rec interactive = begin fun compiler ->
   begin try
     begin let str = (read (Buffer.create initial_buffer_size)) in
     begin match (((compile_string compiler) "<interactive>") str) with
-      | (None _) ->
+      | None ->
         (interactive compiler)
       | (Some (compiler, decls, output)) ->
         begin
@@ -191,7 +191,7 @@ let rec interactive = begin fun compiler ->
     end
   with
 
-    | (End_of_file _) ->
+    | End_of_file ->
       compiler
   end
   end
@@ -215,7 +215,7 @@ let rec load_iface_file = begin fun compiler ->
       begin try
         begin let rec loop = begin fun compiler ->
           begin match (Parser.parse_decl parser) with
-            | (None _) ->
+            | None ->
               (Some ({
                 compiler with
                 inf = ((Inf.leave_module compiler.inf) mod_name);

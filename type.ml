@@ -37,7 +37,7 @@ let rec map = begin fun var_func ->
           t
         | (Var (let_level, t_ref)) ->
           begin match (( ! ) t_ref) with
-            | (None _) ->
+            | None ->
               (((var_func t) let_level) t_ref)
             | (Some (t_val)) ->
               (((map var_func) gen_func) t_val)
@@ -70,7 +70,7 @@ let rec occurs = begin fun t_ref0 ->
         false
       | (Var (_, t_ref)) ->
         begin match (( ! ) t_ref) with
-          | (None _) ->
+          | None ->
             ((( == ) t_ref) t_ref0)
           | (Some (t_val)) ->
             ((occurs t_ref0) t_val)
@@ -100,18 +100,18 @@ let rec unify = begin fun t1 ->
             ((unify t10) t2)
           | (_, (Some (t20))) ->
             ((unify t1) t20)
-          | ((None _), (None _)) when ((( > ) lv1) lv2) ->
+          | (None, None) when ((( > ) lv1) lv2) ->
             ((( := ) t1_ref) (Some (t2)))
-          | ((None _), (None _)) when ((( < ) lv1) lv2) ->
+          | (None, None) when ((( < ) lv1) lv2) ->
             ((( := ) t2_ref) (Some (t1)))
-          | ((None _), (None _)) ->
+          | (None, None) ->
             ((( := ) t2_ref) (Some (t1)))
         end
       | ((Var (lv1, t1_ref)), _) ->
         begin match (( ! ) t1_ref) with
           | (Some (t10)) ->
             ((unify t10) t2)
-          | (None _) ->
+          | None ->
             begin if ((occurs t1_ref) t2) then
               (raise (Unification_error (t1, t2)))
             else
@@ -122,7 +122,7 @@ let rec unify = begin fun t1 ->
         begin match (( ! ) t2_ref) with
           | (Some (t20)) ->
             ((unify t1) t20)
-          | (None _) ->
+          | None ->
             begin if ((occurs t2_ref) t1) then
               (raise (Unification_error (t1, t2)))
             else
@@ -161,7 +161,7 @@ type shower = {
 
 let rec create_shower = begin fun gen_num ->
   {
-    var_map = [];
+    var_map = ( [] );
     gen_map = ((Array.init gen_num) (sprintf "`t%d"));
   }
 end
@@ -175,12 +175,12 @@ let rec show = begin fun shower ->
         begin match (( ! ) t_ref) with
           | (Some (t_val)) ->
             ((show shower) t_val)
-          | (None _) ->
+          | None ->
             begin try
               ((List.assq t_ref) shower.var_map)
             with
 
-              | (Not_found _) ->
+              | Not_found ->
                 begin let str = ((sprintf "`_t%d") (List.length shower.var_map)) in
                 begin
                 (shower.var_map <- (( :: ) ((t_ref, str), shower.var_map)));
@@ -209,7 +209,7 @@ and show_list = begin fun shower ->
   begin fun sep ->
     begin fun ts ->
       begin match ts with
-        | ([] _) ->
+        | ( [] ) ->
           (assert false)
         | (( :: ) (x, xs)) ->
           (((YzList.fold_left ((show shower) x)) xs) begin fun acc ->
@@ -226,7 +226,7 @@ let rec show_origin = begin fun shower ->
   begin fun descr ->
     begin fun t ->
       begin match t.pos with
-        | (None _) ->
+        | None ->
           ""
         | (Some (pos)) ->
           ((Pos.show_message pos) (((sprintf "'%s' of %s\n") ((show shower) t)) descr))
