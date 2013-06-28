@@ -522,7 +522,11 @@ and parse_atomic_type = begin fun parser ->
       end
       end
     | (Token.Reserved ("`")) ->
-      (parse_type_var parser)
+      begin let pos = parser.pos in
+      begin let name = (parse_type_var_name parser) in
+      ((TypeExpr.at pos) (TypeExpr.Var (name)))
+      end
+      end
     | _ ->
       (failwith ((expected parser) "type"))
   end
@@ -548,14 +552,10 @@ and parse_typector = begin fun parser ->
   end
 end
 
-and parse_type_var = begin fun parser ->
-  begin let pos = parser.pos in
+and parse_type_var_name = begin fun parser ->
   begin
   ((parse_token parser) (Token.Reserved ("`")));
-  begin let name = (parse_lowid parser) in
-  ((TypeExpr.at pos) (TypeExpr.Var (name)))
-  end
-  end
+  (parse_lowid parser)
   end
 end
 
@@ -1615,16 +1615,28 @@ let rec parse_decl_expr = begin fun parser ->
     | (Token.Reserved ("type")) ->
       begin
       (lookahead parser);
-      begin let name = (parse_lowid parser) in
-      begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
-        (DeclExpr.AbstrType (name, 0))
-      else
+      begin let typector_name = (parse_lowid parser) in
+      begin let type_params = begin if ((( = ) parser.token) (Token.Reserved ("("))) then
         begin
         (lookahead parser);
-        begin let type_params = (((parse_elems parser) comma_or_rparen) parse_type_var) in
-        (DeclExpr.AbstrType (name, (List.length type_params)))
+        (((parse_elems parser) comma_or_rparen) parse_type_var_name)
         end
-        end
+      else
+        []
+      end in
+      begin match parser.token with
+        | (Token.CmpOp ("=")) ->
+          begin
+          (lookahead parser);
+          begin let t = (parse_type parser) in
+          (DeclExpr.ConcrType (typector_name, type_params, (TypeInfo.Abbrev (t))))
+          end
+          end
+        | ((Token.Reserved (":")) | (Token.Reserved ("{"))) ->
+          (DeclExpr.ConcrType (typector_name, type_params, (parse_type_repr parser)))
+        | _ ->
+          (DeclExpr.AbstrType (typector_name, (List.length type_params)))
+      end
       end
       end
       end
