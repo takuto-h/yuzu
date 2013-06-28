@@ -974,6 +974,7 @@ def parse_decl(parser):
           if parser.token <> Token.Reserved("("):
             DeclExpr.AbstrType(name, 0)
           else:
+            lookahead(parser)
             var type_params = parse_elems(parser, comma_or_rparen, parse_type_var)
             DeclExpr.AbstrType(name, List.length(type_params))
         case _:

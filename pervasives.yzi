@@ -1,7 +1,7 @@
 
 type int
 type bool
-type list
+type list(`a)
 
 val $(+) : int -> int -> int
 val $(-) : int -> int -> int

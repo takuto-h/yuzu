@@ -1625,8 +1625,11 @@ let rec parse_decl = begin fun parser ->
           begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
             (DeclExpr.AbstrType (name, 0))
           else
+            begin
+            (lookahead parser);
             begin let type_params = (((parse_elems parser) comma_or_rparen) parse_type_var) in
             (DeclExpr.AbstrType (name, (List.length type_params)))
+            end
             end
           end
           end
