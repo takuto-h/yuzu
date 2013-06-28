@@ -48,8 +48,8 @@ def compile_file(compiler, fname_in):
         None
 
 def compile_string(compiler, fname_in, str):
-  var decls = Buffer.create(initial_buffer_size)
-  var output = Buffer.create(initial_buffer_size)
+  var buf_decls = Buffer.create(initial_buffer_size)
+  var buf_output = Buffer.create(initial_buffer_size)
   var strm = Stream.of_string(str)
   var src = Source.create(fname_in, strm, Pos.String(str))
   var lexer = Lexer.create(src)
@@ -59,12 +59,12 @@ def compile_string(compiler, fname_in, str):
     def loop(compiler):
       match Parser.parse(parser):
         case None:
-          Some(compiler, Buffer.contents(decls), Buffer.contents(output))
+          Some(compiler, Buffer.contents(buf_decls), Buffer.contents(buf_output))
         case Some(top):
-          var (inf, decl) = Inf.infer_top(compiler.inf, top)
-          Buffer.add_string(decls, Decl.show(decl))
+          var (inf, decls) = Inf.infer_top(compiler.inf, top)
+          List.iter^(decl){Buffer.add_string(buf_decls, Decl.show(decl))}(decls)
           var result = Trans.translate_top(trans, top)
-          Buffer.add_string(output, result)
+          Buffer.add_string(buf_output, result)
           loop(compiler.{inf = inf})
     loop(compiler)
   with:

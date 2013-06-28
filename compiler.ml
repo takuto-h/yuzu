@@ -87,8 +87,8 @@ end
 let rec compile_string = begin fun compiler ->
   begin fun fname_in ->
     begin fun str ->
-      begin let decls = (Buffer.create initial_buffer_size) in
-      begin let output = (Buffer.create initial_buffer_size) in
+      begin let buf_decls = (Buffer.create initial_buffer_size) in
+      begin let buf_output = (Buffer.create initial_buffer_size) in
       begin let strm = (Stream.of_string str) in
       begin let src = (((Source.create fname_in) strm) (Pos.String (str))) in
       begin let lexer = (Lexer.create src) in
@@ -98,14 +98,16 @@ let rec compile_string = begin fun compiler ->
         begin let rec loop = begin fun compiler ->
           begin match (Parser.parse parser) with
             | (None _) ->
-              (Some (compiler, (Buffer.contents decls), (Buffer.contents output)))
+              (Some (compiler, (Buffer.contents buf_decls), (Buffer.contents buf_output)))
             | (Some (top)) ->
-              begin let (inf, decl) = ((Inf.infer_top compiler.inf) top) in
+              begin let (inf, decls) = ((Inf.infer_top compiler.inf) top) in
               begin
-              ((Buffer.add_string decls) (Decl.show decl));
+              ((List.iter begin fun decl ->
+                ((Buffer.add_string buf_decls) (Decl.show decl))
+              end) decls);
               begin let result = ((Trans.translate_top trans) top) in
               begin
-              ((Buffer.add_string output) result);
+              ((Buffer.add_string buf_output) result);
               (loop {
                 compiler with
                 inf = inf;

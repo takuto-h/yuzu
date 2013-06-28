@@ -237,7 +237,7 @@ rec:
 def infer_top(inf, top):
   match top.Top.raw:
     case Top.Expr(expr):
-      (inf, Decl.Val(Names.Id("_"), Scheme.mono(infer_expr(inf, expr))))
+      (inf, [Decl.Val(Names.Id("_"), Scheme.mono(infer_expr(inf, expr)))])
 
 def eval(inf, type_expr):
   var t = match type_expr.TypeExpr.raw:

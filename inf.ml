@@ -382,7 +382,7 @@ let rec infer_top = begin fun inf ->
   begin fun top ->
     begin match top.Top.raw with
       | (Top.Expr (expr)) ->
-        (inf, (Decl.Val ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))))
+        (inf, (( :: ) ((Decl.Val ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))), [])))
     end
   end
 end
