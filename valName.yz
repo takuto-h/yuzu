@@ -1,0 +1,8 @@
+
+type t = Names.val_name
+
+def compare(name1, name2):
+  String.compare(
+    Names.show_val_name(name1),
+    Names.show_val_name(name2),
+  )

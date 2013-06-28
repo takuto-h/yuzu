@@ -1,5 +1,3 @@
-module A = Map.Make(String)
-
 open Printf
 
 type t = {

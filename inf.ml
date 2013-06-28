@@ -1,5 +1,7 @@
 open Printf
 
+module ValNameMap = Map.Make(ValName)
+
 type t = {
   mods : ((Names.mod_name * Module.t)) list;
   opens : ((Names.mod_name * Names.mod_path)) list;
@@ -187,18 +189,24 @@ let rec infer_pattern = begin fun inf ->
   begin fun pat ->
     begin match pat with
       | (Pattern.Con (lit)) ->
-        (inf, ((Type.at None) (infer_literal lit)))
+        (inf, ((Type.at None) (infer_literal lit)), ValNameMap.empty)
       | (Pattern.Var (name)) ->
-        ((add_asp inf) name)
+        begin let (inf, t) = ((add_asp inf) name) in
+        (inf, t, ((ValNameMap.singleton name) t))
+        end
       | (Pattern.Tuple (pats)) ->
-        begin let (inf, ts) = (((YzList.fold_right pats) (inf, [])) begin fun elem ->
-          begin fun (inf, ts) ->
-            begin let (inf, t) = ((infer_pattern inf) elem) in
-            (inf, (( :: ) (t, ts)))
+        begin let init = (inf, [], ValNameMap.empty) in
+        begin let (inf, ts, map) = (((YzList.fold_right pats) init) begin fun elem ->
+          begin fun (inf, ts, map1) ->
+            begin let (inf, t, map2) = ((infer_pattern inf) elem) in
+            (inf, (( :: ) (t, ts)), (((ValNameMap.merge begin fun _ ->
+              YzOption.or_
+            end) map1) map2))
             end
           end
         end) in
-        (inf, ((Type.at None) (Type.Tuple (ts))))
+        (inf, ((Type.at None) (Type.Tuple (ts))), map)
+        end
         end
     end
   end
@@ -272,7 +280,7 @@ let rec infer_expr = begin fun inf ->
         end
         end
       | (Expr.Abs (pat, body_expr)) ->
-        begin let (inf, pat_type) = ((infer_pattern inf) pat) in
+        begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
         begin let body_type = ((infer_expr inf) body_expr) in
         ((Type.at (Some (expr.Expr.pos))) (Type.Fun (pat_type, body_type)))
         end
@@ -326,7 +334,7 @@ let rec infer_expr = begin fun inf ->
         end
       | (Expr.LetVal (pat, val_expr, cont_expr)) ->
         begin let val_type = ((infer_expr inf) val_expr) in
-        begin let (inf, pat_type) = ((infer_pattern inf) pat) in
+        begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
         begin
         (((require val_expr.Expr.pos) pat_type) val_type);
         ((infer_expr inf) cont_expr)

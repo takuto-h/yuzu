@@ -1,6 +1,6 @@
 
-def bind(option, func):
-  match option:
+def bind(opt, func):
+  match opt:
     case None:
       None
     case Some(x):
@@ -8,3 +8,10 @@ def bind(option, func):
 
 def return(x):
   Some(x)
+
+def or_(opt1, opt2):
+  match opt1:
+    case Some(x):
+      opt1
+    case None:
+      opt2

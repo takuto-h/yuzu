@@ -1,6 +1,8 @@
 
 open Printf
 
+module ValNameMap = Map.Make(ValName)
+
 type t:
   mods : list(Names.mod_name * Module.t)
   opens : list(Names.mod_name * Names.mod_path)
@@ -131,14 +133,16 @@ def add_asp(inf, name):
 def infer_pattern(inf, pat):
   match pat:
     case Pattern.Con(lit):
-      (inf, Type.at(None, infer_literal(lit)))
+      (inf, Type.at(None, infer_literal(lit)), ValNameMap.empty)
     case Pattern.Var(name):
-      add_asp(inf, name)
+      var (inf, t) = add_asp(inf, name)
+      (inf, t, ValNameMap.singleton(name, t))
     case Pattern.Tuple(pats):
-      var (inf, ts) = YzList.fold_right(pats, (inf, []))^(elem, (inf, ts)):
-        var (inf, t) = infer_pattern(inf, elem)
-        (inf, t::ts)
-      (inf, Type.at(None, Type.Tuple(ts)))
+      var init = (inf, [], ValNameMap.empty)
+      var (inf, ts, map) = YzList.fold_right(pats, init)^(elem, (inf, ts, map1)):
+        var (inf, t, map2) = infer_pattern(inf, elem)
+        (inf, t::ts, ValNameMap.merge^(_){YzOption.or_}(map1, map2))
+      (inf, Type.at(None, Type.Tuple(ts)), map)
 
 def generalize(let_level, t):
   var alist_ref = ref([])
@@ -179,7 +183,7 @@ rec:
             failwith(invalid_application(expr.Expr.pos, fun_type, arg_type, t1, t2))
         ret_type
       case Expr.Abs(pat, body_expr):
-        var (inf, pat_type) = infer_pattern(inf, pat)
+        var (inf, pat_type, map) = infer_pattern(inf, pat)
         var body_type = infer_expr(inf, body_expr)
         Type.at(Some(expr.Expr.pos), Type.Fun(pat_type, body_type))
       case Expr.If(cond_expr, then_expr, else_expr):
@@ -212,7 +216,7 @@ rec:
         rhs_type
       case Expr.LetVal(pat,val_expr,cont_expr):
         var val_type = infer_expr(inf, val_expr)
-        var (inf, pat_type) = infer_pattern(inf, pat)
+        var (inf, pat_type, map) = infer_pattern(inf, pat)
         require(val_expr.Expr.pos, pat_type, val_type)
         infer_expr(inf, cont_expr)
       case Expr.LetFun(defs, cont_expr):
