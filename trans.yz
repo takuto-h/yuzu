@@ -194,7 +194,7 @@ rec:
         var str_cases = YzList.fold_left("", cases)^(acc, elem):
           sprintf("%s%s", acc, translate_case(trans_expr, elem))
         sprintf(
-          "begin try\n%s\n%s\n%s\n%s",
+          "begin try\n%s\n%s%s\n%s",
           indent(trans_expr, str_expr),
           indent(trans, "with"),
           str_cases,

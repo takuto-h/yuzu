@@ -179,7 +179,6 @@ let rec show = begin fun shower ->
             begin try
               ((List.assq t_ref) shower.var_map)
             with
-
               | Not_found ->
                 begin let str = ((sprintf "`_t%d") (List.length shower.var_map)) in
                 begin

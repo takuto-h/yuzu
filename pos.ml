@@ -57,7 +57,6 @@ let rec show_source = begin fun {fname;lnum;cnum;bol;source;} ->
           end
           end
         with
-
           | End_of_file ->
             ""
         end
@@ -67,7 +66,6 @@ let rec show_source = begin fun {fname;lnum;cnum;bol;source;} ->
       begin let str_line = begin try
         (((String.sub str) 0) ((String.index str) '\n'))
       with
-
         | Not_found ->
           str
       end in

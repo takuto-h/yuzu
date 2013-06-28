@@ -9,7 +9,6 @@ let rec with_open_in = begin fun fname_in ->
       end
       end
     with
-
       | exn ->
         begin
         (close_in_noerr chan_in);
@@ -31,7 +30,6 @@ let rec with_open_out = begin fun fname_out ->
       end
       end
     with
-
       | exn ->
         begin
         (close_out_noerr chan_out);

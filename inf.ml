@@ -136,7 +136,6 @@ let rec search_opens = begin fun search_mod ->
             begin try
               (((((search_mods search_mod) mods) mod_name) mod_path) name)
             with
-
               | Not_found ->
                 ((((search_opens search_mod) mods) opens) name)
             end
@@ -155,7 +154,6 @@ let rec search_alist = begin fun search_mod ->
             begin try
               ((List.assoc name) alist)
             with
-
               | Not_found ->
                 ((((search_opens search_mod) inf.mods) inf.opens) name)
             end
@@ -274,7 +272,6 @@ let rec generalize = begin fun let_level ->
             begin try
               ((List.assq ref) (( ! ) alist_ref))
             with
-
               | Not_found ->
                 begin let gen = ((Type.at t.Type.pos) (Type.Gen ((List.length (( ! ) alist_ref))))) in
                 begin
@@ -310,7 +307,6 @@ let rec apply = begin fun let_level ->
         begin try
           ((Type.unify fun_type) ((Type.at None) (Type.Fun (arg_type, ret_type))))
         with
-
           | (Type.Unification_error (t1, t2)) ->
             (failwith (((((invalid_application pos) fun_type) arg_type) t1) t2))
         end;
@@ -331,7 +327,6 @@ let rec infer_expr = begin fun inf ->
         begin try
           ((instantiate inf.let_level) ((search_asp inf) path))
         with
-
           | Not_found ->
             (failwith ((unbound_variable expr.Expr.pos) path))
         end
@@ -362,7 +357,6 @@ let rec infer_expr = begin fun inf ->
               end
           end
         with
-
           | Not_found ->
             (failwith ((unbound_constructor expr.Expr.pos) ctor))
         end
@@ -376,7 +370,6 @@ let rec infer_expr = begin fun inf ->
         begin try
           ((Type.unify then_type) else_type)
         with
-
           | (Type.Unification_error (t1, t2)) ->
             (failwith (((((invalid_if_expr expr.Expr.pos) then_type) else_type) t1) t2))
         end;
@@ -459,7 +452,6 @@ and require = begin fun pos ->
       begin try
         ((Type.unify req_type) got_type)
       with
-
         | (Type.Unification_error (t1, t2)) ->
           (failwith (((((required pos) req_type) got_type) t1) t2))
       end
@@ -536,7 +528,6 @@ let rec eval = begin fun inf ->
             end
             end
           with
-
             | Not_found ->
               (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
           end
@@ -544,7 +535,6 @@ let rec eval = begin fun inf ->
           begin try
             ((List.assoc name) (( ! ) env_ref))
           with
-
             | Not_found ->
               begin let t = (Type.make_var inf.let_level).Type.raw in
               begin
@@ -565,7 +555,6 @@ let rec eval = begin fun inf ->
             end
             end
           with
-
             | Not_found ->
               (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
           end
@@ -666,7 +655,6 @@ let app_expr = ((Expr.at pos) (Expr.App (int_expr, string_expr)))
 let () = begin try
   (ignore ((infer_expr inf) app_expr))
 with
-
   | (Failure (got)) ->
     begin let req = (((((((((sprintf "%s%s%s%s%s%s%s%s") "<assertion>:1:0: error: invalid application\n") "function type: int\n") "argument type: string\n") "<assertion>\n") "^\n") "<assertion>:1:0: 'int' of function type\n") "<assertion>\n") "^\n") in
     (assert ((( = ) got) req))

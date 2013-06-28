@@ -263,7 +263,7 @@ let rec translate_expr = begin fun trans ->
             (((sprintf "%s%s") acc) ((translate_case trans_expr) elem))
           end
         end) in
-        (((((sprintf "begin try\n%s\n%s\n%s\n%s") ((indent trans_expr) str_expr)) ((indent trans) "with")) str_cases) ((indent trans) "end"))
+        (((((sprintf "begin try\n%s\n%s%s\n%s") ((indent trans_expr) str_expr)) ((indent trans) "with")) str_cases) ((indent trans) "end"))
         end
         end
         end

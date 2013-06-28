@@ -20,7 +20,6 @@ def create(lexer): {
 def make_cons_pattern(lhs, rhs):
   Pattern.Ctor(([], Names.Op("::")), Some(Pattern.Tuple([lhs;rhs])))
 
-var wildcard_pattern = Pattern.Var(Names.Id("_"))
 var nil_pattern = Pattern.Ctor(([], Names.Op("[]")), None)
 var unit_pattern = Pattern.Con(Literal.Unit)
 

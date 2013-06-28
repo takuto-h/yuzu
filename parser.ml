@@ -26,8 +26,6 @@ let rec make_cons_pattern = begin fun lhs ->
   end
 end
 
-let wildcard_pattern = (Pattern.Var ((Names.Id ("_"))))
-
 let nil_pattern = (Pattern.Ctor ((( [] ), (Names.Op ("[]"))), None))
 
 let unit_pattern = (Pattern.Con (Literal.Unit))

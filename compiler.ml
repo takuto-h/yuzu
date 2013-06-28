@@ -23,7 +23,6 @@ let rec compile_file = begin fun compiler ->
     begin let chopped = begin try
       (Filename.chop_extension fname_in)
     with
-
       | (Invalid_argument (_)) ->
         fname_in
     end in
@@ -61,7 +60,6 @@ let rec compile_file = begin fun compiler ->
           (loop compiler)
           end
         with
-
           | (Failure (message)) ->
             begin
             ((eprintf "%s") message);
@@ -121,7 +119,6 @@ let rec compile_string = begin fun compiler ->
         (loop compiler)
         end
       with
-
         | (Failure (message)) ->
           begin
           ((eprintf "%s") message);
@@ -190,7 +187,6 @@ let rec interactive = begin fun compiler ->
     end
     end
   with
-
     | End_of_file ->
       compiler
   end
@@ -202,7 +198,6 @@ let rec load_iface_file = begin fun compiler ->
     begin let chopped = begin try
       (Filename.chop_extension fname_in)
     with
-
       | (Invalid_argument (_)) ->
         fname_in
     end in
@@ -232,7 +227,6 @@ let rec load_iface_file = begin fun compiler ->
         (loop compiler)
         end
       with
-
         | (Failure (message)) ->
           begin
           ((eprintf "%s") message);
