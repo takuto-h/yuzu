@@ -19,6 +19,7 @@ var reserved = [
   "false";
   "if";
   "match";
+  "module";
   "mutable";
   "open";
   "rec";

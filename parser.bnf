@@ -1,3 +1,6 @@
+#
+# NOT MAINTAINED
+#
 
 [elems sep term elem] = term | elem (term | sep [elems sep term elem])
 [indented_elems elem] = [elems (';' | <newline>) <undent> elem]

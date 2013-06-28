@@ -1,3 +1,5 @@
+module A = Map.Make(String)
+
 open Printf
 
 type t = {
@@ -1353,6 +1355,13 @@ let rec parse_top = begin fun parser ->
       begin let pos = parser.pos in
       ((Top.at pos) (Top.Type ((( :: ) ((parse_top_typedef parser), [])))))
       end
+    | (Token.Reserved ("module")) ->
+      begin let pos = parser.pos in
+      begin
+      (lookahead parser);
+      ((parse_top_module parser) pos)
+      end
+      end
     | (Token.Reserved ("open")) ->
       begin let pos = parser.pos in
       begin
@@ -1404,6 +1413,27 @@ and parse_top_let_fun = begin fun parser ->
   end
   end
   end
+  end
+end
+
+and parse_top_module = begin fun parser ->
+  begin fun pos ->
+    begin let name = (parse_capid parser) in
+    begin
+    ((parse_token parser) (Token.CmpOp ("=")));
+    begin let ftor = ((parse_mod_path parser) []) in
+    begin
+    ((parse_token parser) (Token.Reserved ("(")));
+    begin let arg = ((parse_mod_path parser) []) in
+    begin
+    ((parse_token parser) (Token.Reserved (")")));
+    ((Top.at pos) (Top.Module (name, ftor, arg)))
+    end
+    end
+    end
+    end
+    end
+    end
   end
 end
 

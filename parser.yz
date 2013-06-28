@@ -816,6 +816,10 @@ rec:
       case Token.Reserved("type"):
         var pos = parser.pos
         Top.at(pos, Top.Type([parse_top_typedef(parser)]))
+      case Token.Reserved("module"):
+        var pos = parser.pos
+        lookahead(parser)
+        parse_top_module(parser, pos)
       case Token.Reserved("open"):
         var pos = parser.pos
         lookahead(parser)
@@ -844,6 +848,15 @@ rec:
     var params = parse_params(parser)
     var body_expr = parse_block(parser)
     (fun_name, make_abs(pos, params, body_expr))
+
+  def parse_top_module(parser, pos):
+    var name = parse_capid(parser)
+    parse_token(parser, Token.CmpOp("="))
+    var ftor = parse_mod_path(parser, [])
+    parse_token(parser, Token.Reserved("("))
+    var arg = parse_mod_path(parser, [])
+    parse_token(parser, Token.Reserved(")"))
+    Top.at(pos, Top.Module(name, ftor, arg))
   
   def parse_top_open(parser, pos):
     var mod_path = parse_mod_path(parser, [])

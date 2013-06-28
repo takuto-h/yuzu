@@ -10,7 +10,7 @@ type t = {
 
 let initial_buffer_size = 16
 
-let reserved = (( :: ) ("as", (( :: ) ("case", (( :: ) ("def", (( :: ) ("else", (( :: ) ("exception", (( :: ) ("false", (( :: ) ("if", (( :: ) ("match", (( :: ) ("mutable", (( :: ) ("open", (( :: ) ("rec", (( :: ) ("try", (( :: ) ("true", (( :: ) ("type", (( :: ) ("val", (( :: ) ("var", (( :: ) ("when", (( :: ) ("with", []))))))))))))))))))))))))))))))))))))
+let reserved = (( :: ) ("as", (( :: ) ("case", (( :: ) ("def", (( :: ) ("else", (( :: ) ("exception", (( :: ) ("false", (( :: ) ("if", (( :: ) ("match", (( :: ) ("module", (( :: ) ("mutable", (( :: ) ("open", (( :: ) ("rec", (( :: ) ("try", (( :: ) ("true", (( :: ) ("type", (( :: ) ("val", (( :: ) ("var", (( :: ) ("when", (( :: ) ("with", []))))))))))))))))))))))))))))))))))))))
 
 let rec create = begin fun source ->
   {
