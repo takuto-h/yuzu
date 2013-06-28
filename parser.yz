@@ -955,35 +955,41 @@ rec:
 
 // END rec: def parse_top
 
+def parse_decl_expr(parser):
+  match parser.token:
+    case Token.Reserved("val"):
+      lookahead(parser)
+      var name = parse_val_name(parser)
+      parse_token(parser, Token.Reserved(":"))
+      var type_expr = parse_type(parser)
+      DeclExpr.Val(name, type_expr)
+    case Token.Reserved("type"):
+      lookahead(parser)
+      var name = parse_lowid(parser)
+      if parser.token <> Token.Reserved("("):
+        DeclExpr.AbstrType(name, 0)
+      else:
+        lookahead(parser)
+        var type_params = parse_elems(parser, comma_or_rparen, parse_type_var)
+        DeclExpr.AbstrType(name, List.length(type_params))
+    case _:
+      failwith(expected(parser, "'type' or 'val'"))
+
+def parse_decl_stmt(parser):
+  var decl_expr = parse_decl_expr(parser)
+  match parser.token:
+    case Token.EOF | Token.Newline | Token.Reserved(";"):
+      decl_expr
+    case _:
+      failwith(expected(parser, "newline or ';'"))
+
 def parse_decl(parser):
   lookahead(parser)
   match parser.token:
     case Token.EOF:
       None
     case _:
-      var decl_expr = match parser.token:
-        case Token.Reserved("val"):
-          lookahead(parser)
-          var name = parse_val_name(parser)
-          parse_token(parser, Token.Reserved(":"))
-          var type_expr = parse_type(parser)
-          DeclExpr.Val(name, type_expr)
-        case Token.Reserved("type"):
-          lookahead(parser)
-          var name = parse_lowid(parser)
-          if parser.token <> Token.Reserved("("):
-            DeclExpr.AbstrType(name, 0)
-          else:
-            lookahead(parser)
-            var type_params = parse_elems(parser, comma_or_rparen, parse_type_var)
-            DeclExpr.AbstrType(name, List.length(type_params))
-        case _:
-          failwith(expected(parser, "'type' or 'val'"))
-      match parser.token:
-        case Token.EOF | Token.Newline | Token.Reserved(";"):
-          Some(decl_expr)
-        case _:
-          failwith(expected(parser, "newline or ';'"))
+      Some(parse_decl_stmt(parser))
 
 def parse_stmt(parser):
   var expr = parse_top(parser)

@@ -1598,6 +1598,52 @@ and parse_field_decl = begin fun parser ->
   end
 end
 
+let rec parse_decl_expr = begin fun parser ->
+  begin match parser.token with
+    | (Token.Reserved ("val")) ->
+      begin
+      (lookahead parser);
+      begin let name = (parse_val_name parser) in
+      begin
+      ((parse_token parser) (Token.Reserved (":")));
+      begin let type_expr = (parse_type parser) in
+      (DeclExpr.Val (name, type_expr))
+      end
+      end
+      end
+      end
+    | (Token.Reserved ("type")) ->
+      begin
+      (lookahead parser);
+      begin let name = (parse_lowid parser) in
+      begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
+        (DeclExpr.AbstrType (name, 0))
+      else
+        begin
+        (lookahead parser);
+        begin let type_params = (((parse_elems parser) comma_or_rparen) parse_type_var) in
+        (DeclExpr.AbstrType (name, (List.length type_params)))
+        end
+        end
+      end
+      end
+      end
+    | _ ->
+      (failwith ((expected parser) "'type' or 'val'"))
+  end
+end
+
+let rec parse_decl_stmt = begin fun parser ->
+  begin let decl_expr = (parse_decl_expr parser) in
+  begin match parser.token with
+    | (((Token.EOF _) | (Token.Newline _)) | (Token.Reserved (";"))) ->
+      decl_expr
+    | _ ->
+      (failwith ((expected parser) "newline or ';'"))
+  end
+  end
+end
+
 let rec parse_decl = begin fun parser ->
   begin
   (lookahead parser);
@@ -1605,45 +1651,7 @@ let rec parse_decl = begin fun parser ->
     | (Token.EOF _) ->
       None
     | _ ->
-      begin let decl_expr = begin match parser.token with
-        | (Token.Reserved ("val")) ->
-          begin
-          (lookahead parser);
-          begin let name = (parse_val_name parser) in
-          begin
-          ((parse_token parser) (Token.Reserved (":")));
-          begin let type_expr = (parse_type parser) in
-          (DeclExpr.Val (name, type_expr))
-          end
-          end
-          end
-          end
-        | (Token.Reserved ("type")) ->
-          begin
-          (lookahead parser);
-          begin let name = (parse_lowid parser) in
-          begin if ((( <> ) parser.token) (Token.Reserved ("("))) then
-            (DeclExpr.AbstrType (name, 0))
-          else
-            begin
-            (lookahead parser);
-            begin let type_params = (((parse_elems parser) comma_or_rparen) parse_type_var) in
-            (DeclExpr.AbstrType (name, (List.length type_params)))
-            end
-            end
-          end
-          end
-          end
-        | _ ->
-          (failwith ((expected parser) "'type' or 'val'"))
-      end in
-      begin match parser.token with
-        | (((Token.EOF _) | (Token.Newline _)) | (Token.Reserved (";"))) ->
-          (Some (decl_expr))
-        | _ ->
-          (failwith ((expected parser) "newline or ';'"))
-      end
-      end
+      (Some ((parse_decl_stmt parser)))
   end
   end
 end
