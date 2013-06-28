@@ -250,6 +250,17 @@ def infer_top(inf, top):
       var (inf, pat_type, map) = infer_pattern(inf, pat)
       require(val_expr.Expr.pos, pat_type, val_type)
       (inf, make_decls(map))
+    case Top.LetFun(defs):
+      var let_level = inf.let_level
+      var tmp_inf = incr_let_level(inf)
+      var tmp_inf = YzList.fold_left(tmp_inf, defs)^(tmp_inf, (name, val_expr)):
+        var (tmp_inf, t) = add_asp(tmp_inf, name)
+        tmp_inf
+      var (inf, decls) = YzList.fold_left((inf, []), defs)^((inf, decls), (name, val_expr)):
+        var val_type = infer_expr(tmp_inf, val_expr)
+        var scm = generalize(let_level, val_type)
+        (inf.{asp = (name, scm)::inf.asp}, Decl.Val(name, scm)::decls)
+      (inf, decls)
 
 def eval(inf, type_expr):
   var t = match type_expr.TypeExpr.raw:

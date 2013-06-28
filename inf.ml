@@ -410,6 +410,33 @@ let rec infer_top = begin fun inf ->
         end
         end
         end
+      | (Top.LetFun (defs)) ->
+        begin let let_level = inf.let_level in
+        begin let tmp_inf = (incr_let_level inf) in
+        begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
+          begin fun (name, val_expr) ->
+            begin let (tmp_inf, t) = ((add_asp tmp_inf) name) in
+            tmp_inf
+            end
+          end
+        end) in
+        begin let (inf, decls) = (((YzList.fold_left (inf, [])) defs) begin fun (inf, decls) ->
+          begin fun (name, val_expr) ->
+            begin let val_type = ((infer_expr tmp_inf) val_expr) in
+            begin let scm = ((generalize let_level) val_type) in
+            ({
+              inf with
+              asp = (( :: ) ((name, scm), inf.asp));
+            }, (( :: ) ((Decl.Val (name, scm)), decls)))
+            end
+            end
+          end
+        end) in
+        (inf, decls)
+        end
+        end
+        end
+        end
     end
   end
 end

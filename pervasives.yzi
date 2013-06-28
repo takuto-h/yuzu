@@ -1,4 +1,7 @@
 
 val $(+) : int -> int -> int
+val $(-) : int -> int -> int
+val $(*) : int -> int -> int
+val $(=) : int -> int -> bool
 val $(||) : bool -> bool -> bool
 val $(&&) : bool -> bool -> bool
