@@ -350,6 +350,13 @@ def load_decl(inf, decl):
       inf.{asp = (name, scm)::inf.asp}
     case DeclExpr.AbstrType(name, param_num):
       inf.{typectors = (name, param_num)::inf.typectors}
+//    case DeclExpr.ConcrType(name, type_params, type_info):
+//      match type_info:
+//        case TypeInfo.Variant(ctor_decls):
+//          var inf = YzList.fold_left(inf, ctor_decls)^(inf, (ctor_name, opt_type_expr)):
+//            
+//            inf.{ctors = (ctor_name, ctor_type)::inf.ctors}
+//          inf.{typectors = (name, 0)::inf.typectors}
 
 def leave_module(inf, mod_name):
   var new_mod = Module.make([], inf.asp, inf.ctors, inf.typectors)

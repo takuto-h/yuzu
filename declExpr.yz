@@ -1,4 +1,5 @@
 
 type t:
-  def AbstrType(Names.typector_name * int)
   def Val(Names.val_name * TypeExpr.t)
+  def AbstrType(Names.typector_name * int)
+  def ConcrType(Names.typector_name * list(string) * TypeInfo.t)
