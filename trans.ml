@@ -119,6 +119,17 @@ let rec translate_expr = begin fun trans ->
         (((sprintf "(%s %s)") str_fun) str_arg)
         end
         end
+      | (Expr.Ctor (ctor, opt_arg_expr)) ->
+        begin let str_ctor = (Names.show_ctor ctor) in
+        begin match opt_arg_expr with
+          | (None _) ->
+            str_ctor
+          | (Some (arg_expr)) ->
+            begin let str_arg = ((translate_expr trans) arg_expr) in
+            (((sprintf "(%s %s)") str_ctor) str_arg)
+            end
+        end
+        end
       | (Expr.If (cond_expr, then_expr, else_expr)) ->
         begin let str_cond = ((translate_expr trans) cond_expr) in
         begin let trans_then_else = (incr_indent_level trans) in

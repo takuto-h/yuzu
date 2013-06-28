@@ -89,6 +89,14 @@ rec:
         var str_fun = translate_expr(trans, fun_expr)
         var str_arg = translate_expr(trans, arg_expr)
         sprintf("(%s %s)", str_fun, str_arg)
+      case Expr.Ctor(ctor, opt_arg_expr):
+        var str_ctor = Names.show_ctor(ctor)
+        match opt_arg_expr:
+          case None:
+            str_ctor
+          case Some(arg_expr):
+            var str_arg = translate_expr(trans, arg_expr)
+            sprintf("(%s %s)", str_ctor, str_arg)
       case Expr.If(cond_expr,then_expr,else_expr):
         var str_cond = translate_expr(trans, cond_expr)
         var trans_then_else = incr_indent_level(trans)

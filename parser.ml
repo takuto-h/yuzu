@@ -36,7 +36,9 @@ let rec make_op_var = begin fun str ->
   (Expr.Var ([], (Names.Op (str))))
 end
 
-let nil_expr = (Expr.Var ([], ((Names.Id ("[]")))))
+let cons_op = ([], (Names.Op ("::")))
+
+let nil_expr = (Expr.Ctor (([], (Names.Id ("[]"))), None))
 
 let unit_expr = (Expr.Con (Literal.Unit))
 
@@ -775,10 +777,8 @@ and parse_cons_expr = begin fun parser ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
-      begin let op = ((Expr.at pos) (make_op_var str)) in
       begin let rhs = (parse_cons_expr parser) in
-      ((Expr.at pos) (Expr.App (op, ((Expr.at pos) (Expr.Tuple ((( :: ) (lhs, (( :: ) (rhs, []))))))))))
-      end
+      ((Expr.at pos) (Expr.Ctor (cons_op, (Some (((Expr.at pos) (Expr.Tuple ((( :: ) (lhs, (( :: ) (rhs, []))))))))))))
       end
       end
       end
@@ -1000,8 +1000,8 @@ and parse_var_or_ctor_app = begin fun parser ->
           ((parse_var_or_ctor_app parser) (( :: ) (capid, mod_names)))
           end
         else
-          begin let ctor = ((Expr.at pos) (Expr.Var ((List.rev mod_names), (Names.Id (capid))))) in
-          ((parse_ctor_app parser) ctor)
+          begin let ctor = ((List.rev mod_names), (Names.Id (capid))) in
+          (((parse_ctor_app parser) pos) ctor)
           end
         end
         end
@@ -1013,28 +1013,28 @@ and parse_var_or_ctor_app = begin fun parser ->
 end
 
 and parse_ctor_app = begin fun parser ->
-  begin fun ctor ->
-    begin match parser.token with
-      | (Token.Reserved ("(")) ->
-        begin let pos = parser.pos in
-        begin
-        (lookahead parser);
-        begin let arg_exprs = ((parse_args parser) pos) in
-        ((Expr.at pos) (Expr.App (ctor, ((Expr.at pos) (Expr.Tuple (arg_exprs))))))
-        end
-        end
-        end
-      | (Token.Reserved ("^")) ->
-        begin let pos = parser.pos in
-        begin
-        (lookahead parser);
-        begin let arg_expr = ((parse_abs parser) pos) in
-        ((Expr.at pos) (Expr.App (ctor, arg_expr)))
-        end
-        end
-        end
-      | _ ->
-        ctor
+  begin fun pos ->
+    begin fun ctor ->
+      begin match parser.token with
+        | (Token.Reserved ("(")) ->
+          begin let pos_paren = parser.pos in
+          begin
+          (lookahead parser);
+          begin let arg_exprs = ((parse_args parser) pos_paren) in
+          ((Expr.at pos) (Expr.Ctor (ctor, (Some (((Expr.at pos_paren) (Expr.Tuple (arg_exprs))))))))
+          end
+          end
+          end
+        | (Token.Reserved ("^")) ->
+          begin
+          (lookahead parser);
+          begin let arg_expr = ((parse_abs parser) pos) in
+          ((Expr.at pos) (Expr.Ctor (ctor, (Some (arg_expr)))))
+          end
+          end
+        | _ ->
+          ((Expr.at pos) (Expr.Ctor (ctor, None)))
+      end
     end
   end
 end
@@ -1208,14 +1208,12 @@ end
 and parse_list = begin fun parser ->
   begin fun pos ->
     begin let list = (((parse_elems parser) semi_or_rbracket) parse_expr) in
-    begin let ctor = ((Expr.at pos) (make_op_var "::")) in
     begin let rec make_cons = begin fun elem ->
       begin fun acc ->
-        ((Expr.at pos) (Expr.App (ctor, ((Expr.at pos) (Expr.Tuple ((( :: ) (elem, (( :: ) (acc, []))))))))))
+        ((Expr.at pos) (Expr.Ctor (cons_op, (Some (((Expr.at pos) (Expr.Tuple ((( :: ) (elem, (( :: ) (acc, []))))))))))))
       end
     end in
     (((List.fold_right make_cons) list) ((Expr.at pos) nil_expr))
-    end
     end
     end
   end

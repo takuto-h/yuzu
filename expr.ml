@@ -8,6 +8,7 @@ and raw =
   | Var of Names.val_path
   | Abs of (Pattern.t * t)
   | App of (t * t)
+  | Ctor of (Names.ctor * (t) option)
   | If of (t * t * t)
   | Tuple of (t) list
   | Or of (t * t)

@@ -9,6 +9,7 @@ rec:
     def Var(Names.val_path)
     def Abs(Pattern.t * t)
     def App(t * t)
+    def Ctor(Names.ctor * option(t))
     def If(t * t * t)
     def Tuple(list(t))
     def Or(t * t)

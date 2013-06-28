@@ -27,7 +27,8 @@ var unit_pattern = Pattern.Con(Literal.Unit)
 def make_op_var(str):
   Expr.Var([], Names.Op(str))
 
-var nil_expr = Expr.Var([], (Names.Id("[]")))
+var cons_op = ([], Names.Op("::"))
+var nil_expr = Expr.Ctor(([], Names.Id("[]")), None)
 var unit_expr = Expr.Con(Literal.Unit)
 
 def make_abs(pos, params, body_expr):
@@ -480,9 +481,8 @@ rec:
       case Token.ConsOp(str):
         var pos = parser.pos
         lookahead(parser)
-        var op = Expr.at(pos, make_op_var(str))
         var rhs = parse_cons_expr(parser)
-        Expr.at(pos, Expr.App(op, Expr.at(pos, Expr.Tuple([lhs;rhs]))))
+        Expr.at(pos, Expr.Ctor(cons_op, Some(Expr.at(pos, Expr.Tuple([lhs;rhs])))))
       case _:
         lhs
   
@@ -620,25 +620,24 @@ rec:
           lookahead(parser)
           parse_var_or_ctor_app(parser, capid::mod_names)
         else:
-          var ctor = Expr.at(pos, Expr.Var(List.rev(mod_names), Names.Id(capid)))
-          parse_ctor_app(parser, ctor)
+          var ctor = (List.rev(mod_names), Names.Id(capid))
+          parse_ctor_app(parser, pos, ctor)
       case _:
         failwith(expected(parser, "identifier"))
   
-  def parse_ctor_app(parser, ctor):
+  def parse_ctor_app(parser, pos, ctor):
     match parser.token:
       case Token.Reserved("("):
-        var pos = parser.pos
+        var pos_paren = parser.pos
         lookahead(parser)
-        var arg_exprs = parse_args(parser, pos)
-        Expr.at(pos, Expr.App(ctor, Expr.at(pos, Expr.Tuple(arg_exprs))))
+        var arg_exprs = parse_args(parser, pos_paren)
+        Expr.at(pos, Expr.Ctor(ctor, Some(Expr.at(pos_paren, Expr.Tuple(arg_exprs)))))
       case Token.Reserved("^"):
-        var pos = parser.pos
         lookahead(parser)
         var arg_expr = parse_abs(parser, pos)
-        Expr.at(pos, Expr.App(ctor, arg_expr))
+        Expr.at(pos, Expr.Ctor(ctor, Some(arg_expr)))
       case _:
-        ctor
+        Expr.at(pos, Expr.Ctor(ctor, None))
   
   def parse_abs(parser, pos):
     var params = parse_params(parser)
@@ -735,9 +734,8 @@ rec:
   
   def parse_list(parser, pos):
     var list = parse_elems(parser, semi_or_rbracket, parse_expr)
-    var ctor = Expr.at(pos, make_op_var("::"))
     def make_cons(elem, acc):
-      Expr.at(pos, Expr.App(ctor, Expr.at(pos, Expr.Tuple([elem; acc]))))
+      Expr.at(pos, Expr.Ctor(cons_op, Some(Expr.at(pos, Expr.Tuple([elem; acc])))))
     List.fold_right(make_cons, list, Expr.at(pos, nil_expr))
   
   def parse_parens(parser, pos):
