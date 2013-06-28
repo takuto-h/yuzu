@@ -159,8 +159,6 @@ let rec compile_files = begin fun compiler ->
 end
 
 let rec read = begin fun buf ->
-  begin
-  (printf "> ");
   begin let line = (read_line ()) in
   begin if ((( = ) line) "") then
     (Buffer.contents buf)
@@ -171,10 +169,11 @@ let rec read = begin fun buf ->
     end
   end
   end
-  end
 end
 
 let rec interactive = begin fun compiler ->
+  begin
+  (printf "---\n");
   begin try
     begin let str = (read (Buffer.create initial_buffer_size)) in
     begin match (((compile_string compiler) "<interactive>") str) with
@@ -194,6 +193,7 @@ let rec interactive = begin fun compiler ->
 
     | (End_of_file _) ->
       compiler
+  end
   end
 end
 

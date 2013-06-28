@@ -5,6 +5,7 @@ def main():
   var compiler = Compiler.create()
   var result =
     YzOption.bind(Compiler.load_iface_file(compiler, "pervasives.yzi"))^(compiler):
+    YzOption.bind(Compiler.load_iface_file(compiler, "list.yzi"))^(compiler):
     if Array.length(Sys.argv) = 1:
       YzOption.return(Compiler.interactive(compiler))
     else:

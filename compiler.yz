@@ -85,7 +85,6 @@ def compile_files(compiler, fnames):
           compile_files(compiler, fnames)
 
 def read(buf):
-  printf("> ")
   var line = read_line()
   if line = "":
     Buffer.contents(buf)
@@ -94,6 +93,7 @@ def read(buf):
     read(buf)
 
 def interactive(compiler):
+  printf("---\n")
   try:
     var str = read(Buffer.create(initial_buffer_size))
     match compile_string(compiler, "<interactive>", str):
