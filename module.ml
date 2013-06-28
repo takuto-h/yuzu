@@ -4,16 +4,20 @@ type t = {
   mods : ((Names.mod_name * t)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
+  typectors : ((Names.typector * int)) list;
 }
 
 let rec make = begin fun mods ->
   begin fun asp ->
     begin fun ctors ->
-      {
-        mods = mods;
-        asp = asp;
-        ctors = ctors;
-      }
+      begin fun typectors ->
+        {
+          mods = mods;
+          asp = asp;
+          ctors = ctors;
+          typectors = typectors;
+        }
+      end
     end
   end
 end

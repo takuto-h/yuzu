@@ -10,6 +10,7 @@ type t:
   opens : list(Names.mod_name * Names.mod_path)
   asp : list(Names.val_name * Scheme.t)
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
+  typectors : list(Names.typector * int)
   let_level : int
 
 var default_opens = [("Pervasives", [])]
@@ -19,6 +20,7 @@ def create(): {
   opens = default_opens;
   asp = [];
   ctors = [];
+  typectors = [];
   let_level = 0;
 }
 
@@ -343,12 +345,13 @@ def load_decl(inf, decl):
       inf.{asp = (name, scm)::inf.asp}
 
 def leave_module(inf, mod_name):
-  var new_mod = Module.make([], inf.asp, inf.ctors)
+  var new_mod = Module.make([], inf.asp, inf.ctors, inf.typectors)
   {
     mods = (mod_name, new_mod)::inf.mods;
     opens = default_opens;
     asp = [];
     ctors = [];
+    typectors = [];
     let_level = 0;
   }
 
@@ -362,12 +365,14 @@ var mod_B = Module.make(
    (Names.Id("b2"), Scheme.mono(Type.at(Some(pos),int_type)));
   ],
   [],
+  [],
 )
 var mod_A = Module.make(
   [("B", mod_B)],
   [(Names.Id("a1"), Scheme.mono(Type.at(Some(pos),int_type)));
    (Names.Id("a2"), Scheme.mono(Type.at(Some(pos),string_type)));
   ],
+  [],
   [],
 )
 var mod_Pervasives = Module.make(
@@ -380,6 +385,7 @@ var mod_Pervasives = Module.make(
           Type.at(Some(pos),int_type),Type.at(Some(pos),int_type)))))));
   ],
   [],
+  [],
 )
 var inf = {
   mods = [
@@ -389,6 +395,7 @@ var inf = {
   opens = [("Pervasives", [])];
   asp = [(Names.Id("ans"), Scheme.mono(Type.at(Some(pos),int_type)))];
   ctors = [];
+  typectors = [];
   let_level = 0;
 }
 var shower = Type.create_shower(0)
