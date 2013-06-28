@@ -105,51 +105,77 @@ let rec required = begin fun pos ->
   end
 end
 
-let rec find_asp_mods = begin fun mods ->
-  begin fun mod_name ->
-    begin fun mod_path ->
-      begin fun name ->
-        begin let modl = ((List.assoc mod_name) mods) in
-        (((Module.find_asp modl) mod_path) name)
-        end
-      end
-    end
-  end
-end
-
-let rec find_asp_opens = begin fun mods ->
-  begin fun opens ->
-    begin fun name ->
-      begin match opens with
-        | ([] _) ->
-          (raise Not_found)
-        | (( :: ) ((mod_name, mod_path), opens)) ->
-          begin try
-            ((((find_asp_mods mods) mod_name) mod_path) name)
-          with
-
-            | (Not_found _) ->
-              (((find_asp_opens mods) opens) name)
+let rec search_mods = begin fun search_mod ->
+  begin fun mods ->
+    begin fun mod_name ->
+      begin fun mod_path ->
+        begin fun name ->
+          begin let modl = ((List.assoc mod_name) mods) in
+          (((search_mod modl) mod_path) name)
           end
+        end
       end
     end
   end
 end
 
-let rec find_asp = begin fun inf ->
-  begin fun path ->
-    begin match path with
-      | (([] _), name) ->
-        begin try
-          ((List.assoc name) inf.asp)
-        with
+let rec search_opens = begin fun search_mod ->
+  begin fun mods ->
+    begin fun opens ->
+      begin fun name ->
+        begin match opens with
+          | ([] _) ->
+            (raise Not_found)
+          | (( :: ) ((mod_name, mod_path), opens)) ->
+            begin try
+              (((((search_mods search_mod) mods) mod_name) mod_path) name)
+            with
 
-          | (Not_found _) ->
-            (((find_asp_opens inf.mods) inf.opens) name)
+              | (Not_found _) ->
+                ((((search_opens search_mod) mods) opens) name)
+            end
         end
-      | ((( :: ) (mod_name, mod_path)), name) ->
-        ((((find_asp_mods inf.mods) mod_name) mod_path) name)
+      end
     end
+  end
+end
+
+let rec search_alist = begin fun search_mod ->
+  begin fun alist ->
+    begin fun inf ->
+      begin fun path ->
+        begin match path with
+          | (([] _), name) ->
+            begin try
+              ((List.assoc name) alist)
+            with
+
+              | (Not_found _) ->
+                ((((search_opens search_mod) inf.mods) inf.opens) name)
+            end
+          | ((( :: ) (mod_name, mod_path)), name) ->
+            (((((search_mods search_mod) inf.mods) mod_name) mod_path) name)
+        end
+      end
+    end
+  end
+end
+
+let rec search_asp = begin fun inf ->
+  begin fun path ->
+    ((((search_alist Module.search_asp) inf.asp) inf) path)
+  end
+end
+
+let rec search_ctors = begin fun inf ->
+  begin fun ctor ->
+    ((((search_alist Module.search_ctors) inf.ctors) inf) ctor)
+  end
+end
+
+let rec search_typectors = begin fun inf ->
+  begin fun typector ->
+    ((((search_alist Module.search_typectors) inf.typectors) inf) typector)
   end
 end
 
@@ -290,54 +316,6 @@ let rec apply = begin fun let_level ->
   end
 end
 
-let rec find_ctor_mods = begin fun mods ->
-  begin fun mod_name ->
-    begin fun mod_path ->
-      begin fun name ->
-        begin let modl = ((List.assoc mod_name) mods) in
-        (((Module.find_ctor modl) mod_path) name)
-        end
-      end
-    end
-  end
-end
-
-let rec find_ctor_opens = begin fun mods ->
-  begin fun opens ->
-    begin fun name ->
-      begin match opens with
-        | ([] _) ->
-          (raise Not_found)
-        | (( :: ) ((mod_name, mod_path), opens)) ->
-          begin try
-            ((((find_ctor_mods mods) mod_name) mod_path) name)
-          with
-
-            | (Not_found _) ->
-              (((find_ctor_opens mods) opens) name)
-          end
-      end
-    end
-  end
-end
-
-let rec find_ctor = begin fun inf ->
-  begin fun ctor ->
-    begin match ctor with
-      | (([] _), name) ->
-        begin try
-          ((List.assoc name) inf.ctors)
-        with
-
-          | (Not_found _) ->
-            (((find_ctor_opens inf.mods) inf.opens) name)
-        end
-      | ((( :: ) (mod_name, mod_path)), name) ->
-        ((((find_ctor_mods inf.mods) mod_name) mod_path) name)
-    end
-  end
-end
-
 let rec infer_expr = begin fun inf ->
   begin fun expr ->
     begin match expr.Expr.raw with
@@ -345,7 +323,7 @@ let rec infer_expr = begin fun inf ->
         ((Type.at (Some (expr.Expr.pos))) (infer_literal lit))
       | (Expr.Var (path)) ->
         begin try
-          ((instantiate inf.let_level) ((find_asp inf) path))
+          ((instantiate inf.let_level) ((search_asp inf) path))
         with
 
           | (Not_found _) ->
@@ -365,7 +343,7 @@ let rec infer_expr = begin fun inf ->
         end
       | (Expr.Ctor (ctor, opt_arg_expr)) ->
         begin try
-          begin match (((find_ctor inf) ctor), opt_arg_expr) with
+          begin match (((search_ctors inf) ctor), opt_arg_expr) with
             | ((false, scm), (None _)) ->
               ((instantiate inf.let_level) scm)
             | ((false, scm), (Some (arg_expr))) ->

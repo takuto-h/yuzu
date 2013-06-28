@@ -14,18 +14,19 @@ def make(mods, asp, ctors, typectors): {
   typectors = typectors;
 }
 
-def find_asp(modl, mod_path, name):
+def search_alist(get_alist, modl, mod_path, name):
   match mod_path:
     case []:
-      List.assoc(name, modl.asp)
+      List.assoc(name, get_alist(modl))
     case mod_name::mod_path:
       var modl = List.assoc(mod_name, modl.mods)
-      find_asp(modl, mod_path, name)
+      search_alist(get_alist, modl, mod_path, name)
 
-def find_ctor(modl, mod_path, name):
-  match mod_path:
-    case []:
-      List.assoc(name, modl.ctors)
-    case mod_name::mod_path:
-      var modl = List.assoc(mod_name, modl.mods)
-      find_ctor(modl, mod_path, name)
+def search_asp(modl, mod_path, name):
+  search_alist^(modl){modl.asp}(modl, mod_path, name)
+
+def search_ctors(modl, mod_path, name):
+  search_alist^(modl){modl.ctors}(modl, mod_path, name)
+
+def search_typectors(modl, mod_path, name):
+  search_alist^(modl){modl.typectors}(modl, mod_path, name)

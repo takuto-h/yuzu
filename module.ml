@@ -22,32 +22,49 @@ let rec make = begin fun mods ->
   end
 end
 
-let rec find_asp = begin fun modl ->
-  begin fun mod_path ->
-    begin fun name ->
-      begin match mod_path with
-        | ([] _) ->
-          ((List.assoc name) modl.asp)
-        | (( :: ) (mod_name, mod_path)) ->
-          begin let modl = ((List.assoc mod_name) modl.mods) in
-          (((find_asp modl) mod_path) name)
-          end
+let rec search_alist = begin fun get_alist ->
+  begin fun modl ->
+    begin fun mod_path ->
+      begin fun name ->
+        begin match mod_path with
+          | ([] _) ->
+            ((List.assoc name) (get_alist modl))
+          | (( :: ) (mod_name, mod_path)) ->
+            begin let modl = ((List.assoc mod_name) modl.mods) in
+            ((((search_alist get_alist) modl) mod_path) name)
+            end
+        end
       end
     end
   end
 end
 
-let rec find_ctor = begin fun modl ->
+let rec search_asp = begin fun modl ->
   begin fun mod_path ->
     begin fun name ->
-      begin match mod_path with
-        | ([] _) ->
-          ((List.assoc name) modl.ctors)
-        | (( :: ) (mod_name, mod_path)) ->
-          begin let modl = ((List.assoc mod_name) modl.mods) in
-          (((find_ctor modl) mod_path) name)
-          end
-      end
+      ((((search_alist begin fun modl ->
+        modl.asp
+      end) modl) mod_path) name)
+    end
+  end
+end
+
+let rec search_ctors = begin fun modl ->
+  begin fun mod_path ->
+    begin fun name ->
+      ((((search_alist begin fun modl ->
+        modl.ctors
+      end) modl) mod_path) name)
+    end
+  end
+end
+
+let rec search_typectors = begin fun modl ->
+  begin fun mod_path ->
+    begin fun name ->
+      ((((search_alist begin fun modl ->
+        modl.typectors
+      end) modl) mod_path) name)
     end
   end
 end
