@@ -40,6 +40,9 @@ def unbound_variable(pos, path):
 def unbound_constructor(pos, ctor):
   Pos.show_error(pos, sprintf("unbound constructor: %s\n", Names.show_ctor(ctor)))
 
+def unbound_type_constructor(pos, typector):
+  Pos.show_error(pos, sprintf("unbound type constructor: %s\n", Names.show_typector(typector)))
+
 def invalid_application(pos, fun_type, arg_type, t1, t2):
   var shower = Type.create_shower(0)
   sprintf(
@@ -301,30 +304,49 @@ def infer_top(inf, top):
         (inf.{asp = (name, scm)::inf.asp}, Decl.Val(name, scm)::decls)
       (inf, decls)
 
-def eval(env_ref, let_level, type_expr):
+def eval(inf, env_ref, type_expr):
   var t = match type_expr.TypeExpr.raw:
     case TypeExpr.Con(typector):
-      Type.Con(typector)
+      try:
+        var param_num = search_typectors(inf, typector)
+        if param_num = 0:
+          Type.Con(typector)
+        else:
+          failwith(wrong_number_of_arguments(type_expr.TypeExpr.pos, 0, param_num))
+      with:
+        case Not_found:
+         failwith(unbound_type_constructor(type_expr.TypeExpr.pos, typector))
     case TypeExpr.Var(name):
       try:
         List.assoc(name, !env_ref)
       with:
         case Not_found:
-          var t = Type.make_var(let_level).Type.raw
+          var t = Type.make_var(inf.let_level).Type.raw
           env_ref := (name, t)::!env_ref
           t
     case TypeExpr.App(typector,ts):
-      Type.App(typector, List.map(eval(env_ref, let_level), ts))
+      try:
+        var param_num = search_typectors(inf, typector)
+        var arg_num = List.length(ts)
+        if param_num = arg_num:
+          Type.App(typector, List.map(eval(inf, env_ref), ts))
+        else:
+          failwith(wrong_number_of_arguments(type_expr.TypeExpr.pos, arg_num, param_num))
+      with:
+        case Not_found:
+         failwith(unbound_type_constructor(type_expr.TypeExpr.pos, typector))
     case TypeExpr.Tuple(ts):
-      Type.Tuple(List.map(eval(env_ref, let_level), ts))
+      Type.Tuple(List.map(eval(inf, env_ref), ts))
     case TypeExpr.Fun(t1, t2):
-      Type.Fun(eval(env_ref, let_level, t1), eval(env_ref, let_level, t2))
+      var t10 = eval(inf, env_ref, t1)
+      var t20 = eval(inf, env_ref, t2)
+      Type.Fun(t10, t20)
   Type.at(Some(type_expr.TypeExpr.pos), t)
 
 def load_decl(inf, decl):
   match decl:
     case DeclExpr.Val(name, type_expr):
-      var scm = Scheme.mono(eval(ref([]), inf.let_level, type_expr))
+      var scm = Scheme.mono(eval(inf, ref([]), type_expr))
       inf.{asp = (name, scm)::inf.asp}
     case DeclExpr.AbstrType(name, param_num):
       inf.{typectors = (name, param_num)::inf.typectors}

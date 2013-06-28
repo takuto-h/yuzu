@@ -55,6 +55,12 @@ let rec unbound_constructor = begin fun pos ->
   end
 end
 
+let rec unbound_type_constructor = begin fun pos ->
+  begin fun typector ->
+    ((Pos.show_error pos) ((sprintf "unbound type constructor: %s\n") (Names.show_typector typector)))
+  end
+end
+
 let rec invalid_application = begin fun pos ->
   begin fun fun_type ->
     begin fun arg_type ->
@@ -516,19 +522,31 @@ let rec infer_top = begin fun inf ->
   end
 end
 
-let rec eval = begin fun env_ref ->
-  begin fun let_level ->
+let rec eval = begin fun inf ->
+  begin fun env_ref ->
     begin fun type_expr ->
       begin let t = begin match type_expr.TypeExpr.raw with
         | (TypeExpr.Con (typector)) ->
-          (Type.Con (typector))
+          begin try
+            begin let param_num = ((search_typectors inf) typector) in
+            begin if ((( = ) param_num) 0) then
+              (Type.Con (typector))
+            else
+              (failwith (((wrong_number_of_arguments type_expr.TypeExpr.pos) 0) param_num))
+            end
+            end
+          with
+
+            | (Not_found _) ->
+              (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
+          end
         | (TypeExpr.Var (name)) ->
           begin try
             ((List.assoc name) (( ! ) env_ref))
           with
 
             | (Not_found _) ->
-              begin let t = (Type.make_var let_level).Type.raw in
+              begin let t = (Type.make_var inf.let_level).Type.raw in
               begin
               ((( := ) env_ref) (( :: ) ((name, t), (( ! ) env_ref))));
               t
@@ -536,11 +554,29 @@ let rec eval = begin fun env_ref ->
               end
           end
         | (TypeExpr.App (typector, ts)) ->
-          (Type.App (typector, ((List.map ((eval env_ref) let_level)) ts)))
+          begin try
+            begin let param_num = ((search_typectors inf) typector) in
+            begin let arg_num = (List.length ts) in
+            begin if ((( = ) param_num) arg_num) then
+              (Type.App (typector, ((List.map ((eval inf) env_ref)) ts)))
+            else
+              (failwith (((wrong_number_of_arguments type_expr.TypeExpr.pos) arg_num) param_num))
+            end
+            end
+            end
+          with
+
+            | (Not_found _) ->
+              (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
+          end
         | (TypeExpr.Tuple (ts)) ->
-          (Type.Tuple (((List.map ((eval env_ref) let_level)) ts)))
+          (Type.Tuple (((List.map ((eval inf) env_ref)) ts)))
         | (TypeExpr.Fun (t1, t2)) ->
-          (Type.Fun ((((eval env_ref) let_level) t1), (((eval env_ref) let_level) t2)))
+          begin let t10 = (((eval inf) env_ref) t1) in
+          begin let t20 = (((eval inf) env_ref) t2) in
+          (Type.Fun (t10, t20))
+          end
+          end
       end in
       ((Type.at (Some (type_expr.TypeExpr.pos))) t)
       end
@@ -552,7 +588,7 @@ let rec load_decl = begin fun inf ->
   begin fun decl ->
     begin match decl with
       | (DeclExpr.Val (name, type_expr)) ->
-        begin let scm = (Scheme.mono (((eval (ref [])) inf.let_level) type_expr)) in
+        begin let scm = (Scheme.mono (((eval inf) (ref [])) type_expr)) in
         {
           inf with
           asp = (( :: ) ((name, scm), inf.asp));
