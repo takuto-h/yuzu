@@ -20,9 +20,13 @@ let rec create = begin fun lexer ->
   }
 end
 
-let rec make_cons_pattern = begin fun lhs ->
-  begin fun rhs ->
-    (Pattern.Ctor ((( [] ), (Names.Op ("::"))), (Some ((Pattern.Tuple ((( :: ) (lhs, (( :: ) (rhs, ( [] )))))))))))
+let rec make_cons_pattern = begin fun pos ->
+  begin fun lhs ->
+    begin fun rhs ->
+      begin let tuple_pattern = ((Pattern.at pos) (Pattern.Tuple ((( :: ) (lhs, (( :: ) (rhs, ( [] )))))))) in
+      ((Pattern.at pos) (Pattern.Ctor ((( [] ), (Names.Op ("::"))), (Some (tuple_pattern)))))
+      end
+    end
   end
 end
 
@@ -604,10 +608,12 @@ end
 and parse_as_pattern = begin fun parser ->
   begin let pat = (parse_or_pattern parser) in
   begin if ((( = ) parser.token) (Token.Reserved ("as"))) then
+    begin let pos = parser.pos in
     begin
     (lookahead parser);
     begin let name = (parse_val_name parser) in
-    (Pattern.As (pat, name))
+    ((Pattern.at pos) (Pattern.As (pat, name)))
+    end
     end
     end
   else
@@ -620,10 +626,12 @@ and parse_or_pattern = begin fun parser ->
   begin let lhs = (parse_cons_pattern parser) in
   begin let rec loop = begin fun lhs ->
     begin if ((( = ) parser.token) (Token.CmpOp ("|"))) then
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
       begin let rhs = (parse_cons_pattern parser) in
-      (loop (Pattern.Or (lhs, rhs)))
+      (loop ((Pattern.at pos) (Pattern.Or (lhs, rhs))))
+      end
       end
       end
     else
@@ -638,10 +646,12 @@ end
 and parse_cons_pattern = begin fun parser ->
   begin let lhs = (parse_atomic_pattern parser) in
   begin if ((( = ) parser.token) (Token.ConsOp ("::"))) then
+    begin let pos = parser.pos in
     begin
     (lookahead parser);
     begin let rhs = (parse_cons_pattern parser) in
-    ((make_cons_pattern lhs) rhs)
+    (((make_cons_pattern pos) lhs) rhs)
+    end
     end
     end
   else
@@ -653,29 +663,39 @@ end
 and parse_atomic_pattern = begin fun parser ->
   begin match parser.token with
     | (((((Token.Int (_)) | (Token.String (_))) | (Token.Char (_))) | (Token.Reserved ("true"))) | (Token.Reserved ("false"))) ->
+      begin let pos = parser.pos in
       begin let lit = (parse_literal parser) in
-      (Pattern.Con (lit))
+      ((Pattern.at pos) (Pattern.Con (lit)))
+      end
       end
     | (Token.LowId (_)) ->
+      begin let pos = parser.pos in
       begin let name = (parse_val_name parser) in
-      (Pattern.Var (name))
+      ((Pattern.at pos) (Pattern.Var (name)))
+      end
       end
     | (Token.CapId (_)) ->
       (parse_variant_pattern parser)
     | (Token.Reserved ("[")) ->
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
-      (parse_list_pattern parser)
+      ((parse_list_pattern parser) pos)
+      end
       end
     | (Token.Reserved ("{")) ->
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
-      (parse_record_pattern parser)
+      ((parse_record_pattern parser) pos)
+      end
       end
     | (Token.Reserved ("(")) ->
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
-      (parse_parens_pattern parser)
+      ((parse_parens_pattern parser) pos)
+      end
       end
     | _ ->
       (failwith ((expected parser) "pattern"))
@@ -683,28 +703,38 @@ and parse_atomic_pattern = begin fun parser ->
 end
 
 and parse_variant_pattern = begin fun parser ->
+  begin let pos = parser.pos in
   begin let ctor = ((parse_ctor parser) ( [] )) in
   begin if ((( = ) parser.token) (Token.Reserved ("("))) then
+    begin let pos_tuple = parser.pos in
     begin
     (lookahead parser);
     begin let pat_list = (parse_pattern_list parser) in
-    (Pattern.Ctor (ctor, (Some ((Pattern.Tuple (pat_list))))))
+    begin let tuple_pat = ((Pattern.at pos_tuple) (Pattern.Tuple (pat_list))) in
+    ((Pattern.at pos) (Pattern.Ctor (ctor, (Some (tuple_pat)))))
+    end
+    end
     end
     end
   else
-    (Pattern.Ctor (ctor, None))
+    ((Pattern.at pos) (Pattern.Ctor (ctor, None)))
+  end
   end
   end
 end
 
 and parse_list_pattern = begin fun parser ->
-  begin let list = (((parse_elems parser) semi_or_rbracket) parse_pattern) in
-  (((List.fold_right make_cons_pattern) list) nil_pattern)
+  begin fun pos ->
+    begin let list = (((parse_elems parser) semi_or_rbracket) parse_pattern) in
+    (((List.fold_right (make_cons_pattern pos)) list) ((Pattern.at pos) nil_pattern))
+    end
   end
 end
 
 and parse_record_pattern = begin fun parser ->
-  (Pattern.Record (((parse_braced_elems parser) parse_field_pattern)))
+  begin fun pos ->
+    ((Pattern.at pos) (Pattern.Record (((parse_braced_elems parser) parse_field_pattern))))
+  end
 end
 
 and parse_field_pattern = begin fun parser ->
@@ -723,14 +753,16 @@ and parse_field_pattern = begin fun parser ->
 end
 
 and parse_parens_pattern = begin fun parser ->
-  begin if ((( = ) parser.token) (Token.Reserved (")"))) then
-    begin
-    (lookahead parser);
-    unit_pattern
-    end
-  else
-    begin let list = (parse_pattern_list parser) in
-    (Pattern.Tuple (list))
+  begin fun pos ->
+    begin if ((( = ) parser.token) (Token.Reserved (")"))) then
+      begin
+      (lookahead parser);
+      ((Pattern.at pos) unit_pattern)
+      end
+    else
+      begin let list = (parse_pattern_list parser) in
+      ((Pattern.at pos) (Pattern.Tuple (list)))
+      end
     end
   end
 end
@@ -1101,15 +1133,17 @@ and parse_abs = begin fun parser ->
 end
 
 and parse_params = begin fun parser ->
+  begin let pos = parser.pos in
   begin
   ((parse_token parser) (Token.Reserved ("(")));
   begin if ((( = ) parser.token) (Token.Reserved (")"))) then
     begin
     (lookahead parser);
-    (( :: ) (unit_pattern, ( [] )))
+    (( :: ) (((Pattern.at pos) unit_pattern), ( [] )))
     end
   else
     (parse_pattern_list parser)
+  end
   end
   end
 end

@@ -45,7 +45,7 @@ let rec translate_literal = begin fun lit ->
 end
 
 let rec translate_pattern = begin fun pat ->
-  begin match pat with
+  begin match pat.Pattern.raw with
     | (Pattern.Con (lit)) ->
       (translate_literal lit)
     | (Pattern.Var (name)) ->

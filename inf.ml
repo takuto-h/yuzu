@@ -239,7 +239,7 @@ end
 
 let rec infer_pattern = begin fun inf ->
   begin fun pat ->
-    begin match pat with
+    begin match pat.Pattern.raw with
       | (Pattern.Con (lit)) ->
         (inf, ((Type.at None) (infer_literal lit)), ValNameMap.empty)
       | (Pattern.Var (name)) ->

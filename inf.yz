@@ -157,7 +157,7 @@ def add_asp(inf, name):
   (inf, t)
 
 def infer_pattern(inf, pat):
-  match pat:
+  match pat.Pattern.raw:
     case Pattern.Con(lit):
       (inf, Type.at(None, infer_literal(lit)), ValNameMap.empty)
     case Pattern.Var(name):

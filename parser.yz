@@ -17,8 +17,9 @@ def create(lexer): {
   pos = Pos.dummy;
 }
 
-def make_cons_pattern(lhs, rhs):
-  Pattern.Ctor(([], Names.Op("::")), Some(Pattern.Tuple([lhs;rhs])))
+def make_cons_pattern(pos, lhs, rhs):
+  var tuple_pattern = Pattern.at(pos, Pattern.Tuple([lhs;rhs]))
+  Pattern.at(pos, Pattern.Ctor(([], Names.Op("::")), Some(tuple_pattern)))
 
 var nil_pattern = Pattern.Ctor(([], Names.Op("[]")), None)
 var unit_pattern = Pattern.Con(Literal.Unit)
@@ -366,9 +367,10 @@ rec:
   def parse_as_pattern(parser):
     var pat = parse_or_pattern(parser)
     if parser.token = Token.Reserved("as"):
+      var pos = parser.pos
       lookahead(parser)
       var name = parse_val_name(parser)
-      Pattern.As(pat, name)
+      Pattern.at(pos, Pattern.As(pat, name))
     else:
       pat
   
@@ -376,9 +378,10 @@ rec:
     var lhs = parse_cons_pattern(parser)
     def loop(lhs):
       if parser.token = Token.CmpOp("|"):
+        var pos = parser.pos
         lookahead(parser)
         var rhs = parse_cons_pattern(parser)
-        loop(Pattern.Or(lhs, rhs))
+        loop(Pattern.at(pos, Pattern.Or(lhs, rhs)))
       else:
         lhs
     loop(lhs)
@@ -386,9 +389,10 @@ rec:
   def parse_cons_pattern(parser):
     var lhs = parse_atomic_pattern(parser)
     if parser.token = Token.ConsOp("::"):
+      var pos = parser.pos
       lookahead(parser)
       var rhs = parse_cons_pattern(parser)
-      make_cons_pattern(lhs, rhs)
+      make_cons_pattern(pos, lhs, rhs)
     else:
       lhs
   
@@ -396,40 +400,48 @@ rec:
     match parser.token:
       case Token.Int(_) | Token.String(_) | Token.Char(_) |
            Token.Reserved("true") | Token.Reserved("false"):
+        var pos = parser.pos
         var lit = parse_literal(parser)
-        Pattern.Con(lit)
+        Pattern.at(pos, Pattern.Con(lit))
       case Token.LowId(_):
+        var pos = parser.pos
         var name = parse_val_name(parser)
-        Pattern.Var(name)
+        Pattern.at(pos, Pattern.Var(name))
       case Token.CapId(_):
         parse_variant_pattern(parser)
       case Token.Reserved("["):
+        var pos = parser.pos
         lookahead(parser)
-        parse_list_pattern(parser)
+        parse_list_pattern(parser, pos)
       case Token.Reserved("{"):
+        var pos = parser.pos
         lookahead(parser)
-        parse_record_pattern(parser)
+        parse_record_pattern(parser, pos)
       case Token.Reserved("("):
+        var pos = parser.pos
         lookahead(parser)
-        parse_parens_pattern(parser)
+        parse_parens_pattern(parser, pos)
       case _:
         failwith(expected(parser, "pattern"))
   
   def parse_variant_pattern(parser):
+    var pos = parser.pos
     var ctor = parse_ctor(parser, [])
     if parser.token = Token.Reserved("("):
+      var pos_tuple = parser.pos
       lookahead(parser)
       var pat_list = parse_pattern_list(parser)
-      Pattern.Ctor(ctor, Some(Pattern.Tuple(pat_list)))
+      var tuple_pat = Pattern.at(pos_tuple, Pattern.Tuple(pat_list))
+      Pattern.at(pos, Pattern.Ctor(ctor, Some(tuple_pat)))
     else:
-      Pattern.Ctor(ctor, None)
+      Pattern.at(pos, Pattern.Ctor(ctor, None))
     
-  def parse_list_pattern(parser):
+  def parse_list_pattern(parser, pos):
     var list = parse_elems(parser, semi_or_rbracket, parse_pattern)
-    List.fold_right(make_cons_pattern, list, nil_pattern)
+    List.fold_right(make_cons_pattern(pos), list, Pattern.at(pos, nil_pattern))
   
-  def parse_record_pattern(parser):
-    Pattern.Record(parse_braced_elems(parser, parse_field_pattern))
+  def parse_record_pattern(parser, pos):
+    Pattern.at(pos, Pattern.Record(parse_braced_elems(parser, parse_field_pattern)))
   
   def parse_field_pattern(parser):
     var field_name = parse_val_path(parser, [])
@@ -440,13 +452,13 @@ rec:
     else:
       (field_name, None)
       
-  def parse_parens_pattern(parser):
+  def parse_parens_pattern(parser, pos):
     if parser.token = Token.Reserved(")"):
       lookahead(parser)
-      unit_pattern
+      Pattern.at(pos, unit_pattern)
     else:
       var list = parse_pattern_list(parser)
-      Pattern.Tuple(list)
+      Pattern.at(pos, Pattern.Tuple(list))
   
   def parse_pattern_list(parser):
     parse_elems(parser, comma_or_rparen, parse_pattern)
@@ -677,10 +689,11 @@ rec:
     make_abs(pos, params, body_expr)
   
   def parse_params(parser):
+    var pos = parser.pos
     parse_token(parser, Token.Reserved("("))
     if parser.token = Token.Reserved(")"):
       lookahead(parser)
-      [unit_pattern]
+      [Pattern.at(pos, unit_pattern)]
     else:
       parse_pattern_list(parser)
   
