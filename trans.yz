@@ -246,9 +246,9 @@ def translate_type_expr(t):
 
 def translate_ctor_decl(ctor_decl):
   match ctor_decl:
-    case (ctor_name,None):
+    case (ctor_name,None,_):
       sprintf("| %s\n", Names.show_ctor_name(ctor_name))
-    case (ctor_name,Some(t)):
+    case (ctor_name,Some(t),_):
       var str_type = translate_type_expr(t)
       sprintf("| %s of %s\n", Names.show_ctor_name(ctor_name), str_type)
 

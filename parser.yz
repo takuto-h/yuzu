@@ -327,9 +327,7 @@ rec:
         parse_token(parser, Token.Reserved(")"))
         t
       case Token.Reserved("`"):
-        var pos = parser.pos
-        var name = parse_type_var_name(parser)
-        TypeExpr.at(pos, TypeExpr.Var(name))
+        parse_type_var_name(parser)
       case _:
         failwith(expected(parser, "type"))
   
@@ -346,8 +344,9 @@ rec:
         failwith(expected(parser, "identifier"))
 
   def parse_type_var_name(parser):
+    var pos = parser.pos
     parse_token(parser, Token.Reserved("`"))
-    parse_lowid(parser)
+    TypeExpr.at(pos, TypeExpr.Var(parse_lowid(parser)))
 
 // END rec: def parse_type
 
@@ -918,6 +917,7 @@ rec:
         
   def parse_top_typedef(parser):
     parse_token(parser, Token.Reserved("type"))
+    var pos = parser.pos
     var typector_name = parse_lowid(parser)
     match parser.token:
       case Token.CmpOp("="):
@@ -925,40 +925,42 @@ rec:
         var t = parse_type(parser)
         (typector_name, TypeInfo.Abbrev(t))
       case Token.Reserved(":") | Token.Reserved("{"):
-        (typector_name, parse_type_repr(parser))
+        var defined_type = TypeExpr.at(pos, TypeExpr.Con([], typector_name))
+        (typector_name, parse_type_repr(parser, defined_type))
       case _:
         failwith(expected(parser, "'=' or ':' or '{'"))
   
-  def parse_type_repr(parser):
+  def parse_type_repr(parser, defined_type):
     match parser.token:
       case Token.Reserved(":"):
         Lexer.indent(parser.lexer)
         lookahead(parser)
         match parser.token:
           case Token.Reserved("def"):
-            TypeInfo.Variant(parse_indented_elems(parser, parse_ctor_decl))
+            TypeInfo.Variant(parse_indented_elems(parser, parse_ctor_decl(defined_type)))
           case _:
             TypeInfo.Record(parse_indented_elems(parser, parse_field_decl))
       case Token.Reserved("{"):
         lookahead(parser)
         match parser.token:
           case Token.Reserved("def"):
-            TypeInfo.Variant(parse_braced_elems(parser, parse_ctor_decl))
+            TypeInfo.Variant(parse_braced_elems(parser, parse_ctor_decl(defined_type)))
           case _:
             TypeInfo.Record(parse_braced_elems(parser, parse_field_decl))
       case _:
         failwith(expected(parser, "':' or '{'"))
   
-  def parse_ctor_decl(parser):
+  def parse_ctor_decl(ret_type, parser):
+    var pos = parser.pos
     parse_token(parser, Token.Reserved("def"))
     var ctor_name = parse_ctor_name(parser)
     if parser.token = Token.Reserved("("):
       lookahead(parser)
-      var t = parse_type(parser)
+      var param_type = parse_type(parser)
       parse_token(parser, Token.Reserved(")"))
-      (ctor_name, Some(t))
+      (ctor_name, Some(param_type), TypeExpr.at(pos, TypeExpr.Fun(param_type, ret_type)))
     else:
-      (ctor_name, None)
+      (ctor_name, None, ret_type)
   
   def parse_field_decl(parser):
     var is_mutable = (parser.token = Token.Reserved("mutable"))
@@ -983,6 +985,7 @@ def parse_decl_expr(parser):
       DeclExpr.Val(name, type_expr)
     case Token.Reserved("type"):
       lookahead(parser)
+      var pos = parser.pos
       var typector_name = parse_lowid(parser)
       var type_params =
         if parser.token = Token.Reserved("("):
@@ -994,9 +997,11 @@ def parse_decl_expr(parser):
         case Token.CmpOp("="):
           lookahead(parser)
           var t = parse_type(parser)
-          DeclExpr.ConcrType(typector_name, type_params, TypeInfo.Abbrev(t))
+          DeclExpr.ConcrType(typector_name, List.length(type_params), TypeInfo.Abbrev(t))
         case Token.Reserved(":") | Token.Reserved("{"):
-          DeclExpr.ConcrType(typector_name, type_params, parse_type_repr(parser))
+          var defined_type = TypeExpr.at(pos, TypeExpr.App(([],typector_name), type_params))
+          var type_info = parse_type_repr(parser, defined_type)
+          DeclExpr.ConcrType(typector_name, List.length(type_params), type_info)
         case _:
           DeclExpr.AbstrType(typector_name, List.length(type_params))
     case _:

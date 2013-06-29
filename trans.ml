@@ -345,9 +345,9 @@ end
 
 let rec translate_ctor_decl = begin fun ctor_decl ->
   begin match ctor_decl with
-    | (ctor_name, None) ->
+    | (ctor_name, None, _) ->
       ((sprintf "| %s\n") (Names.show_ctor_name ctor_name))
-    | (ctor_name, (Some (t))) ->
+    | (ctor_name, (Some (t)), _) ->
       begin let str_type = (translate_type_expr t) in
       (((sprintf "| %s of %s\n") (Names.show_ctor_name ctor_name)) str_type)
       end

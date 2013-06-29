@@ -551,11 +551,7 @@ and parse_atomic_type = begin fun parser ->
       end
       end
     | (Token.Reserved ("`")) ->
-      begin let pos = parser.pos in
-      begin let name = (parse_type_var_name parser) in
-      ((TypeExpr.at pos) (TypeExpr.Var (name)))
-      end
-      end
+      (parse_type_var_name parser)
     | _ ->
       (failwith ((expected parser) "type"))
   end
@@ -582,9 +578,11 @@ and parse_typector = begin fun parser ->
 end
 
 and parse_type_var_name = begin fun parser ->
+  begin let pos = parser.pos in
   begin
   ((parse_token parser) (Token.Reserved ("`")));
-  (parse_lowid parser)
+  ((TypeExpr.at pos) (TypeExpr.Var ((parse_lowid parser))))
+  end
   end
 end
 
@@ -1538,6 +1536,7 @@ end
 and parse_top_typedef = begin fun parser ->
   begin
   ((parse_token parser) (Token.Reserved ("type")));
+  begin let pos = parser.pos in
   begin let typector_name = (parse_lowid parser) in
   begin match parser.token with
     | (Token.CmpOp ("=")) ->
@@ -1548,62 +1547,71 @@ and parse_top_typedef = begin fun parser ->
       end
       end
     | ((Token.Reserved (":")) | (Token.Reserved ("{"))) ->
-      (typector_name, (parse_type_repr parser))
+      begin let defined_type = ((TypeExpr.at pos) (TypeExpr.Con (( [] ), typector_name))) in
+      (typector_name, ((parse_type_repr parser) defined_type))
+      end
     | _ ->
       (failwith ((expected parser) "'=' or ':' or '{'"))
+  end
   end
   end
   end
 end
 
 and parse_type_repr = begin fun parser ->
-  begin match parser.token with
-    | (Token.Reserved (":")) ->
-      begin
-      (Lexer.indent parser.lexer);
-      begin
-      (lookahead parser);
-      begin match parser.token with
-        | (Token.Reserved ("def")) ->
-          (TypeInfo.Variant (((parse_indented_elems parser) parse_ctor_decl)))
-        | _ ->
-          (TypeInfo.Record (((parse_indented_elems parser) parse_field_decl)))
-      end
-      end
-      end
-    | (Token.Reserved ("{")) ->
-      begin
-      (lookahead parser);
-      begin match parser.token with
-        | (Token.Reserved ("def")) ->
-          (TypeInfo.Variant (((parse_braced_elems parser) parse_ctor_decl)))
-        | _ ->
-          (TypeInfo.Record (((parse_braced_elems parser) parse_field_decl)))
-      end
-      end
-    | _ ->
-      (failwith ((expected parser) "':' or '{'"))
+  begin fun defined_type ->
+    begin match parser.token with
+      | (Token.Reserved (":")) ->
+        begin
+        (Lexer.indent parser.lexer);
+        begin
+        (lookahead parser);
+        begin match parser.token with
+          | (Token.Reserved ("def")) ->
+            (TypeInfo.Variant (((parse_indented_elems parser) (parse_ctor_decl defined_type))))
+          | _ ->
+            (TypeInfo.Record (((parse_indented_elems parser) parse_field_decl)))
+        end
+        end
+        end
+      | (Token.Reserved ("{")) ->
+        begin
+        (lookahead parser);
+        begin match parser.token with
+          | (Token.Reserved ("def")) ->
+            (TypeInfo.Variant (((parse_braced_elems parser) (parse_ctor_decl defined_type))))
+          | _ ->
+            (TypeInfo.Record (((parse_braced_elems parser) parse_field_decl)))
+        end
+        end
+      | _ ->
+        (failwith ((expected parser) "':' or '{'"))
+    end
   end
 end
 
-and parse_ctor_decl = begin fun parser ->
-  begin
-  ((parse_token parser) (Token.Reserved ("def")));
-  begin let ctor_name = (parse_ctor_name parser) in
-  begin if ((( = ) parser.token) (Token.Reserved ("("))) then
+and parse_ctor_decl = begin fun ret_type ->
+  begin fun parser ->
+    begin let pos = parser.pos in
     begin
-    (lookahead parser);
-    begin let t = (parse_type parser) in
-    begin
-    ((parse_token parser) (Token.Reserved (")")));
-    (ctor_name, (Some (t)))
+    ((parse_token parser) (Token.Reserved ("def")));
+    begin let ctor_name = (parse_ctor_name parser) in
+    begin if ((( = ) parser.token) (Token.Reserved ("("))) then
+      begin
+      (lookahead parser);
+      begin let param_type = (parse_type parser) in
+      begin
+      ((parse_token parser) (Token.Reserved (")")));
+      (ctor_name, (Some (param_type)), ((TypeExpr.at pos) (TypeExpr.Fun (param_type, ret_type))))
+      end
+      end
+      end
+    else
+      (ctor_name, None, ret_type)
     end
     end
     end
-  else
-    (ctor_name, None)
-  end
-  end
+    end
   end
 end
 
@@ -1644,6 +1652,7 @@ let rec parse_decl_expr = begin fun parser ->
     | (Token.Reserved ("type")) ->
       begin
       (lookahead parser);
+      begin let pos = parser.pos in
       begin let typector_name = (parse_lowid parser) in
       begin let type_params = begin if ((( = ) parser.token) (Token.Reserved ("("))) then
         begin
@@ -1658,13 +1667,18 @@ let rec parse_decl_expr = begin fun parser ->
           begin
           (lookahead parser);
           begin let t = (parse_type parser) in
-          (DeclExpr.ConcrType (typector_name, type_params, (TypeInfo.Abbrev (t))))
+          (DeclExpr.ConcrType (typector_name, (List.length type_params), (TypeInfo.Abbrev (t))))
           end
           end
         | ((Token.Reserved (":")) | (Token.Reserved ("{"))) ->
-          (DeclExpr.ConcrType (typector_name, type_params, (parse_type_repr parser)))
+          begin let defined_type = ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params))) in
+          begin let type_info = ((parse_type_repr parser) defined_type) in
+          (DeclExpr.ConcrType (typector_name, (List.length type_params), type_info))
+          end
+          end
         | _ ->
           (DeclExpr.AbstrType (typector_name, (List.length type_params)))
+      end
       end
       end
       end
