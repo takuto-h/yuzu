@@ -450,18 +450,7 @@ def load_decl(inf, decl):
       var typector = ([inf.mod_name], name)
       var param_num = List.length(type_params)
       var inf = inf.{typectors = (name, (typector, param_num))::inf.typectors}
-      match type_info:
-        case TypeInfo.Variant(ctor_decls):
-          var let_level = inf.let_level
-          var tmp_inf = incr_let_level(inf)
-          YzList.fold_left(inf, ctor_decls)^(inf, (ctor_name, opt_param, ctor_type_expr)):
-            var ctor_type = eval(tmp_inf, ref([]), ctor_type_expr)
-            var ctor_scm = generalize(let_level, ctor_type)
-            match opt_param:
-              case None:
-                inf.{ctors = (ctor_name, (false, ctor_scm))::inf.ctors}
-              case Some(_):
-                inf.{ctors = (ctor_name, (true, ctor_scm))::inf.ctors}
+      load_type_info(inf, type_info)
 
 def enter_module(inf, mod_name):
   inf.{mod_name = mod_name}
