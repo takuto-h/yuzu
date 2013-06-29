@@ -1559,7 +1559,11 @@ and parse_top_typedef = begin fun parser ->
       end
       end
     | ((Token.Reserved (":")) | (Token.Reserved ("{"))) ->
-      begin let defined_type = ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params))) in
+      begin let defined_type = begin if ((( = ) (List.length type_params)) 0) then
+        ((TypeExpr.at pos) (TypeExpr.Con (( [] ), typector_name)))
+      else
+        ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params)))
+      end in
       (typector_name, type_params, ((parse_type_repr parser) defined_type))
       end
     | _ ->
@@ -1677,7 +1681,11 @@ let rec parse_decl_expr = begin fun parser ->
           end
           end
         | ((Token.Reserved (":")) | (Token.Reserved ("{"))) ->
-          begin let defined_type = ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params))) in
+          begin let defined_type = begin if ((( = ) (List.length type_params)) 0) then
+            ((TypeExpr.at pos) (TypeExpr.Con (( [] ), typector_name)))
+          else
+            ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params)))
+          end in
           begin let type_info = ((parse_type_repr parser) defined_type) in
           (DeclExpr.ConcrType (typector_name, (List.length type_params), type_info))
           end

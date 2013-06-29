@@ -24,7 +24,7 @@ let rec create = begin fun () ->
     ctors = ( [] );
     typectors = ( [] );
     let_level = 0;
-    mod_name = "Pervasives";
+    mod_name = "Dummy";
   }
 end
 
@@ -471,51 +471,6 @@ let rec make_decls = begin fun map ->
   end) map) ( [] )))
 end
 
-let rec infer_top = begin fun inf ->
-  begin fun top ->
-    begin match top.Top.raw with
-      | (Top.Expr (expr)) ->
-        (inf, (( :: ) ((Decl.Val ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))), ( [] ))))
-      | (Top.LetVal (pat, val_expr)) ->
-        begin let val_type = ((infer_expr inf) val_expr) in
-        begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
-        begin
-        (((require val_expr.Expr.pos) pat_type) val_type);
-        (inf, (make_decls map))
-        end
-        end
-        end
-      | (Top.LetFun (defs)) ->
-        begin let let_level = inf.let_level in
-        begin let tmp_inf = (incr_let_level inf) in
-        begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
-          begin fun (name, val_expr) ->
-            begin let (tmp_inf, t) = ((add_asp tmp_inf) name) in
-            tmp_inf
-            end
-          end
-        end) in
-        begin let (inf, decls) = (((YzList.fold_left (inf, ( [] ))) defs) begin fun (inf, decls) ->
-          begin fun (name, val_expr) ->
-            begin let val_type = ((infer_expr tmp_inf) val_expr) in
-            begin let scm = ((generalize let_level) val_type) in
-            ({
-              inf with
-              asp = (( :: ) ((name, scm), inf.asp));
-            }, (( :: ) ((Decl.Val (name, scm)), decls)))
-            end
-            end
-          end
-        end) in
-        (inf, decls)
-        end
-        end
-        end
-        end
-    end
-  end
-end
-
 let rec eval = begin fun inf ->
   begin fun env_ref ->
     begin fun type_expr ->
@@ -571,6 +526,96 @@ let rec eval = begin fun inf ->
       end in
       ((Type.at (Some (type_expr.TypeExpr.pos))) t)
       end
+    end
+  end
+end
+
+let rec load_type_info = begin fun inf ->
+  begin fun type_info ->
+    begin match type_info with
+      | (TypeInfo.Variant (ctor_decls)) ->
+        begin let let_level = inf.let_level in
+        begin let tmp_inf = (incr_let_level inf) in
+        (((YzList.fold_left inf) ctor_decls) begin fun inf ->
+          begin fun (ctor_name, opt_param, ctor_type_expr) ->
+            begin let ctor_type = (((eval tmp_inf) (ref ( [] ))) ctor_type_expr) in
+            begin let ctor_scm = ((generalize let_level) ctor_type) in
+            begin match opt_param with
+              | None ->
+                {
+                  inf with
+                  ctors = (( :: ) ((ctor_name, (false, ctor_scm)), inf.ctors));
+                }
+              | (Some (_)) ->
+                {
+                  inf with
+                  ctors = (( :: ) ((ctor_name, (true, ctor_scm)), inf.ctors));
+                }
+            end
+            end
+            end
+          end
+        end)
+        end
+        end
+    end
+  end
+end
+
+let rec infer_top = begin fun inf ->
+  begin fun top ->
+    begin match top.Top.raw with
+      | (Top.Expr (expr)) ->
+        (inf, (( :: ) ((Decl.Val ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))), ( [] ))))
+      | (Top.LetVal (pat, val_expr)) ->
+        begin let val_type = ((infer_expr inf) val_expr) in
+        begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+        begin
+        (((require val_expr.Expr.pos) pat_type) val_type);
+        (inf, (make_decls map))
+        end
+        end
+        end
+      | (Top.LetFun (defs)) ->
+        begin let let_level = inf.let_level in
+        begin let tmp_inf = (incr_let_level inf) in
+        begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
+          begin fun (name, val_expr) ->
+            begin let (tmp_inf, t) = ((add_asp tmp_inf) name) in
+            tmp_inf
+            end
+          end
+        end) in
+        begin let (inf, decls) = (((YzList.fold_left (inf, ( [] ))) defs) begin fun (inf, decls) ->
+          begin fun (name, val_expr) ->
+            begin let val_type = ((infer_expr tmp_inf) val_expr) in
+            begin let scm = ((generalize let_level) val_type) in
+            ({
+              inf with
+              asp = (( :: ) ((name, scm), inf.asp));
+            }, (( :: ) ((Decl.Val (name, scm)), decls)))
+            end
+            end
+          end
+        end) in
+        (inf, decls)
+        end
+        end
+        end
+        end
+      | (Top.Type ((( :: ) ((name, type_params, type_info), defs)))) ->
+        begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
+        begin let param_num = (List.length type_params) in
+        begin let inf = {
+          inf with
+          typectors = (( :: ) ((name, (typector, param_num)), inf.typectors));
+        } in
+        begin let inf = ((load_type_info inf) type_info) in
+        (inf, ( [] ))
+        end
+        end
+        end
+        end
     end
   end
 end

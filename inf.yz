@@ -23,7 +23,7 @@ def create(): {
   ctors = [];
   typectors = [];
   let_level = 0;
-  mod_name = "Pervasives";
+  mod_name = "Dummy";
 }
 
 def incr_let_level(inf): inf.{
@@ -285,27 +285,6 @@ rec:
 def make_decls(map):
   List.rev(ValNameMap.fold^(name, t, acc){Decl.Val(name, Scheme.mono(t))::acc}(map, []))
 
-def infer_top(inf, top):
-  match top.Top.raw:
-    case Top.Expr(expr):
-      (inf, [Decl.Val(Names.Id("_"), Scheme.mono(infer_expr(inf, expr)))])
-    case Top.LetVal(pat,val_expr):
-      var val_type = infer_expr(inf, val_expr)
-      var (inf, pat_type, map) = infer_pattern(inf, pat)
-      require(val_expr.Expr.pos, pat_type, val_type)
-      (inf, make_decls(map))
-    case Top.LetFun(defs):
-      var let_level = inf.let_level
-      var tmp_inf = incr_let_level(inf)
-      var tmp_inf = YzList.fold_left(tmp_inf, defs)^(tmp_inf, (name, val_expr)):
-        var (tmp_inf, t) = add_asp(tmp_inf, name)
-        tmp_inf
-      var (inf, decls) = YzList.fold_left((inf, []), defs)^((inf, decls), (name, val_expr)):
-        var val_type = infer_expr(tmp_inf, val_expr)
-        var scm = generalize(let_level, val_type)
-        (inf.{asp = (name, scm)::inf.asp}, Decl.Val(name, scm)::decls)
-      (inf, decls)
-
 def eval(inf, env_ref, type_expr):
   var t = match type_expr.TypeExpr.raw:
     case TypeExpr.Con(typector):
@@ -344,6 +323,47 @@ def eval(inf, env_ref, type_expr):
       var t20 = eval(inf, env_ref, t2)
       Type.Fun(t10, t20)
   Type.at(Some(type_expr.TypeExpr.pos), t)
+
+def load_type_info(inf, type_info):
+  match type_info:
+    case TypeInfo.Variant(ctor_decls):
+      var let_level = inf.let_level
+      var tmp_inf = incr_let_level(inf)
+      YzList.fold_left(inf, ctor_decls)^(inf, (ctor_name, opt_param, ctor_type_expr)):
+        var ctor_type = eval(tmp_inf, ref([]), ctor_type_expr)
+        var ctor_scm = generalize(let_level, ctor_type)
+        match opt_param:
+          case None:
+            inf.{ctors = (ctor_name, (false, ctor_scm))::inf.ctors}
+          case Some(_):
+            inf.{ctors = (ctor_name, (true, ctor_scm))::inf.ctors}
+
+def infer_top(inf, top):
+  match top.Top.raw:
+    case Top.Expr(expr):
+      (inf, [Decl.Val(Names.Id("_"), Scheme.mono(infer_expr(inf, expr)))])
+    case Top.LetVal(pat,val_expr):
+      var val_type = infer_expr(inf, val_expr)
+      var (inf, pat_type, map) = infer_pattern(inf, pat)
+      require(val_expr.Expr.pos, pat_type, val_type)
+      (inf, make_decls(map))
+    case Top.LetFun(defs):
+      var let_level = inf.let_level
+      var tmp_inf = incr_let_level(inf)
+      var tmp_inf = YzList.fold_left(tmp_inf, defs)^(tmp_inf, (name, val_expr)):
+        var (tmp_inf, t) = add_asp(tmp_inf, name)
+        tmp_inf
+      var (inf, decls) = YzList.fold_left((inf, []), defs)^((inf, decls), (name, val_expr)):
+        var val_type = infer_expr(tmp_inf, val_expr)
+        var scm = generalize(let_level, val_type)
+        (inf.{asp = (name, scm)::inf.asp}, Decl.Val(name, scm)::decls)
+      (inf, decls)
+    case Top.Type((name,type_params,type_info)::defs):
+      var typector = ([inf.mod_name], name)
+      var param_num = List.length(type_params)
+      var inf = inf.{typectors = (name, (typector, param_num))::inf.typectors}
+      var inf = load_type_info(inf, type_info)
+      (inf, [])
 
 def load_decl(inf, decl):
   match decl:

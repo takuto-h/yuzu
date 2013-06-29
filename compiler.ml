@@ -169,26 +169,35 @@ let rec read = begin fun buf ->
 end
 
 let rec interactive = begin fun compiler ->
-  begin
-  (printf "---\n");
-  begin try
-    begin let str = (read (Buffer.create initial_buffer_size)) in
-    begin match (((compile_string compiler) "<interactive>") str) with
-      | None ->
-        (interactive compiler)
-      | (Some (compiler, decls, output)) ->
-        begin
-        ((printf "decls:\n%s") decls);
-        begin
-        ((printf "output:\n%s") output);
-        (interactive compiler)
-        end
-        end
+  begin let compiler = {
+    compiler with
+    inf = ((Inf.enter_module compiler.inf) "Interactive");
+  } in
+  begin let rec loop = begin fun compiler ->
+    begin
+    (printf "---\n");
+    begin try
+      begin let str = (read (Buffer.create initial_buffer_size)) in
+      begin match (((compile_string compiler) "<interactive>") str) with
+        | None ->
+          (loop compiler)
+        | (Some (compiler, decls, output)) ->
+          begin
+          ((printf "decls:\n%s") decls);
+          begin
+          ((printf "output:\n%s") output);
+          (loop compiler)
+          end
+          end
+      end
+      end
+    with
+      | End_of_file ->
+        compiler
     end
     end
-  with
-    | End_of_file ->
-      compiler
+  end in
+  (loop compiler)
   end
   end
 end

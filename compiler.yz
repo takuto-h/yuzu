@@ -93,19 +93,23 @@ def read(buf):
     read(buf)
 
 def interactive(compiler):
-  printf("---\n")
-  try:
-    var str = read(Buffer.create(initial_buffer_size))
-    match compile_string(compiler, "<interactive>", str):
-      case None:
-        interactive(compiler)
-      case Some(compiler, decls, output):
-        printf("decls:\n%s", decls)
-        printf("output:\n%s", output)
-        interactive(compiler)
-  with:
-    case End_of_file:
-      compiler
+  var compiler = compiler.{inf = Inf.enter_module(compiler.inf, "Interactive")}
+  def loop(compiler):
+    printf("---\n")
+    try:
+      var str = read(Buffer.create(initial_buffer_size))
+      match compile_string(compiler, "<interactive>", str):
+        case None:
+          loop(compiler)
+        case Some(compiler, decls, output):
+          printf("decls:\n%s", decls)
+          printf("output:\n%s", output)
+          loop(compiler)
+    with:
+      case End_of_file:
+        compiler
+  loop(compiler)
+  
 
 def load_iface_file(compiler, fname_in):
   var chopped = try:
