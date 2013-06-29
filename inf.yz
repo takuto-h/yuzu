@@ -326,6 +326,21 @@ rec:
           var scm = generalize(let_level, val_type)
           inf.{asp = (name, scm)::inf.asp}
         infer_expr(inf, cont_expr)
+      case Expr.Match(target_expr, cases):
+        var target_type = infer_expr(inf, target_expr)
+        var ret_type = Type.make_var(inf.let_level)
+        YzList.fold_left((), cases)^((), (pat, opt_guard, body_expr)):
+          match opt_guard:
+            case None:
+              ()
+            case Some(guard):
+              var guard_type = infer_expr(inf, guard)
+              require(guard.Expr.pos, Type.at(None, bool_type), guard_type)
+          var (inf, pat_type, map) = infer_pattern(inf, pat)
+          require(target_expr.Expr.pos, target_type, pat_type)
+          var body_type = infer_expr(inf, body_expr)
+          require(body_expr.Expr.pos, ret_type, body_type)
+        ret_type
 
   def require(pos, req_type, got_type):
     try:

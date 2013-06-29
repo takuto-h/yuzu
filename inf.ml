@@ -516,6 +516,36 @@ let rec infer_expr = begin fun inf ->
         end
         end
         end
+      | (Expr.Match (target_expr, cases)) ->
+        begin let target_type = ((infer_expr inf) target_expr) in
+        begin let ret_type = (Type.make_var inf.let_level) in
+        begin
+        (((YzList.fold_left ()) cases) begin fun () ->
+          begin fun (pat, opt_guard, body_expr) ->
+            begin
+            begin match opt_guard with
+              | None ->
+                ()
+              | (Some (guard)) ->
+                begin let guard_type = ((infer_expr inf) guard) in
+                (((require guard.Expr.pos) ((Type.at None) bool_type)) guard_type)
+                end
+            end;
+            begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+            begin
+            (((require target_expr.Expr.pos) target_type) pat_type);
+            begin let body_type = ((infer_expr inf) body_expr) in
+            (((require body_expr.Expr.pos) ret_type) body_type)
+            end
+            end
+            end
+            end
+          end
+        end);
+        ret_type
+        end
+        end
+        end
     end
   end
 end
