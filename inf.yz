@@ -426,10 +426,12 @@ def infer_top(inf, top):
         (inf.{asp = (name, scm)::inf.asp}, Decl.Val(name, scm)::decls)
       (inf, decls)
     case Top.Type((name,type_params,type_info)::defs):
-      var typector = ([inf.mod_name], name)
-      var param_num = List.length(type_params)
-      var inf = inf.{typectors = (name, (typector, param_num))::inf.typectors}
-      var inf = load_type_info(inf, type_info)
+      var inf = YzList.fold_left(inf, defs)^(inf, (name, type_params, type_info)):
+        var typector = ([inf.mod_name], name)
+        var param_num = List.length(type_params)
+        inf.{typectors = (name, (typector, param_num))::inf.typectors}
+      var inf = YzList.fold_left(inf, defs)^(inf, (name, type_params, type_info)):
+        load_type_info(inf, type_info)
       (inf, [])
 
 def load_decl(inf, decl):
