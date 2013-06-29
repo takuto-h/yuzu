@@ -944,17 +944,17 @@ rec:
       case Token.CmpOp("="):
         lookahead(parser)
         var t = parse_type(parser)
-        (typector_name, type_params, TypeInfo.Abbrev(t))
+        TypeDef.Abbrev(typector_name, type_params, t)
       case Token.Reserved(":") | Token.Reserved("{"):
         var defined_type = if List.length(type_params) = 0:
             TypeExpr.at(pos, TypeExpr.Con([],typector_name))
           else:
             TypeExpr.at(pos, TypeExpr.App(([],typector_name), type_params))
-        (typector_name, type_params, parse_type_repr(parser, defined_type))
+        TypeDef.Repr(typector_name, type_params, parse_type_info(parser, defined_type))
       case _:
         failwith(expected(parser, "'=' or ':' or '{'"))
   
-  def parse_type_repr(parser, defined_type):
+  def parse_type_info(parser, defined_type):
     match parser.token:
       case Token.Reserved(":"):
         Lexer.indent(parser.lexer)
@@ -1016,14 +1016,14 @@ def parse_decl_expr(parser):
         case Token.CmpOp("="):
           lookahead(parser)
           var t = parse_type(parser)
-          DeclExpr.ConcrType(typector_name, List.length(type_params), TypeInfo.Abbrev(t))
+          DeclExpr.ConcrType(TypeDef.Abbrev(typector_name, type_params, t))
         case Token.Reserved(":") | Token.Reserved("{"):
           var defined_type = if List.length(type_params) = 0:
             TypeExpr.at(pos, TypeExpr.Con([],typector_name))
           else:
             TypeExpr.at(pos, TypeExpr.App(([],typector_name), type_params))
-          var type_info = parse_type_repr(parser, defined_type)
-          DeclExpr.ConcrType(typector_name, List.length(type_params), type_info)
+          var type_info = parse_type_info(parser, defined_type)
+          DeclExpr.ConcrType(TypeDef.Repr(typector_name, type_params, type_info))
         case _:
           DeclExpr.AbstrType(typector_name, List.length(type_params))
     case _:

@@ -268,8 +268,6 @@ def translate_exn_decl(exn_decl):
 
 def translate_type_info(trans, type_info):
   match type_info:
-    case TypeInfo.Abbrev(t):
-      translate_type_expr(t)
     case TypeInfo.Variant(ctor_decls):
       var trans_ctor_decl = incr_indent_level(trans)
       var str_ctor_decls = YzList.fold_left("", ctor_decls)^(acc, elem):
@@ -289,6 +287,17 @@ def translate_type_head(name, params):
       var str_params = YzList.fold_left(translate_type_expr(param), params)^(acc, param):
         sprintf("%s, %s", acc, translate_type_expr(param))
       sprintf("(%s) %s", str_params, name)
+
+def translate_type_def(trans, type_def):
+  match type_def:
+    case TypeDef.Abbrev(name,params,t):
+      var str_head = translate_type_head(name, params)
+      var str_type = translate_type_expr(t)
+      sprintf("%s = %s", str_head, str_type)
+    case TypeDef.Repr(name,params,info):
+      var str_head = translate_type_head(name, params)
+      var str_info = translate_type_info(trans, info)
+      sprintf("%s = %s", str_head, str_info)
 
 def translate_top(trans, top):
   match top.Top.raw:
@@ -312,14 +321,13 @@ def translate_top(trans, top):
     case Top.Open(path):
       var str_path = Names.show_mod_path(path)
       sprintf("open %s\n", str_path)
-    case Top.Type((name,params,info)::defs):
-      var str_head = translate_type_head(name, params)
-      var str_info = translate_type_info(trans, info)
-      var str_type = sprintf("type %s = %s\n", str_head, str_info)
-      YzList.fold_left(str_type, defs)^(acc, (name,params,info)):
-        var str_head = translate_type_head(name, params)
-        var str_info = translate_type_info(trans, info)
-        sprintf("%s\nand %s = %s\n", acc, str_head, str_info)
+    case Top.Type(type_def::defs):
+      var str_type_def = translate_type_def(trans, type_def)
+      var str_type = sprintf("type %s\n", str_type_def)
+      var str_type = YzList.fold_left(str_type, defs)^(acc, type_def):
+        var str_type_def = translate_type_def(trans, type_def)
+        sprintf("%s\nand %s\n", acc, str_type_def)
+      str_type
     case Top.Type([]):
       assert(false)
     case Top.Module(name,ftor,arg):

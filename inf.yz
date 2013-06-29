@@ -425,13 +425,17 @@ def infer_top(inf, top):
         var scm = generalize(let_level, val_type)
         (inf.{asp = (name, scm)::inf.asp}, Decl.Val(name, scm)::decls)
       (inf, decls)
-    case Top.Type((name,type_params,type_info)::defs):
-      var inf = YzList.fold_left(inf, defs)^(inf, (name, type_params, type_info)):
-        var typector = ([inf.mod_name], name)
-        var param_num = List.length(type_params)
-        inf.{typectors = (name, (typector, param_num))::inf.typectors}
-      var inf = YzList.fold_left(inf, defs)^(inf, (name, type_params, type_info)):
-        load_type_info(inf, type_info)
+    case Top.Type(defs):
+      var inf = YzList.fold_left(inf, defs)^(inf, type_def):
+        match type_def:
+          case TypeDef.Repr(name, type_params, type_info):
+            var typector = ([inf.mod_name], name)
+            var param_num = List.length(type_params)
+            inf.{typectors = (name, (typector, param_num))::inf.typectors}
+      var inf = YzList.fold_left(inf, defs)^(inf, type_def):
+        match type_def:
+          case TypeDef.Repr(name, type_params, type_info):
+            load_type_info(inf, type_info)
       (inf, [])
 
 def load_decl(inf, decl):
@@ -442,8 +446,9 @@ def load_decl(inf, decl):
     case DeclExpr.AbstrType(name, param_num):
       var typector = ([inf.mod_name], name)
       inf.{typectors = (name, (typector, param_num))::inf.typectors}
-    case DeclExpr.ConcrType(name, param_num, type_info):
+    case DeclExpr.ConcrType(TypeDef.Repr(name, type_params, type_info)):
       var typector = ([inf.mod_name], name)
+      var param_num = List.length(type_params)
       var inf = inf.{typectors = (name, (typector, param_num))::inf.typectors}
       match type_info:
         case TypeInfo.Variant(ctor_decls):

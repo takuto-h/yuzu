@@ -705,22 +705,28 @@ let rec infer_top = begin fun inf ->
         end
         end
         end
-      | (Top.Type ((( :: ) ((name, type_params, type_info), defs)))) ->
+      | (Top.Type (defs)) ->
         begin let inf = (((YzList.fold_left inf) defs) begin fun inf ->
-          begin fun (name, type_params, type_info) ->
-            begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
-            begin let param_num = (List.length type_params) in
-            {
-              inf with
-              typectors = (( :: ) ((name, (typector, param_num)), inf.typectors));
-            }
-            end
+          begin fun type_def ->
+            begin match type_def with
+              | (TypeDef.Repr (name, type_params, type_info)) ->
+                begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
+                begin let param_num = (List.length type_params) in
+                {
+                  inf with
+                  typectors = (( :: ) ((name, (typector, param_num)), inf.typectors));
+                }
+                end
+                end
             end
           end
         end) in
         begin let inf = (((YzList.fold_left inf) defs) begin fun inf ->
-          begin fun (name, type_params, type_info) ->
-            ((load_type_info inf) type_info)
+          begin fun type_def ->
+            begin match type_def with
+              | (TypeDef.Repr (name, type_params, type_info)) ->
+                ((load_type_info inf) type_info)
+            end
           end
         end) in
         (inf, ( [] ))
@@ -747,8 +753,9 @@ let rec load_decl = begin fun inf ->
           typectors = (( :: ) ((name, (typector, param_num)), inf.typectors));
         }
         end
-      | (DeclExpr.ConcrType (name, param_num, type_info)) ->
+      | (DeclExpr.ConcrType ((TypeDef.Repr (name, type_params, type_info)))) ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
+        begin let param_num = (List.length type_params) in
         begin let inf = {
           inf with
           typectors = (( :: ) ((name, (typector, param_num)), inf.typectors));
@@ -779,6 +786,7 @@ let rec load_decl = begin fun inf ->
             end)
             end
             end
+        end
         end
         end
         end

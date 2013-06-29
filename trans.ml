@@ -376,8 +376,6 @@ end
 let rec translate_type_info = begin fun trans ->
   begin fun type_info ->
     begin match type_info with
-      | (TypeInfo.Abbrev (t)) ->
-        (translate_type_expr t)
       | (TypeInfo.Variant (ctor_decls)) ->
         begin let trans_ctor_decl = (incr_indent_level trans) in
         begin let str_ctor_decls = (((YzList.fold_left "") ctor_decls) begin fun acc ->
@@ -419,6 +417,25 @@ let rec translate_type_head = begin fun name ->
   end
 end
 
+let rec translate_type_def = begin fun trans ->
+  begin fun type_def ->
+    begin match type_def with
+      | (TypeDef.Abbrev (name, params, t)) ->
+        begin let str_head = ((translate_type_head name) params) in
+        begin let str_type = (translate_type_expr t) in
+        (((sprintf "%s = %s") str_head) str_type)
+        end
+        end
+      | (TypeDef.Repr (name, params, info)) ->
+        begin let str_head = ((translate_type_head name) params) in
+        begin let str_info = ((translate_type_info trans) info) in
+        (((sprintf "%s = %s") str_head) str_info)
+        end
+        end
+    end
+  end
+end
+
 let rec translate_top = begin fun trans ->
   begin fun top ->
     begin match top.Top.raw with
@@ -454,19 +471,17 @@ let rec translate_top = begin fun trans ->
         begin let str_path = (Names.show_mod_path path) in
         ((sprintf "open %s\n") str_path)
         end
-      | (Top.Type ((( :: ) ((name, params, info), defs)))) ->
-        begin let str_head = ((translate_type_head name) params) in
-        begin let str_info = ((translate_type_info trans) info) in
-        begin let str_type = (((sprintf "type %s = %s\n") str_head) str_info) in
-        (((YzList.fold_left str_type) defs) begin fun acc ->
-          begin fun (name, params, info) ->
-            begin let str_head = ((translate_type_head name) params) in
-            begin let str_info = ((translate_type_info trans) info) in
-            ((((sprintf "%s\nand %s = %s\n") acc) str_head) str_info)
-            end
+      | (Top.Type ((( :: ) (type_def, defs)))) ->
+        begin let str_type_def = ((translate_type_def trans) type_def) in
+        begin let str_type = ((sprintf "type %s\n") str_type_def) in
+        begin let str_type = (((YzList.fold_left str_type) defs) begin fun acc ->
+          begin fun type_def ->
+            begin let str_type_def = ((translate_type_def trans) type_def) in
+            (((sprintf "%s\nand %s\n") acc) str_type_def)
             end
           end
-        end)
+        end) in
+        str_type
         end
         end
         end
