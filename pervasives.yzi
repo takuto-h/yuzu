@@ -2,6 +2,10 @@
 type int
 type bool
 
+type option(`a):
+  def None
+  def Some(`a)
+
 type list(`a):
   def $([])
   def $(::)(`a * list(`a))
