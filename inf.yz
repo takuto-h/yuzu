@@ -95,6 +95,25 @@ def required(pos, req_type, got_type, t1, t2):
     Type.show_origin(shower, "got type", t2),
   )
 
+def inconsistent_types(pos, type1, type2, t1, t2):
+  var shower = Type.create_shower(0)
+  sprintf(
+    "%s%s%s",
+    Pos.show_error(
+      pos,
+      sprintf(
+        "inconsistent types\n%s%s",
+        sprintf("type of lhs: %s\n", Type.show(shower, type1)),
+        sprintf("type of rhs: %s\n", Type.show(shower, type2))
+      )
+    ),
+    Type.show_origin(shower, "type of lhs", t1),
+    Type.show_origin(shower, "type of rhs", t2),
+  )
+
+def inconsistent_var_occurrence(pos):
+  Pos.show_error(pos, "inconsistent variable occurrence\n")
+
 def search_mods(search_mod, mods, mod_name, mod_path, name):
   var modl = List.assoc(mod_name, mods)
   search_mod(modl, mod_path, name)
@@ -165,6 +184,13 @@ def apply(let_level, pos, fun_type, arg_type):
       failwith(invalid_application(pos, fun_type, arg_type, t1, t2))
   ret_type
 
+def require_consistent(pos, type1, type2):
+  try:
+    Type.unify(type1, type2)
+  with:
+    case Type.Unification_error(t1, t2):
+      failwith(inconsistent_types(pos, type1, type2, t1, t2))
+
 def infer_pattern(inf, pat):
   match pat.Pattern.raw:
     case Pattern.Con(lit):
@@ -196,6 +222,14 @@ def infer_pattern(inf, pat):
       var (inf, t, map) = infer_pattern(inf, pat)
       var inf = inf.{asp = (name, Scheme.mono(t))::inf.asp}
       (inf, t, ValNameMap.add(name, t, map))
+    case Pattern.Or(lhs,rhs):
+      var (lhs_inf, lhs_type, lhs_map) = infer_pattern(inf, lhs)
+      var (rhs_inf, rhs_type, rhs_map) = infer_pattern(inf, rhs)
+      if not(ValNameMap.equal($(=), lhs_map, rhs_map)):
+        failwith(inconsistent_var_occurrence(pat.Pattern.pos))
+      else:
+        require_consistent(pat.Pattern.pos, lhs_type, rhs_type)
+        (rhs_inf, rhs_type, rhs_map)
 
 def generalize(let_level, t):
   var alist_ref = ref([])

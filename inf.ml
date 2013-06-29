@@ -113,6 +113,24 @@ let rec required = begin fun pos ->
   end
 end
 
+let rec inconsistent_types = begin fun pos ->
+  begin fun type1 ->
+    begin fun type2 ->
+      begin fun t1 ->
+        begin fun t2 ->
+          begin let shower = (Type.create_shower 0) in
+          ((((sprintf "%s%s%s") ((Pos.show_error pos) (((sprintf "inconsistent types\n%s%s") ((sprintf "type of lhs: %s\n") ((Type.show shower) type1))) ((sprintf "type of rhs: %s\n") ((Type.show shower) type2))))) (((Type.show_origin shower) "type of lhs") t1)) (((Type.show_origin shower) "type of rhs") t2))
+          end
+        end
+      end
+    end
+  end
+end
+
+let rec inconsistent_var_occurrence = begin fun pos ->
+  ((Pos.show_error pos) "inconsistent variable occurrence\n")
+end
+
 let rec search_mods = begin fun search_mod ->
   begin fun mods ->
     begin fun mod_name ->
@@ -257,6 +275,19 @@ let rec apply = begin fun let_level ->
   end
 end
 
+let rec require_consistent = begin fun pos ->
+  begin fun type1 ->
+    begin fun type2 ->
+      begin try
+        ((Type.unify type1) type2)
+      with
+        | (Type.Unification_error (t1, t2)) ->
+          (failwith (((((inconsistent_types pos) type1) type2) t1) t2))
+      end
+    end
+  end
+end
+
 let rec infer_pattern = begin fun inf ->
   begin fun pat ->
     begin match pat.Pattern.raw with
@@ -306,6 +337,19 @@ let rec infer_pattern = begin fun inf ->
           asp = (( :: ) ((name, (Scheme.mono t)), inf.asp));
         } in
         (inf, t, (((ValNameMap.add name) t) map))
+        end
+        end
+      | (Pattern.Or (lhs, rhs)) ->
+        begin let (lhs_inf, lhs_type, lhs_map) = ((infer_pattern inf) lhs) in
+        begin let (rhs_inf, rhs_type, rhs_map) = ((infer_pattern inf) rhs) in
+        begin if (not (((ValNameMap.equal ( = )) lhs_map) rhs_map)) then
+          (failwith (inconsistent_var_occurrence pat.Pattern.pos))
+        else
+          begin
+          (((require_consistent pat.Pattern.pos) lhs_type) rhs_type);
+          (rhs_inf, rhs_type, rhs_map)
+          end
+        end
         end
         end
     end
