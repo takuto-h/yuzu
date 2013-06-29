@@ -2,9 +2,9 @@
 type int
 type bool
 
-type list(`a)//:
-//  def $([])
-//  def $(::)(`a * list(`a))
+type list(`a):
+  def $([])
+  def $(::)(`a * list(`a))
 
 val $(+) : int -> int -> int
 val $(-) : int -> int -> int
