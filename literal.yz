@@ -1,6 +1,4 @@
 
-open Printf
-
 type t:
   def Unit
   def Int(int)

@@ -1,5 +1,3 @@
-open Printf
-
 type t = 
   | Unit
   | Int of int
