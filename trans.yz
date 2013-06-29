@@ -281,6 +281,15 @@ def translate_type_info(trans, type_info):
         sprintf("%s%s", acc, indent(trans_field_decl, translate_field_decl(elem)))
       sprintf("{\n%s%s", str_field_decls, indent(trans, "}"))
 
+def translate_type_head(name, params):
+  match params:
+    case []:
+      name
+    case param::params:
+      var str_params = YzList.fold_left(translate_type_expr(param), params)^(acc, param):
+        sprintf("%s, %s", acc, translate_type_expr(param))
+      sprintf("(%s) %s", str_params, name)
+
 def translate_top(trans, top):
   match top.Top.raw:
     case Top.Expr(expr):
@@ -303,12 +312,14 @@ def translate_top(trans, top):
     case Top.Open(path):
       var str_path = Names.show_mod_path(path)
       sprintf("open %s\n", str_path)
-    case Top.Type((name,info)::defs):
+    case Top.Type((name,params,info)::defs):
+      var str_head = translate_type_head(name, params)
       var str_info = translate_type_info(trans, info)
-      var str_type = sprintf("type %s = %s\n", name, str_info)
-      YzList.fold_left(str_type, defs)^(acc, (name,info)):
+      var str_type = sprintf("type %s = %s\n", str_head, str_info)
+      YzList.fold_left(str_type, defs)^(acc, (name,params,info)):
+        var str_head = translate_type_head(name, params)
         var str_info = translate_type_info(trans, info)
-        sprintf("%s\nand %s = %s\n", acc, name, str_info)
+        sprintf("%s\nand %s = %s\n", acc, str_head, str_info)
     case Top.Type([]):
       assert(false)
     case Top.Module(name,ftor,arg):

@@ -551,7 +551,7 @@ and parse_atomic_type = begin fun parser ->
       end
       end
     | (Token.Reserved ("`")) ->
-      (parse_type_var_name parser)
+      (parse_type_var parser)
     | _ ->
       (failwith ((expected parser) "type"))
   end
@@ -577,12 +577,23 @@ and parse_typector = begin fun parser ->
   end
 end
 
-and parse_type_var_name = begin fun parser ->
+and parse_type_var = begin fun parser ->
   begin let pos = parser.pos in
   begin
   ((parse_token parser) (Token.Reserved ("`")));
   ((TypeExpr.at pos) (TypeExpr.Var ((parse_lowid parser))))
   end
+  end
+end
+
+and parse_type_params = begin fun parser ->
+  begin if ((( = ) parser.token) (Token.Reserved ("("))) then
+    begin
+    (lookahead parser);
+    (((parse_elems parser) comma_or_rparen) parse_type_var)
+    end
+  else
+    ( [] )
   end
 end
 
@@ -1538,20 +1549,22 @@ and parse_top_typedef = begin fun parser ->
   ((parse_token parser) (Token.Reserved ("type")));
   begin let pos = parser.pos in
   begin let typector_name = (parse_lowid parser) in
+  begin let type_params = (parse_type_params parser) in
   begin match parser.token with
     | (Token.CmpOp ("=")) ->
       begin
       (lookahead parser);
       begin let t = (parse_type parser) in
-      (typector_name, (TypeInfo.Abbrev (t)))
+      (typector_name, type_params, (TypeInfo.Abbrev (t)))
       end
       end
     | ((Token.Reserved (":")) | (Token.Reserved ("{"))) ->
-      begin let defined_type = ((TypeExpr.at pos) (TypeExpr.Con (( [] ), typector_name))) in
-      (typector_name, ((parse_type_repr parser) defined_type))
+      begin let defined_type = ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params))) in
+      (typector_name, type_params, ((parse_type_repr parser) defined_type))
       end
     | _ ->
       (failwith ((expected parser) "'=' or ':' or '{'"))
+  end
   end
   end
   end
@@ -1654,14 +1667,7 @@ let rec parse_decl_expr = begin fun parser ->
       (lookahead parser);
       begin let pos = parser.pos in
       begin let typector_name = (parse_lowid parser) in
-      begin let type_params = begin if ((( = ) parser.token) (Token.Reserved ("("))) then
-        begin
-        (lookahead parser);
-        (((parse_elems parser) comma_or_rparen) parse_type_var_name)
-        end
-      else
-        ( [] )
-      end in
+      begin let type_params = (parse_type_params parser) in
       begin match parser.token with
         | (Token.CmpOp ("=")) ->
           begin

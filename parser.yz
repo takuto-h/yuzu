@@ -327,7 +327,7 @@ rec:
         parse_token(parser, Token.Reserved(")"))
         t
       case Token.Reserved("`"):
-        parse_type_var_name(parser)
+        parse_type_var(parser)
       case _:
         failwith(expected(parser, "type"))
   
@@ -343,10 +343,17 @@ rec:
       case _:
         failwith(expected(parser, "identifier"))
 
-  def parse_type_var_name(parser):
+  def parse_type_var(parser):
     var pos = parser.pos
     parse_token(parser, Token.Reserved("`"))
     TypeExpr.at(pos, TypeExpr.Var(parse_lowid(parser)))
+
+  def parse_type_params(parser):
+    if parser.token = Token.Reserved("("):
+      lookahead(parser)
+      parse_elems(parser, comma_or_rparen, parse_type_var)
+    else:
+      []
 
 // END rec: def parse_type
 
@@ -919,14 +926,15 @@ rec:
     parse_token(parser, Token.Reserved("type"))
     var pos = parser.pos
     var typector_name = parse_lowid(parser)
+    var type_params = parse_type_params(parser)
     match parser.token:
       case Token.CmpOp("="):
         lookahead(parser)
         var t = parse_type(parser)
-        (typector_name, TypeInfo.Abbrev(t))
+        (typector_name, type_params, TypeInfo.Abbrev(t))
       case Token.Reserved(":") | Token.Reserved("{"):
-        var defined_type = TypeExpr.at(pos, TypeExpr.Con([], typector_name))
-        (typector_name, parse_type_repr(parser, defined_type))
+        var defined_type = TypeExpr.at(pos, TypeExpr.App(([], typector_name), type_params))
+        (typector_name, type_params, parse_type_repr(parser, defined_type))
       case _:
         failwith(expected(parser, "'=' or ':' or '{'"))
   
@@ -987,12 +995,7 @@ def parse_decl_expr(parser):
       lookahead(parser)
       var pos = parser.pos
       var typector_name = parse_lowid(parser)
-      var type_params =
-        if parser.token = Token.Reserved("("):
-          lookahead(parser)
-          parse_elems(parser, comma_or_rparen, parse_type_var_name)
-        else:
-          []
+      var type_params = parse_type_params(parser)
       match parser.token:
         case Token.CmpOp("="):
           lookahead(parser)

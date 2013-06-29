@@ -402,6 +402,23 @@ let rec translate_type_info = begin fun trans ->
   end
 end
 
+let rec translate_type_head = begin fun name ->
+  begin fun params ->
+    begin match params with
+      | ( [] ) ->
+        name
+      | (( :: ) (param, params)) ->
+        begin let str_params = (((YzList.fold_left (translate_type_expr param)) params) begin fun acc ->
+          begin fun param ->
+            (((sprintf "%s, %s") acc) (translate_type_expr param))
+          end
+        end) in
+        (((sprintf "(%s) %s") str_params) name)
+        end
+    end
+  end
+end
+
 let rec translate_top = begin fun trans ->
   begin fun top ->
     begin match top.Top.raw with
@@ -437,16 +454,20 @@ let rec translate_top = begin fun trans ->
         begin let str_path = (Names.show_mod_path path) in
         ((sprintf "open %s\n") str_path)
         end
-      | (Top.Type ((( :: ) ((name, info), defs)))) ->
+      | (Top.Type ((( :: ) ((name, params, info), defs)))) ->
+        begin let str_head = ((translate_type_head name) params) in
         begin let str_info = ((translate_type_info trans) info) in
-        begin let str_type = (((sprintf "type %s = %s\n") name) str_info) in
+        begin let str_type = (((sprintf "type %s = %s\n") str_head) str_info) in
         (((YzList.fold_left str_type) defs) begin fun acc ->
-          begin fun (name, info) ->
+          begin fun (name, params, info) ->
+            begin let str_head = ((translate_type_head name) params) in
             begin let str_info = ((translate_type_info trans) info) in
-            ((((sprintf "%s\nand %s = %s\n") acc) name) str_info)
+            ((((sprintf "%s\nand %s = %s\n") acc) str_head) str_info)
+            end
             end
           end
         end)
+        end
         end
         end
       | (Top.Type (( [] ))) ->

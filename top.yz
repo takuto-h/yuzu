@@ -4,7 +4,7 @@ type raw:
   def LetVal(Pattern.t * Expr.t)
   def LetFun(list(Names.val_name * Expr.t))
   def Open(Names.mod_path)
-  def Type(list(Names.typector_name * TypeInfo.t))
+  def Type(list(Names.typector_name * list(TypeExpr.t) * TypeInfo.t))
   def Module(Names.mod_name * Names.mod_path * Names.mod_path)
   def Exception(Names.ctor_name * option(TypeExpr.t))
 
