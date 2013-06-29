@@ -156,6 +156,15 @@ def add_asp(inf, name):
   var inf = inf.{asp = (name,Scheme.mono(t))::inf.asp}
   (inf, t)
 
+def apply(let_level, pos, fun_type, arg_type):
+  var ret_type = Type.make_var(let_level)
+  try:
+    Type.unify(fun_type, Type.at(None, Type.Fun(arg_type, ret_type)))
+  with:
+    case Type.Unification_error(t1, t2):
+      failwith(invalid_application(pos, fun_type, arg_type, t1, t2))
+  ret_type
+
 def infer_pattern(inf, pat):
   match pat.Pattern.raw:
     case Pattern.Con(lit):
@@ -169,6 +178,20 @@ def infer_pattern(inf, pat):
         var (inf, t, map2) = infer_pattern(inf, elem)
         (inf, t::ts, ValNameMap.merge^(_){YzOption.or_}(map1, map2))
       (inf, Type.at(None, Type.Tuple(ts)), map)
+    case Pattern.Ctor(ctor, opt_pat):
+      var (req_arg, ctor_scm) = search_ctors(inf, ctor)
+      var ctor_type = instantiate(inf.let_level, ctor_scm)
+      match (req_arg, opt_pat):
+        case (false, None):
+          (inf, ctor_type, ValNameMap.empty)
+        case (false, Some(pat)):
+          failwith(wrong_number_of_arguments(pat.Pattern.pos, 0, 1))
+        case (true, None):
+          failwith(wrong_number_of_arguments(pat.Pattern.pos, 1, 0))
+        case (true, Some(pat)):
+          var (inf, param_type, map) = infer_pattern(inf, pat)
+          var ret_type = apply(inf.let_level, pat.Pattern.pos, ctor_type, param_type)
+          (inf, ret_type, map)
 
 def generalize(let_level, t):
   var alist_ref = ref([])
@@ -186,15 +209,6 @@ def generalize(let_level, t):
   def gen_func(t, _):
     assert(false)
   Scheme.poly(List.length(!alist_ref), Type.map(var_func, gen_func, t))
-
-def apply(let_level, pos, fun_type, arg_type):
-  var ret_type = Type.make_var(let_level)
-  try:
-    Type.unify(fun_type, Type.at(None, Type.Fun(arg_type, ret_type)))
-  with:
-    case Type.Unification_error(t1, t2):
-      failwith(invalid_application(pos, fun_type, arg_type, t1, t2))
-  ret_type
 
 rec:
   def infer_expr(inf, expr):

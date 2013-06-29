@@ -237,6 +237,26 @@ let rec add_asp = begin fun inf ->
   end
 end
 
+let rec apply = begin fun let_level ->
+  begin fun pos ->
+    begin fun fun_type ->
+      begin fun arg_type ->
+        begin let ret_type = (Type.make_var let_level) in
+        begin
+        begin try
+          ((Type.unify fun_type) ((Type.at None) (Type.Fun (arg_type, ret_type))))
+        with
+          | (Type.Unification_error (t1, t2)) ->
+            (failwith (((((invalid_application pos) fun_type) arg_type) t1) t2))
+        end;
+        ret_type
+        end
+        end
+      end
+    end
+  end
+end
+
 let rec infer_pattern = begin fun inf ->
   begin fun pat ->
     begin match pat.Pattern.raw with
@@ -258,6 +278,25 @@ let rec infer_pattern = begin fun inf ->
           end
         end) in
         (inf, ((Type.at None) (Type.Tuple (ts))), map)
+        end
+        end
+      | (Pattern.Ctor (ctor, opt_pat)) ->
+        begin let (req_arg, ctor_scm) = ((search_ctors inf) ctor) in
+        begin let ctor_type = ((instantiate inf.let_level) ctor_scm) in
+        begin match (req_arg, opt_pat) with
+          | (false, None) ->
+            (inf, ctor_type, ValNameMap.empty)
+          | (false, (Some (pat))) ->
+            (failwith (((wrong_number_of_arguments pat.Pattern.pos) 0) 1))
+          | (true, None) ->
+            (failwith (((wrong_number_of_arguments pat.Pattern.pos) 1) 0))
+          | (true, (Some (pat))) ->
+            begin let (inf, param_type, map) = ((infer_pattern inf) pat) in
+            begin let ret_type = ((((apply inf.let_level) pat.Pattern.pos) ctor_type) param_type) in
+            (inf, ret_type, map)
+            end
+            end
+        end
         end
         end
     end
@@ -296,26 +335,6 @@ let rec generalize = begin fun let_level ->
     ((Scheme.poly (List.length (( ! ) alist_ref))) (((Type.map var_func) gen_func) t))
     end
     end
-    end
-  end
-end
-
-let rec apply = begin fun let_level ->
-  begin fun pos ->
-    begin fun fun_type ->
-      begin fun arg_type ->
-        begin let ret_type = (Type.make_var let_level) in
-        begin
-        begin try
-          ((Type.unify fun_type) ((Type.at None) (Type.Fun (arg_type, ret_type))))
-        with
-          | (Type.Unification_error (t1, t2)) ->
-            (failwith (((((invalid_application pos) fun_type) arg_type) t1) t2))
-        end;
-        ret_type
-        end
-        end
-      end
     end
   end
 end
