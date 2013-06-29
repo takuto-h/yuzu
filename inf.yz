@@ -192,6 +192,10 @@ def infer_pattern(inf, pat):
           var (inf, param_type, map) = infer_pattern(inf, pat)
           var ret_type = apply(inf.let_level, pat.Pattern.pos, ctor_type, param_type)
           (inf, ret_type, map)
+    case Pattern.As(pat,name):
+      var (inf, t, map) = infer_pattern(inf, pat)
+      var inf = inf.{asp = (name, Scheme.mono(t))::inf.asp}
+      (inf, t, ValNameMap.add(name, t, map))
 
 def generalize(let_level, t):
   var alist_ref = ref([])

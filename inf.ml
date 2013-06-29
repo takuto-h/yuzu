@@ -299,6 +299,15 @@ let rec infer_pattern = begin fun inf ->
         end
         end
         end
+      | (Pattern.As (pat, name)) ->
+        begin let (inf, t, map) = ((infer_pattern inf) pat) in
+        begin let inf = {
+          inf with
+          asp = (( :: ) ((name, (Scheme.mono t)), inf.asp));
+        } in
+        (inf, t, (((ValNameMap.add name) t) map))
+        end
+        end
     end
   end
 end
