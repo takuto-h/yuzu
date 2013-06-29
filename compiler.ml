@@ -207,6 +207,10 @@ let rec load_iface_file = begin fun compiler ->
       begin let src = (((Source.create fname_in) strm) Pos.File) in
       begin let lexer = (Lexer.create src) in
       begin let parser = (Parser.create lexer) in
+      begin let compiler = {
+        compiler with
+        inf = ((Inf.enter_module compiler.inf) mod_name);
+      } in
       begin try
         begin let rec loop = begin fun compiler ->
           begin match (Parser.parse_decl parser) with
@@ -235,6 +239,7 @@ let rec load_iface_file = begin fun compiler ->
           None
           end
           end
+      end
       end
       end
       end

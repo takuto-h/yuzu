@@ -4,7 +4,7 @@ type t = {
   mods : ((Names.mod_name * t)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
-  typectors : ((Names.typector_name * int)) list;
+  typectors : ((Names.typector_name * (Names.typector * int))) list;
 }
 
 let rec make = begin fun mods ->

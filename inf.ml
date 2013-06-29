@@ -9,8 +9,9 @@ type t = {
   opens : ((Names.mod_name * Names.mod_path)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
-  typectors : ((Names.typector_name * int)) list;
+  typectors : ((Names.typector_name * (Names.typector * int))) list;
   let_level : int;
+  mod_name : Names.mod_name;
 }
 
 let default_opens = (( :: ) (("Pervasives", ( [] )), ( [] )))
@@ -23,6 +24,7 @@ let rec create = begin fun () ->
     ctors = ( [] );
     typectors = ( [] );
     let_level = 0;
+    mod_name = "Pervasives";
   }
 end
 
@@ -33,15 +35,15 @@ let rec incr_let_level = begin fun inf ->
   }
 end
 
-let unit_type = (Type.Con (( [] ), "unit"))
+let unit_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "unit"))
 
-let int_type = (Type.Con (( [] ), "int"))
+let int_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "int"))
 
-let string_type = (Type.Con (( [] ), "string"))
+let string_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "string"))
 
-let char_type = (Type.Con (( [] ), "char"))
+let char_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "char"))
 
-let bool_type = (Type.Con (( [] ), "bool"))
+let bool_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "bool"))
 
 let rec unbound_variable = begin fun pos ->
   begin fun path ->
@@ -520,7 +522,7 @@ let rec eval = begin fun inf ->
       begin let t = begin match type_expr.TypeExpr.raw with
         | (TypeExpr.Con (typector)) ->
           begin try
-            begin let param_num = ((search_typectors inf) typector) in
+            begin let (typector, param_num) = ((search_typectors inf) typector) in
             begin if ((( = ) param_num) 0) then
               (Type.Con (typector))
             else
@@ -545,7 +547,7 @@ let rec eval = begin fun inf ->
           end
         | (TypeExpr.App (typector, ts)) ->
           begin try
-            begin let param_num = ((search_typectors inf) typector) in
+            begin let (typector, param_num) = ((search_typectors inf) typector) in
             begin let arg_num = (List.length ts) in
             begin if ((( = ) param_num) arg_num) then
               (Type.App (typector, ((List.map ((eval inf) env_ref)) ts)))
@@ -584,11 +586,22 @@ let rec load_decl = begin fun inf ->
         }
         end
       | (DeclExpr.AbstrType (name, param_num)) ->
+        begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
         {
           inf with
-          typectors = (( :: ) ((name, param_num), inf.typectors));
+          typectors = (( :: ) ((name, (typector, param_num)), inf.typectors));
         }
+        end
     end
+  end
+end
+
+let rec enter_module = begin fun inf ->
+  begin fun mod_name ->
+    {
+      inf with
+      mod_name = mod_name;
+    }
   end
 end
 
@@ -602,6 +615,7 @@ let rec leave_module = begin fun inf ->
       ctors = ( [] );
       typectors = ( [] );
       let_level = 0;
+      mod_name = "Pervasives";
     }
     end
   end
@@ -622,6 +636,7 @@ let inf = {
   ctors = ( [] );
   typectors = ( [] );
   let_level = 0;
+  mod_name = "Pervasives";
 }
 
 let shower = (Type.create_shower 0)
@@ -632,11 +647,11 @@ let string_expr = ((Expr.at pos) (Expr.Con ((Literal.String ("abc")))))
 
 let char_expr = ((Expr.at pos) (Expr.Con ((Literal.Char ("x")))))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) int_expr))) "int"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) int_expr))) "Pervasives.int"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) string_expr))) "string"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) string_expr))) "Pervasives.string"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) char_expr))) "char"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) char_expr))) "Pervasives.char"))
 
 let ans = ((Expr.at pos) (Expr.Var (( [] ), (Names.Id ("ans")))))
 
@@ -644,11 +659,11 @@ let _A_a2 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", ( [] ))), (Names.Id ("a2")))
 
 let _A_B_b1 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", (( :: ) ("B", ( [] ))))), (Names.Id ("b1")))))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) ans))) "int"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) ans))) "Pervasives.int"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) _A_a2))) "string"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) _A_a2))) "Pervasives.string"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) _A_B_b1))) "char"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) _A_B_b1))) "Pervasives.char"))
 
 let app_expr = ((Expr.at pos) (Expr.App (int_expr, string_expr)))
 
@@ -656,7 +671,7 @@ let () = begin try
   (ignore ((infer_expr inf) app_expr))
 with
   | (Failure (got)) ->
-    begin let req = (((((((((sprintf "%s%s%s%s%s%s%s%s") "<assertion>:1:0: error: invalid application\n") "function type: int\n") "argument type: string\n") "<assertion>\n") "^\n") "<assertion>:1:0: 'int' of function type\n") "<assertion>\n") "^\n") in
+    begin let req = (((((((((sprintf "%s%s%s%s%s%s%s%s") "<assertion>:1:0: error: invalid application\n") "function type: Pervasives.int\n") "argument type: Pervasives.string\n") "<assertion>\n") "^\n") "<assertion>:1:0: 'Pervasives.int' of function type\n") "<assertion>\n") "^\n") in
     (assert ((( = ) got) req))
     end
 end
@@ -667,9 +682,9 @@ let add_int = ((Expr.at pos) (Expr.App (add, int_expr)))
 
 let add_int_int = ((Expr.at pos) (Expr.App (add_int, int_expr)))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) add))) "(int -> (int -> int))"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) add))) "(Pervasives.int -> (Pervasives.int -> Pervasives.int))"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) add_int))) "(int -> int)"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) add_int))) "(Pervasives.int -> Pervasives.int)"))
 
-let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) add_int_int))) "int"))
+let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) add_int_int))) "Pervasives.int"))
 

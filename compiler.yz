@@ -119,6 +119,7 @@ def load_iface_file(compiler, fname_in):
     var src = Source.create(fname_in, strm, Pos.File)
     var lexer = Lexer.create(src)
     var parser = Parser.create(lexer)
+    var compiler = compiler.{inf  = Inf.enter_module(compiler.inf, mod_name)}
     try:
       def loop(compiler):
         match Parser.parse_decl(parser):

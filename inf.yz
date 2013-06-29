@@ -10,8 +10,9 @@ type t:
   opens : list(Names.mod_name * Names.mod_path)
   asp : list(Names.val_name * Scheme.t)
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
-  typectors : list(Names.typector_name * int)
+  typectors : list(Names.typector_name * (Names.typector * int))
   let_level : int
+  mod_name : Names.mod_name
 
 var default_opens = [("Pervasives", [])]
   
@@ -22,17 +23,18 @@ def create(): {
   ctors = [];
   typectors = [];
   let_level = 0;
+  mod_name = "Pervasives";
 }
 
 def incr_let_level(inf): inf.{
   let_level = inf.let_level + 1;
 }
 
-var unit_type = Type.Con([], "unit")
-var int_type = Type.Con([], "int")
-var string_type = Type.Con([], "string")
-var char_type = Type.Con([], "char")
-var bool_type = Type.Con([], "bool")
+var unit_type = Type.Con(["Pervasives"], "unit")
+var int_type = Type.Con(["Pervasives"], "int")
+var string_type = Type.Con(["Pervasives"], "string")
+var char_type = Type.Con(["Pervasives"], "char")
+var bool_type = Type.Con(["Pervasives"], "bool")
 
 def unbound_variable(pos, path):
   Pos.show_error(pos, sprintf("unbound variable: %s\n", Names.show_val_path(path)))
@@ -308,7 +310,7 @@ def eval(inf, env_ref, type_expr):
   var t = match type_expr.TypeExpr.raw:
     case TypeExpr.Con(typector):
       try:
-        var param_num = search_typectors(inf, typector)
+        var (typector, param_num) = search_typectors(inf, typector)
         if param_num = 0:
           Type.Con(typector)
         else:
@@ -326,7 +328,7 @@ def eval(inf, env_ref, type_expr):
           t
     case TypeExpr.App(typector,ts):
       try:
-        var param_num = search_typectors(inf, typector)
+        var (typector, param_num) = search_typectors(inf, typector)
         var arg_num = List.length(ts)
         if param_num = arg_num:
           Type.App(typector, List.map(eval(inf, env_ref), ts))
@@ -349,7 +351,8 @@ def load_decl(inf, decl):
       var scm = Scheme.mono(eval(inf, ref([]), type_expr))
       inf.{asp = (name, scm)::inf.asp}
     case DeclExpr.AbstrType(name, param_num):
-      inf.{typectors = (name, param_num)::inf.typectors}
+      var typector = ([inf.mod_name], name)
+      inf.{typectors = (name, (typector, param_num))::inf.typectors}
 //    case DeclExpr.ConcrType(name, type_params, type_info):
 //      match type_info:
 //        case TypeInfo.Variant(ctor_decls):
@@ -357,6 +360,9 @@ def load_decl(inf, decl):
 //            
 //            inf.{ctors = (ctor_name, ctor_type)::inf.ctors}
 //          inf.{typectors = (name, 0)::inf.typectors}
+
+def enter_module(inf, mod_name):
+  inf.{mod_name = mod_name}
 
 def leave_module(inf, mod_name):
   var new_mod = Module.make([], inf.asp, inf.ctors, inf.typectors)
@@ -367,6 +373,7 @@ def leave_module(inf, mod_name):
     ctors = [];
     typectors = [];
     let_level = 0;
+    mod_name = "Pervasives";
   }
 
 //      
@@ -411,20 +418,21 @@ var inf = {
   ctors = [];
   typectors = [];
   let_level = 0;
+  mod_name = "Pervasives";
 }
 var shower = Type.create_shower(0)
 var int_expr = Expr.at(pos, Expr.Con(Literal.Int(123)))
 var string_expr = Expr.at(pos, Expr.Con(Literal.String("abc")))
 var char_expr = Expr.at(pos, Expr.Con(Literal.Char("x")))
-assert(Type.show(shower, infer_expr(inf, int_expr)) = "int")
-assert(Type.show(shower, infer_expr(inf, string_expr)) = "string")
-assert(Type.show(shower, infer_expr(inf, char_expr)) = "char")
+assert(Type.show(shower, infer_expr(inf, int_expr)) = "Pervasives.int")
+assert(Type.show(shower, infer_expr(inf, string_expr)) = "Pervasives.string")
+assert(Type.show(shower, infer_expr(inf, char_expr)) = "Pervasives.char")
 var ans = Expr.at(pos, Expr.Var([], Names.Id("ans")))
 var _A_a2 = Expr.at(pos, Expr.Var(["A"], Names.Id("a2")))
 var _A_B_b1 = Expr.at(pos, Expr.Var(["A"; "B"], Names.Id("b1")))
-assert(Type.show(shower, infer_expr(inf, ans)) = "int")
-assert(Type.show(shower, infer_expr(inf, _A_a2)) = "string")
-assert(Type.show(shower, infer_expr(inf, _A_B_b1)) = "char")
+assert(Type.show(shower, infer_expr(inf, ans)) = "Pervasives.int")
+assert(Type.show(shower, infer_expr(inf, _A_a2)) = "Pervasives.string")
+assert(Type.show(shower, infer_expr(inf, _A_B_b1)) = "Pervasives.char")
 var app_expr = Expr.at(pos, Expr.App(int_expr, string_expr))
 try:
   ignore(infer_expr(inf, app_expr))
@@ -433,11 +441,11 @@ with:
     var req = sprintf(
       "%s%s%s%s%s%s%s%s",
       "<assertion>:1:0: error: invalid application\n",
-      "function type: int\n",
-      "argument type: string\n",
+      "function type: Pervasives.int\n",
+      "argument type: Pervasives.string\n",
       "<assertion>\n",
       "^\n",
-      "<assertion>:1:0: 'int' of function type\n",
+      "<assertion>:1:0: 'Pervasives.int' of function type\n",
       "<assertion>\n",
       "^\n",
     )
@@ -445,6 +453,6 @@ with:
 var add = Expr.at(pos, Expr.Var([], Names.Op("+")))
 var add_int = Expr.at(pos, Expr.App(add, int_expr))
 var add_int_int = Expr.at(pos,Expr.App(add_int, int_expr))
-assert(Type.show(shower, infer_expr(inf, add)) = "(int -> (int -> int))")
-assert(Type.show(shower, infer_expr(inf, add_int)) = "(int -> int)")
-assert(Type.show(shower, infer_expr(inf, add_int_int)) = "int")
+assert(Type.show(shower, infer_expr(inf, add)) = "(Pervasives.int -> (Pervasives.int -> Pervasives.int))")
+assert(Type.show(shower, infer_expr(inf, add_int)) = "(Pervasives.int -> Pervasives.int)")
+assert(Type.show(shower, infer_expr(inf, add_int_int)) = "Pervasives.int")
