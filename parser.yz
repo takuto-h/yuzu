@@ -457,8 +457,13 @@ rec:
       lookahead(parser)
       Pattern.at(pos, unit_pattern)
     else:
-      var list = parse_pattern_list(parser)
-      Pattern.at(pos, Pattern.Tuple(list))
+      match parse_pattern_list(parser):
+        case []:
+          assert(false)
+        case [pat]:
+          pat
+        case list:
+          Pattern.at(pos, Pattern.Tuple(list))
   
   def parse_pattern_list(parser):
     parse_elems(parser, comma_or_rparen, parse_pattern)

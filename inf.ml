@@ -292,7 +292,7 @@ let rec infer_pattern = begin fun inf ->
   begin fun pat ->
     begin match pat.Pattern.raw with
       | (Pattern.Con (lit)) ->
-        (inf, ((Type.at None) (infer_literal lit)), ValNameMap.empty)
+        (inf, ((Type.at (Some pat.Pattern.pos)) (infer_literal lit)), ValNameMap.empty)
       | (Pattern.Var (name)) ->
         begin let (inf, t) = ((add_asp inf) name) in
         (inf, t, ((ValNameMap.singleton name) t))
@@ -308,7 +308,7 @@ let rec infer_pattern = begin fun inf ->
             end
           end
         end) in
-        (inf, ((Type.at None) (Type.Tuple ts)), map)
+        (inf, ((Type.at (Some pat.Pattern.pos)) (Type.Tuple ts)), map)
         end
         end
       | (Pattern.Ctor (ctor, opt_pat)) ->

@@ -194,7 +194,7 @@ def require_consistent(pos, type1, type2):
 def infer_pattern(inf, pat):
   match pat.Pattern.raw:
     case Pattern.Con(lit):
-      (inf, Type.at(None, infer_literal(lit)), ValNameMap.empty)
+      (inf, Type.at(Some(pat.Pattern.pos), infer_literal(lit)), ValNameMap.empty)
     case Pattern.Var(name):
       var (inf, t) = add_asp(inf, name)
       (inf, t, ValNameMap.singleton(name, t))
@@ -203,7 +203,7 @@ def infer_pattern(inf, pat):
       var (inf, ts, map) = YzList.fold_right(pats, init)^(elem, (inf, ts, map1)):
         var (inf, t, map2) = infer_pattern(inf, elem)
         (inf, t::ts, ValNameMap.merge^(_){YzOption.or_}(map1, map2))
-      (inf, Type.at(None, Type.Tuple(ts)), map)
+      (inf, Type.at(Some(pat.Pattern.pos), Type.Tuple(ts)), map)
     case Pattern.Ctor(ctor, opt_pat):
       var (req_arg, ctor_scm) = search_ctors(inf, ctor)
       var ctor_type = instantiate(inf.let_level, ctor_scm)

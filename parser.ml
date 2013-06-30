@@ -760,8 +760,13 @@ and parse_parens_pattern = begin fun parser ->
       ((Pattern.at pos) unit_pattern)
       end
     else
-      begin let list = (parse_pattern_list parser) in
-      ((Pattern.at pos) (Pattern.Tuple list))
+      begin match (parse_pattern_list parser) with
+        | ( [] ) ->
+          (assert false)
+        | (( :: ) (pat, ( [] ))) ->
+          pat
+        | list ->
+          ((Pattern.at pos) (Pattern.Tuple list))
       end
     end
   end
