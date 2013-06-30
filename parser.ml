@@ -941,7 +941,7 @@ and parse_unary_expr = begin fun parser ->
       end
       end
       end
-    | (Token.Reserved "!") ->
+    | (Token.CmpOp "!") ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);

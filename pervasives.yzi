@@ -32,7 +32,7 @@ val ignore : `a -> unit
 type ref(`a)
 
 val ref : `a -> ref(`a)
-//val $(!) : ref(`a) -> `a
+val $(!) : ref(`a) -> `a
 
 type in_channel
 
