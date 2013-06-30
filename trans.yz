@@ -36,6 +36,8 @@ def translate_literal(lit):
 rec:
   def translate_pattern(pat):
     match pat.Pattern.raw:
+      case Pattern.WildCard:
+        "_"
       case Pattern.Con(lit):
         translate_literal(lit)
       case Pattern.Var(name):

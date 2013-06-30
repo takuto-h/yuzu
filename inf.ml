@@ -313,6 +313,8 @@ end
 let rec infer_pattern = begin fun inf ->
   begin fun pat ->
     begin match pat.Pattern.raw with
+      | Pattern.WildCard ->
+        (inf, (Type.make_var inf.let_level), ValNameMap.empty)
       | (Pattern.Con lit) ->
         (inf, ((Type.at (Some pat.Pattern.pos)) (infer_literal lit)), ValNameMap.empty)
       | (Pattern.Var name) ->

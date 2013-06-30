@@ -670,6 +670,13 @@ and parse_atomic_pattern = begin fun parser ->
       ((Pattern.at pos) (Pattern.Con lit))
       end
       end
+    | (Token.LowId "_") ->
+      begin let pos = parser.pos in
+      begin
+      (lookahead parser);
+      ((Pattern.at pos) Pattern.WildCard)
+      end
+      end
     | (Token.LowId _) ->
       begin let pos = parser.pos in
       begin let name = (parse_val_name parser) in

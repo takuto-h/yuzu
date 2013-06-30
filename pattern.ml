@@ -6,6 +6,7 @@ type t = {
 }
 
 and raw = 
+  | WildCard
   | Con of Literal.t
   | Var of Names.val_name
   | Ctor of (Names.ctor * (t) option)

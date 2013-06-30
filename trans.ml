@@ -46,6 +46,8 @@ end
 
 let rec translate_pattern = begin fun pat ->
   begin match pat.Pattern.raw with
+    | Pattern.WildCard ->
+      "_"
     | (Pattern.Con lit) ->
       (translate_literal lit)
     | (Pattern.Var name) ->

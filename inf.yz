@@ -204,6 +204,8 @@ def require_consistent(pos, type1, type2):
 
 def infer_pattern(inf, pat):
   match pat.Pattern.raw:
+    case Pattern.WildCard:
+      (inf, Type.make_var(inf.let_level), ValNameMap.empty)
     case Pattern.Con(lit):
       (inf, Type.at(Some(pat.Pattern.pos), infer_literal(lit)), ValNameMap.empty)
     case Pattern.Var(name):

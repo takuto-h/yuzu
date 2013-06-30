@@ -405,6 +405,10 @@ rec:
         var pos = parser.pos
         var lit = parse_literal(parser)
         Pattern.at(pos, Pattern.Con(lit))
+      case Token.LowId("_"):
+        var pos = parser.pos
+        lookahead(parser)
+        Pattern.at(pos, Pattern.WildCard)
       case Token.LowId(_):
         var pos = parser.pos
         var name = parse_val_name(parser)
