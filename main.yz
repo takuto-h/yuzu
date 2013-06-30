@@ -5,6 +5,7 @@ var preloads = [
   "pervasives.yzi";
 
   "buffer.yzi";
+  "char.yzi";
   "list.yzi";
   "printf.yzi";
   "stack.yzi";

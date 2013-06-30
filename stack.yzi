@@ -1,0 +1,4 @@
+
+type t(`a)
+val create : unit -> t(`a)
+val is_empty : t(`a) -> bool

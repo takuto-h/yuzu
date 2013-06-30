@@ -4,3 +4,4 @@ val set : string -> int -> char -> unit
 val sub : string -> int -> int -> string
 val length : string -> int
 val index : string -> char -> int
+val contains : string -> char -> bool
