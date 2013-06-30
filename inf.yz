@@ -10,7 +10,7 @@ type t:
   opens : list(Names.mod_name * Names.mod_path)
   asp : list(Names.val_name * Scheme.t)
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
-  typectors : list(Names.typector_name * (Names.typector * int))
+  typectors : list(Names.typector_name * (Names.typector * int * option(Scheme.t)))
   let_level : int
   mod_name : Names.mod_name
 
@@ -353,12 +353,18 @@ def make_decls(map):
   List.rev(ValNameMap.fold^(name, t, acc){Decl.Val(name, Scheme.mono(t))::acc}(map, []))
 
 def eval(inf, env_ref, type_expr):
-  var t = match type_expr.TypeExpr.raw:
+  match type_expr.TypeExpr.raw:
     case TypeExpr.Con(typector):
       try:
-        var (typector, param_num) = search_typectors(inf, typector)
+        var (typector, param_num, opt_conv) = search_typectors(inf, typector)
         if param_num = 0:
-          Type.Con(typector)
+          var t = Type.at(Some(type_expr.TypeExpr.pos), Type.Con(typector))
+          match opt_conv:
+            case None:
+              t
+            case Some(conv_fun_scm):
+              var conv_fun_type = instantiate(inf.let_level, conv_fun_scm)
+              apply(inf.let_level, type_expr.TypeExpr.pos, conv_fun_type, t)
         else:
           failwith(wrong_number_of_arguments(type_expr.TypeExpr.pos, 0, param_num))
       with:
@@ -369,27 +375,33 @@ def eval(inf, env_ref, type_expr):
         List.assoc(name, !env_ref)
       with:
         case Not_found:
-          var t = Type.make_var(inf.let_level).Type.raw
+          var t = Type.make_var(inf.let_level)
           env_ref := (name, t)::!env_ref
           t
     case TypeExpr.App(typector,ts):
       try:
-        var (typector, param_num) = search_typectors(inf, typector)
+        var (typector, param_num, opt_conv) = search_typectors(inf, typector)
         var arg_num = List.length(ts)
         if param_num = arg_num:
-          Type.App(typector, List.map(eval(inf, env_ref), ts))
+          var ts = List.map(eval(inf, env_ref), ts)
+          var t = Type.at(Some(type_expr.TypeExpr.pos), Type.App(typector, ts))
+          match opt_conv:
+            case None:
+              t
+            case Some(conv_fun_scm):
+              var conv_fun_type = instantiate(inf.let_level, conv_fun_scm)
+              apply(inf.let_level, type_expr.TypeExpr.pos, conv_fun_type, t)
         else:
           failwith(wrong_number_of_arguments(type_expr.TypeExpr.pos, arg_num, param_num))
       with:
         case Not_found:
          failwith(unbound_type_constructor(type_expr.TypeExpr.pos, typector))
     case TypeExpr.Tuple(ts):
-      Type.Tuple(List.map(eval(inf, env_ref), ts))
+      Type.at(Some(type_expr.TypeExpr.pos), Type.Tuple(List.map(eval(inf, env_ref), ts)))
     case TypeExpr.Fun(t1, t2):
       var t10 = eval(inf, env_ref, t1)
       var t20 = eval(inf, env_ref, t2)
-      Type.Fun(t10, t20)
-  Type.at(Some(type_expr.TypeExpr.pos), t)
+      Type.at(Some(type_expr.TypeExpr.pos), Type.Fun(t10, t20))
 
 def load_type_info(inf, type_info):
   match type_info:
@@ -431,7 +443,7 @@ def infer_top(inf, top):
           case TypeDef.Repr(name, type_params, type_info):
             var typector = ([inf.mod_name], name)
             var param_num = List.length(type_params)
-            inf.{typectors = (name, (typector, param_num))::inf.typectors}
+            inf.{typectors = (name, (typector, param_num, None))::inf.typectors}
       var inf = YzList.fold_left(inf, defs)^(inf, type_def):
         match type_def:
           case TypeDef.Repr(name, type_params, type_info):
@@ -445,11 +457,11 @@ def load_decl(inf, decl):
       inf.{asp = (name, scm)::inf.asp}
     case DeclExpr.AbstrType(name, param_num):
       var typector = ([inf.mod_name], name)
-      inf.{typectors = (name, (typector, param_num))::inf.typectors}
+      inf.{typectors = (name, (typector, param_num, None))::inf.typectors}
     case DeclExpr.ConcrType(TypeDef.Repr(name, type_params, type_info)):
       var typector = ([inf.mod_name], name)
       var param_num = List.length(type_params)
-      var inf = inf.{typectors = (name, (typector, param_num))::inf.typectors}
+      var inf = inf.{typectors = (name, (typector, param_num, None))::inf.typectors}
       load_type_info(inf, type_info)
 
 def enter_module(inf, mod_name):

@@ -9,7 +9,7 @@ type t = {
   opens : ((Names.mod_name * Names.mod_path)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
-  typectors : ((Names.typector_name * (Names.typector * int))) list;
+  typectors : ((Names.typector_name * (Names.typector * int * (Scheme.t) option))) list;
   let_level : int;
   mod_name : Names.mod_name;
 }
@@ -576,12 +576,21 @@ end
 let rec eval = begin fun inf ->
   begin fun env_ref ->
     begin fun type_expr ->
-      begin let t = begin match type_expr.TypeExpr.raw with
+      begin match type_expr.TypeExpr.raw with
         | (TypeExpr.Con (typector)) ->
           begin try
-            begin let (typector, param_num) = ((search_typectors inf) typector) in
+            begin let (typector, param_num, opt_conv) = ((search_typectors inf) typector) in
             begin if ((( = ) param_num) 0) then
-              (Type.Con (typector))
+              begin let t = ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.Con (typector))) in
+              begin match opt_conv with
+                | None ->
+                  t
+                | (Some (conv_fun_scm)) ->
+                  begin let conv_fun_type = ((instantiate inf.let_level) conv_fun_scm) in
+                  ((((apply inf.let_level) type_expr.TypeExpr.pos) conv_fun_type) t)
+                  end
+              end
+              end
             else
               (failwith (((wrong_number_of_arguments type_expr.TypeExpr.pos) 0) param_num))
             end
@@ -595,7 +604,7 @@ let rec eval = begin fun inf ->
             ((List.assoc name) (( ! ) env_ref))
           with
             | Not_found ->
-              begin let t = (Type.make_var inf.let_level).Type.raw in
+              begin let t = (Type.make_var inf.let_level) in
               begin
               ((( := ) env_ref) (( :: ) ((name, t), (( ! ) env_ref))));
               t
@@ -604,10 +613,21 @@ let rec eval = begin fun inf ->
           end
         | (TypeExpr.App (typector, ts)) ->
           begin try
-            begin let (typector, param_num) = ((search_typectors inf) typector) in
+            begin let (typector, param_num, opt_conv) = ((search_typectors inf) typector) in
             begin let arg_num = (List.length ts) in
             begin if ((( = ) param_num) arg_num) then
-              (Type.App (typector, ((List.map ((eval inf) env_ref)) ts)))
+              begin let ts = ((List.map ((eval inf) env_ref)) ts) in
+              begin let t = ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.App (typector, ts))) in
+              begin match opt_conv with
+                | None ->
+                  t
+                | (Some (conv_fun_scm)) ->
+                  begin let conv_fun_type = ((instantiate inf.let_level) conv_fun_scm) in
+                  ((((apply inf.let_level) type_expr.TypeExpr.pos) conv_fun_type) t)
+                  end
+              end
+              end
+              end
             else
               (failwith (((wrong_number_of_arguments type_expr.TypeExpr.pos) arg_num) param_num))
             end
@@ -618,15 +638,13 @@ let rec eval = begin fun inf ->
               (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
           end
         | (TypeExpr.Tuple (ts)) ->
-          (Type.Tuple (((List.map ((eval inf) env_ref)) ts)))
+          ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.Tuple (((List.map ((eval inf) env_ref)) ts))))
         | (TypeExpr.Fun (t1, t2)) ->
           begin let t10 = (((eval inf) env_ref) t1) in
           begin let t20 = (((eval inf) env_ref) t2) in
-          (Type.Fun (t10, t20))
+          ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.Fun (t10, t20)))
           end
           end
-      end in
-      ((Type.at (Some (type_expr.TypeExpr.pos))) t)
       end
     end
   end
@@ -714,7 +732,7 @@ let rec infer_top = begin fun inf ->
                 begin let param_num = (List.length type_params) in
                 {
                   inf with
-                  typectors = (( :: ) ((name, (typector, param_num)), inf.typectors));
+                  typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
                 }
                 end
                 end
@@ -750,7 +768,7 @@ let rec load_decl = begin fun inf ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
         {
           inf with
-          typectors = (( :: ) ((name, (typector, param_num)), inf.typectors));
+          typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
         }
         end
       | (DeclExpr.ConcrType ((TypeDef.Repr (name, type_params, type_info)))) ->
@@ -758,7 +776,7 @@ let rec load_decl = begin fun inf ->
         begin let param_num = (List.length type_params) in
         begin let inf = {
           inf with
-          typectors = (( :: ) ((name, (typector, param_num)), inf.typectors));
+          typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
         } in
         ((load_type_info inf) type_info)
         end
