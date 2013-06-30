@@ -406,7 +406,7 @@ let rec infer_pattern = begin fun inf ->
       | (Pattern.Or (lhs, rhs)) ->
         begin let (lhs_inf, lhs_type, lhs_map) = ((infer_pattern inf) lhs) in
         begin let (rhs_inf, rhs_type, rhs_map) = ((infer_pattern inf) rhs) in
-        begin if (not (((ValNameMap.equal ( = )) lhs_map) rhs_map)) then
+        begin if (not ((ValNameMap.equal_keys lhs_map) rhs_map)) then
           (failwith (inconsistent_var_occurrence pat.Pattern.pos))
         else
           begin

@@ -260,7 +260,7 @@ def infer_pattern(inf, pat):
     case Pattern.Or(lhs,rhs):
       var (lhs_inf, lhs_type, lhs_map) = infer_pattern(inf, lhs)
       var (rhs_inf, rhs_type, rhs_map) = infer_pattern(inf, rhs)
-      if not(ValNameMap.equal($(=), lhs_map, rhs_map)):
+      if not(ValNameMap.equal_keys(lhs_map, rhs_map)):
         failwith(inconsistent_var_occurrence(pat.Pattern.pos))
       else:
         require_consistent(pat.Pattern.pos, lhs_type, rhs_type)
