@@ -586,6 +586,9 @@ let rec infer_expr = begin fun inf ->
         begin
         (((YzList.fold_left ()) cases) begin fun () ->
           begin fun (pat, opt_guard, body_expr) ->
+            begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+            begin
+            (((require pat.Pattern.pos) target_type) pat_type);
             begin
             begin match opt_guard with
               | None ->
@@ -595,9 +598,6 @@ let rec infer_expr = begin fun inf ->
                 (((require guard.Expr.pos) ((Type.at None) bool_type)) guard_type)
                 end
             end;
-            begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
-            begin
-            (((require pat.Pattern.pos) target_type) pat_type);
             begin let body_type = ((infer_expr inf) body_expr) in
             (((require body_expr.Expr.pos) ret_type) body_type)
             end
@@ -615,6 +615,9 @@ let rec infer_expr = begin fun inf ->
         begin
         (((YzList.fold_left ()) cases) begin fun () ->
           begin fun (pat, opt_guard, body_expr) ->
+            begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+            begin
+            (((require pat.Pattern.pos) ((Type.at None) exn_type)) pat_type);
             begin
             begin match opt_guard with
               | None ->
@@ -624,9 +627,6 @@ let rec infer_expr = begin fun inf ->
                 (((require guard.Expr.pos) ((Type.at None) bool_type)) guard_type)
                 end
             end;
-            begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
-            begin
-            (((require pat.Pattern.pos) ((Type.at None) exn_type)) pat_type);
             begin let body_type = ((infer_expr inf) body_expr) in
             (((require body_expr.Expr.pos) ret_type) body_type)
             end

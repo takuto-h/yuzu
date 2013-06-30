@@ -1,0 +1,4 @@
+
+type t
+
+val add_char : t -> char -> unit
