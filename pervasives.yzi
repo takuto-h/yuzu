@@ -65,4 +65,5 @@ exception End_of_file
 
 val raise : exn -> `a
 val failwith : string -> `a
+val exit : int -> `a
 val assert : bool -> `a

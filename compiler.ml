@@ -96,7 +96,7 @@ let rec compile_file = begin fun compiler ->
                   inf = ((Inf.leave_module compiler.inf) mod_name);
                 })
               | (Some top) ->
-                begin let inf = compiler.inf in
+                begin let (inf, decl) = ((Inf.infer_top compiler.inf) top) in
                 begin let result = ((Trans.translate_top trans) top) in
                 begin
                 (((fprintf chan_out) "%s\n") result);

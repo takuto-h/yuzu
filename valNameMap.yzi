@@ -1,6 +1,6 @@
 
 type t(`a)
-type key// = ValName.t
+type key = ValName.t
 
 val empty : t(`a)
 val singleton : key -> `a -> t(`a)

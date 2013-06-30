@@ -2,3 +2,5 @@
 val init : int -> (int -> `a) -> array(`a)
 val get : array(`a) -> int -> `a
 val length : array(`a) -> int
+val to_list : array(`a) -> list(`a)
+val sub : array(`a) -> int -> int -> array(`a)
