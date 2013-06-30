@@ -885,7 +885,7 @@ rec:
       case Token.Reserved("exception"):
         var pos = parser.pos
         lookahead(parser)
-        parse_top_exn_decl(parser, pos)
+        Top.at(pos, Top.Exception(parse_exn_decl(parser, pos)))
       case Token.Reserved("rec"):
         var pos = parser.pos
         lookahead(parser)
@@ -911,7 +911,7 @@ rec:
     var mod_path = parse_mod_path(parser, [])
     Top.at(pos, Top.Open(mod_path))
 
-  def parse_top_exn_decl(parser, pos):
+  def parse_exn_decl(parser, pos):
     var exn_name = Names.Id(parse_capid(parser))
     var ret_type_expr = TypeExpr.at(pos, exn_type_expr)
     if parser.token = Token.Reserved("("):
@@ -919,9 +919,9 @@ rec:
       var t = parse_type(parser)
       parse_token(parser, Token.Reserved(")"))
       var ctor_type_expr = TypeExpr.at(pos, TypeExpr.Fun(t, ret_type_expr))
-      Top.at(pos, Top.Exception(exn_name, Some(t), ctor_type_expr))
+      (exn_name, Some(t), ctor_type_expr)
     else:
-      Top.at(pos, Top.Exception(exn_name, None, ret_type_expr))
+      (exn_name, None, ret_type_expr)
 
   def parse_top_rec(parser, pos):
     match parser.token:
@@ -1038,18 +1038,9 @@ def parse_decl_expr(parser):
         case _:
           DeclExpr.AbstrType(typector_name, List.length(type_params))
     case Token.Reserved("exception"):
-      lookahead(parser)
       var pos = parser.pos
-      var exn_name = Names.Id(parse_capid(parser))
-      var ret_type_expr = TypeExpr.at(pos, exn_type_expr)
-      if parser.token = Token.Reserved("("):
-        lookahead(parser)
-        var t = parse_type(parser)
-        parse_token(parser, Token.Reserved(")"))
-        var ctor_type_expr = TypeExpr.at(pos, TypeExpr.Fun(t, ret_type_expr))
-        DeclExpr.Exception(exn_name, Some(t), ctor_type_expr)
-      else:
-        DeclExpr.Exception(exn_name, None, ret_type_expr)
+      lookahead(parser)
+      DeclExpr.Exception(parse_exn_decl(parser, pos))
     case _:
       failwith(expected(parser, "declaration"))
 

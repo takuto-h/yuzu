@@ -1459,7 +1459,7 @@ let rec parse_top = begin fun parser ->
       begin let pos = parser.pos in
       begin
       (lookahead parser);
-      ((parse_top_exn_decl parser) pos)
+      ((Top.at pos) (Top.Exception ((parse_exn_decl parser) pos)))
       end
       end
     | (Token.Reserved "rec") ->
@@ -1510,7 +1510,7 @@ and parse_top_open = begin fun parser ->
   end
 end
 
-and parse_top_exn_decl = begin fun parser ->
+and parse_exn_decl = begin fun parser ->
   begin fun pos ->
     begin let exn_name = (Names.Id (parse_capid parser)) in
     begin let ret_type_expr = ((TypeExpr.at pos) exn_type_expr) in
@@ -1521,13 +1521,13 @@ and parse_top_exn_decl = begin fun parser ->
       begin
       ((parse_token parser) (Token.Reserved ")"));
       begin let ctor_type_expr = ((TypeExpr.at pos) (TypeExpr.Fun (t, ret_type_expr))) in
-      ((Top.at pos) (Top.Exception (exn_name, (Some t), ctor_type_expr)))
+      (exn_name, (Some t), ctor_type_expr)
       end
       end
       end
       end
     else
-      ((Top.at pos) (Top.Exception (exn_name, None, ret_type_expr)))
+      (exn_name, None, ret_type_expr)
     end
     end
     end
@@ -1728,28 +1728,10 @@ let rec parse_decl_expr = begin fun parser ->
       end
       end
     | (Token.Reserved "exception") ->
+      begin let pos = parser.pos in
       begin
       (lookahead parser);
-      begin let pos = parser.pos in
-      begin let exn_name = (Names.Id (parse_capid parser)) in
-      begin let ret_type_expr = ((TypeExpr.at pos) exn_type_expr) in
-      begin if ((( = ) parser.token) (Token.Reserved "(")) then
-        begin
-        (lookahead parser);
-        begin let t = (parse_type parser) in
-        begin
-        ((parse_token parser) (Token.Reserved ")"));
-        begin let ctor_type_expr = ((TypeExpr.at pos) (TypeExpr.Fun (t, ret_type_expr))) in
-        (DeclExpr.Exception (exn_name, (Some t), ctor_type_expr))
-        end
-        end
-        end
-        end
-      else
-        (DeclExpr.Exception (exn_name, None, ret_type_expr))
-      end
-      end
-      end
+      (DeclExpr.Exception ((parse_exn_decl parser) pos))
       end
       end
     | _ ->
