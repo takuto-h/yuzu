@@ -31,6 +31,8 @@ var cons_op = ([], Names.Op("::"))
 var nil_expr = Expr.Ctor(([], Names.Op("[]")), None)
 var unit_expr = Expr.Con(Literal.Unit)
 
+var exn_type_expr = TypeExpr.Con([], "exn")
+
 def make_abs(pos, params, body_expr):
   def mk_abs(param, expr):
     Expr.at(pos, Expr.Abs(param, expr))
@@ -918,13 +920,15 @@ rec:
 
   def parse_top_exn_decl(parser, pos):
     var exn_name = Names.Id(parse_capid(parser))
+    var ret_type_expr = TypeExpr.at(pos, exn_type_expr)
     if parser.token = Token.Reserved("("):
       lookahead(parser)
       var t = parse_type(parser)
       parse_token(parser, Token.Reserved(")"))
-      Top.at(pos, Top.Exception(exn_name, Some(t)))
+      var ctor_type_expr = TypeExpr.at(pos, TypeExpr.Fun(t, ret_type_expr))
+      Top.at(pos, Top.Exception(exn_name, Some(t), ctor_type_expr))
     else:
-      Top.at(pos, Top.Exception(exn_name, None))
+      Top.at(pos, Top.Exception(exn_name, None, ret_type_expr))
 
   def parse_top_rec(parser, pos):
     match parser.token:

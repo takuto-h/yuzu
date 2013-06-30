@@ -364,9 +364,9 @@ end
 
 let rec translate_exn_decl = begin fun exn_decl ->
   begin match exn_decl with
-    | (ctor_name, None) ->
+    | (ctor_name, None, _) ->
       ((sprintf "%s") (Names.show_ctor_name ctor_name))
-    | (ctor_name, (Some t)) ->
+    | (ctor_name, (Some t), _) ->
       begin let str_type = (translate_type_expr t) in
       (((sprintf "%s of %s") (Names.show_ctor_name ctor_name)) str_type)
       end

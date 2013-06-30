@@ -462,6 +462,17 @@ def infer_top(inf, top):
       (inf, [])
     case Top.Open([]):
       assert(false)
+    case Top.Exception(ctor_name, opt_param, ctor_type_expr):
+      var let_level = inf.let_level
+      var tmp_inf = incr_let_level(inf)
+      var ctor_type = eval(tmp_inf, ref([]), ctor_type_expr)
+      var ctor_scm = generalize(let_level, ctor_type)
+      var inf = match opt_param:
+        case None:
+          inf.{ctors = (ctor_name, (false, ctor_scm))::inf.ctors}
+        case Some(_):
+          inf.{ctors = (ctor_name, (true, ctor_scm))::inf.ctors}
+      (inf, [])
 
 def load_decl(inf, decl):
   match decl:

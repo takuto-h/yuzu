@@ -44,6 +44,8 @@ let nil_expr = (Expr.Ctor ((( [] ), (Names.Op "[]")), None))
 
 let unit_expr = (Expr.Con Literal.Unit)
 
+let exn_type_expr = (TypeExpr.Con (( [] ), "exn"))
+
 let rec make_abs = begin fun pos ->
   begin fun params ->
     begin fun body_expr ->
@@ -1529,18 +1531,22 @@ end
 and parse_top_exn_decl = begin fun parser ->
   begin fun pos ->
     begin let exn_name = (Names.Id (parse_capid parser)) in
+    begin let ret_type_expr = ((TypeExpr.at pos) exn_type_expr) in
     begin if ((( = ) parser.token) (Token.Reserved "(")) then
       begin
       (lookahead parser);
       begin let t = (parse_type parser) in
       begin
       ((parse_token parser) (Token.Reserved ")"));
-      ((Top.at pos) (Top.Exception (exn_name, (Some t))))
+      begin let ctor_type_expr = ((TypeExpr.at pos) (TypeExpr.Fun (t, ret_type_expr))) in
+      ((Top.at pos) (Top.Exception (exn_name, (Some t), ctor_type_expr)))
+      end
       end
       end
       end
     else
-      ((Top.at pos) (Top.Exception (exn_name, None)))
+      ((Top.at pos) (Top.Exception (exn_name, None, ret_type_expr)))
+    end
     end
     end
   end

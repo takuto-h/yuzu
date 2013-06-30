@@ -6,7 +6,7 @@ type raw:
   def Open(Names.mod_path)
   def Type(list(TypeDef.t))
   def Module(Names.mod_name * Names.mod_path * Names.mod_path)
-  def Exception(Names.ctor_name * option(TypeExpr.t))
+  def Exception(Names.ctor_name * option(TypeExpr.t) * TypeExpr.t)
 
 type t:
   pos : Pos.t
