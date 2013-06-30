@@ -388,6 +388,19 @@ rec:
         with:
           case Not_found:
             failwith(unbound_field_label(expr.Expr.pos, path))
+      case Expr.Record(field_defs):
+        var record_type = Type.make_var(inf.let_level)
+        YzList.fold_left((), field_defs)^((), (path, val_expr)):
+          try:
+            var (is_mutable, access_fun_scm) = search_fields(inf, path)
+            var access_fun_type = instantiate(inf.let_level, access_fun_scm)
+            var field_type = apply(inf.let_level,expr.Expr.pos,access_fun_type,record_type)
+            var val_type = infer_expr(inf, val_expr)
+            require(val_expr.Expr.pos, field_type, val_type)
+          with:
+            case Not_found:
+              failwith(unbound_field_label(expr.Expr.pos, path))
+        record_type
         
   def require(pos, req_type, got_type):
     try:
