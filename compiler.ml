@@ -83,6 +83,10 @@ let rec compile_file = begin fun compiler ->
         begin let lexer = (Lexer.create src) in
         begin let parser = (Parser.create lexer) in
         begin let trans = (Trans.create basic_offset) in
+        begin let compiler = {
+          compiler with
+          inf = ((Inf.enter_module compiler.inf) mod_name);
+        } in
         begin try
           begin let rec loop = begin fun compiler ->
             begin match (Parser.parse parser) with
@@ -116,6 +120,7 @@ let rec compile_file = begin fun compiler ->
             None
             end
             end
+        end
         end
         end
         end

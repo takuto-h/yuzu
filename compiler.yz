@@ -50,6 +50,7 @@ def compile_file(compiler, fname_in):
     var lexer = Lexer.create(src)
     var parser = Parser.create(lexer)
     var trans = Trans.create(basic_offset)
+    var compiler = compiler.{inf  = Inf.enter_module(compiler.inf, mod_name)}
     try:
       def loop(compiler):
         match Parser.parse(parser):

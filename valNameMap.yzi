@@ -1,9 +1,10 @@
 
 type t(`a)
+type key// = ValName.t
 
 val empty : t(`a)
-val singleton : ValName.t -> `a -> t(`a)
-val add : ValName.t -> `a -> t(`a) -> t(`a)
-val merge : (ValName.t -> option(`a) -> option(`b) -> option(`c)) -> t(`a) -> t(`b) -> t(`c)
+val singleton : key -> `a -> t(`a)
+val add : key -> `a -> t(`a) -> t(`a)
+val merge : (key -> option(`a) -> option(`b) -> option(`c)) -> t(`a) -> t(`b) -> t(`c)
 val equal_keys : t(`a) -> t(`b) -> bool
-val fold : (ValName.t -> `a -> `b -> `b) -> t(`a) -> `b -> `b
+val fold : (key -> `a -> `b -> `b) -> t(`a) -> `b -> `b
