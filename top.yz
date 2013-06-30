@@ -5,7 +5,7 @@ type raw:
   def LetFun(list(Names.val_name * Expr.t))
   def Open(Names.mod_path)
   def Type(list(TypeDef.t))
-  def Exception(Names.ctor_name * option(TypeExpr.t) * TypeExpr.t)
+  def Exception(ExnDecl.t)
 
 type t:
   pos : Pos.t

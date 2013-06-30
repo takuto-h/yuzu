@@ -525,6 +525,17 @@ def load_type_info(inf, type_info):
         var access_scm = generalize(let_level, access_type)
         inf.{fields = (field_name, (is_mutable, access_scm))::inf.fields}
 
+def load_exn_decl(inf, (ctor_name, opt_param, ctor_type_expr)):
+  var let_level = inf.let_level
+  var tmp_inf = incr_let_level(inf)
+  var ctor_type = eval(tmp_inf, ref([]), ctor_type_expr)
+  var ctor_scm = generalize(let_level, ctor_type)
+  match opt_param:
+    case None:
+      inf.{ctors = (ctor_name, (false, ctor_scm))::inf.ctors}
+    case Some(_):
+      inf.{ctors = (ctor_name, (true, ctor_scm))::inf.ctors}
+
 def infer_top(inf, top):
   match top.Top.raw:
     case Top.Expr(expr):
@@ -570,16 +581,8 @@ def infer_top(inf, top):
       (inf, [])
     case Top.Open([]):
       assert(false)
-    case Top.Exception(ctor_name, opt_param, ctor_type_expr):
-      var let_level = inf.let_level
-      var tmp_inf = incr_let_level(inf)
-      var ctor_type = eval(tmp_inf, ref([]), ctor_type_expr)
-      var ctor_scm = generalize(let_level, ctor_type)
-      var inf = match opt_param:
-        case None:
-          inf.{ctors = (ctor_name, (false, ctor_scm))::inf.ctors}
-        case Some(_):
-          inf.{ctors = (ctor_name, (true, ctor_scm))::inf.ctors}
+    case Top.Exception(exn_decl):
+      var inf = load_exn_decl(inf, exn_decl)
       (inf, [])
 
 def load_decl(inf, decl):
@@ -607,16 +610,8 @@ def load_decl(inf, decl):
       var conv_type = eval(tmp_inf, ref([]), conv_type_expr)
       var conv_scm = generalize(let_level, conv_type)
       inf.{typectors = (name, (typector, param_num, Some(conv_scm)))::inf.typectors}
-    case DeclExpr.Exception(ctor_name, opt_param, ctor_type_expr):
-      var let_level = inf.let_level
-      var tmp_inf = incr_let_level(inf)
-      var ctor_type = eval(tmp_inf, ref([]), ctor_type_expr)
-      var ctor_scm = generalize(let_level, ctor_type)
-      match opt_param:
-        case None:
-          inf.{ctors = (ctor_name, (false, ctor_scm))::inf.ctors}
-        case Some(_):
-          inf.{ctors = (ctor_name, (true, ctor_scm))::inf.ctors}
+    case DeclExpr.Exception(exn_decl):
+      load_exn_decl(inf, exn_decl)
       
 def enter_module(inf, mod_name):
   inf.{mod_name = mod_name}

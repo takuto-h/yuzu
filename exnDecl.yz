@@ -1,0 +1,2 @@
+
+type t = Names.ctor_name * option(TypeExpr.t) * TypeExpr.t

@@ -4,7 +4,7 @@ type raw =
   | LetFun of ((Names.val_name * Expr.t)) list
   | Open of Names.mod_path
   | Type of (TypeDef.t) list
-  | Exception of (Names.ctor_name * (TypeExpr.t) option * TypeExpr.t)
+  | Exception of ExnDecl.t
 
 
 type t = {

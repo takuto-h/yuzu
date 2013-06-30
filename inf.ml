@@ -878,6 +878,31 @@ let rec load_type_info = begin fun inf ->
   end
 end
 
+let rec load_exn_decl = begin fun inf ->
+  begin fun (ctor_name, opt_param, ctor_type_expr) ->
+    begin let let_level = inf.let_level in
+    begin let tmp_inf = (incr_let_level inf) in
+    begin let ctor_type = (((eval tmp_inf) (ref ( [] ))) ctor_type_expr) in
+    begin let ctor_scm = ((generalize let_level) ctor_type) in
+    begin match opt_param with
+      | None ->
+        {
+          inf with
+          ctors = (( :: ) ((ctor_name, (false, ctor_scm)), inf.ctors));
+        }
+      | (Some _) ->
+        {
+          inf with
+          ctors = (( :: ) ((ctor_name, (true, ctor_scm)), inf.ctors));
+        }
+    end
+    end
+    end
+    end
+    end
+  end
+end
+
 let rec infer_top = begin fun inf ->
   begin fun top ->
     begin match top.Top.raw with
@@ -972,28 +997,9 @@ let rec infer_top = begin fun inf ->
         end
       | (Top.Open ( [] )) ->
         (assert false)
-      | (Top.Exception (ctor_name, opt_param, ctor_type_expr)) ->
-        begin let let_level = inf.let_level in
-        begin let tmp_inf = (incr_let_level inf) in
-        begin let ctor_type = (((eval tmp_inf) (ref ( [] ))) ctor_type_expr) in
-        begin let ctor_scm = ((generalize let_level) ctor_type) in
-        begin let inf = begin match opt_param with
-          | None ->
-            {
-              inf with
-              ctors = (( :: ) ((ctor_name, (false, ctor_scm)), inf.ctors));
-            }
-          | (Some _) ->
-            {
-              inf with
-              ctors = (( :: ) ((ctor_name, (true, ctor_scm)), inf.ctors));
-            }
-        end in
+      | (Top.Exception exn_decl) ->
+        begin let inf = ((load_exn_decl inf) exn_decl) in
         (inf, ( [] ))
-        end
-        end
-        end
-        end
         end
     end
   end
@@ -1055,27 +1061,8 @@ let rec load_decl = begin fun inf ->
         end
         end
         end
-      | (DeclExpr.Exception (ctor_name, opt_param, ctor_type_expr)) ->
-        begin let let_level = inf.let_level in
-        begin let tmp_inf = (incr_let_level inf) in
-        begin let ctor_type = (((eval tmp_inf) (ref ( [] ))) ctor_type_expr) in
-        begin let ctor_scm = ((generalize let_level) ctor_type) in
-        begin match opt_param with
-          | None ->
-            {
-              inf with
-              ctors = (( :: ) ((ctor_name, (false, ctor_scm)), inf.ctors));
-            }
-          | (Some _) ->
-            {
-              inf with
-              ctors = (( :: ) ((ctor_name, (true, ctor_scm)), inf.ctors));
-            }
-        end
-        end
-        end
-        end
-        end
+      | (DeclExpr.Exception exn_decl) ->
+        ((load_exn_decl inf) exn_decl)
     end
   end
 end
