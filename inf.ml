@@ -593,17 +593,26 @@ let rec infer_expr = begin fun inf ->
         ret_type
         end
         end
-      | (Expr.Field (arg_expr, path)) ->
-        begin let arg_type = ((infer_expr inf) arg_expr) in
+      | (Expr.Field (record_expr, path)) ->
+        begin let record_type = ((infer_expr inf) record_expr) in
         begin try
           begin let access_fun_scm = ((search_fields inf) path) in
           begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
-          ((((apply inf.let_level) expr.Expr.pos) access_fun_type) arg_type)
+          ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type)
           end
           end
         with
           | Not_found ->
             (failwith ((unbound_field_label expr.Expr.pos) path))
+        end
+        end
+      | (Expr.Assign (field_expr, val_expr)) ->
+        begin let field_type = ((infer_expr inf) field_expr) in
+        begin let val_type = ((infer_expr inf) val_expr) in
+        begin
+        (((require val_expr.Expr.pos) field_type) val_type);
+        ((Type.at (Some expr.Expr.pos)) unit_type)
+        end
         end
         end
     end
