@@ -23,7 +23,7 @@ let rec compile_file = begin fun compiler ->
     begin let chopped = begin try
       (Filename.chop_extension fname_in)
     with
-      | (Invalid_argument (_)) ->
+      | (Invalid_argument _) ->
         fname_in
     end in
     begin let fname_out = ((sprintf "%s.ml") chopped) in
@@ -43,7 +43,7 @@ let rec compile_file = begin fun compiler ->
                   compiler with
                   inf = ((Inf.leave_module compiler.inf) mod_name);
                 })
-              | (Some (top)) ->
+              | (Some top) ->
                 begin let inf = compiler.inf in
                 begin let result = ((Trans.translate_top trans) top) in
                 begin
@@ -60,7 +60,7 @@ let rec compile_file = begin fun compiler ->
           (loop compiler)
           end
         with
-          | (Failure (message)) ->
+          | (Failure message) ->
             begin
             ((eprintf "%s") message);
             begin
@@ -97,7 +97,7 @@ let rec compile_string = begin fun compiler ->
           begin match (Parser.parse parser) with
             | None ->
               (Some (compiler, (Buffer.contents buf_decls), (Buffer.contents buf_output)))
-            | (Some (top)) ->
+            | (Some top) ->
               begin let (inf, decls) = ((Inf.infer_top compiler.inf) top) in
               begin
               ((List.iter begin fun decl ->
@@ -119,7 +119,7 @@ let rec compile_string = begin fun compiler ->
         (loop compiler)
         end
       with
-        | (Failure (message)) ->
+        | (Failure message) ->
           begin
           ((eprintf "%s") message);
           begin
@@ -148,7 +148,7 @@ let rec compile_files = begin fun compiler ->
         begin match ((compile_file compiler) fname_in) with
           | None ->
             None
-          | (Some (compiler)) ->
+          | (Some compiler) ->
             ((compile_files compiler) fnames)
         end
     end
@@ -207,7 +207,7 @@ let rec load_iface_file = begin fun compiler ->
     begin let chopped = begin try
       (Filename.chop_extension fname_in)
     with
-      | (Invalid_argument (_)) ->
+      | (Invalid_argument _) ->
         fname_in
     end in
     begin let mod_name = (String.capitalize chopped) in
@@ -228,7 +228,7 @@ let rec load_iface_file = begin fun compiler ->
                 compiler with
                 inf = ((Inf.leave_module compiler.inf) mod_name);
               })
-            | (Some (decl)) ->
+            | (Some decl) ->
               begin let inf = ((Inf.load_decl compiler.inf) decl) in
               (loop {
                 compiler with
@@ -240,7 +240,7 @@ let rec load_iface_file = begin fun compiler ->
         (loop compiler)
         end
       with
-        | (Failure (message)) ->
+        | (Failure message) ->
           begin
           ((eprintf "%s") message);
           begin

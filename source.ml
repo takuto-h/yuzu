@@ -34,7 +34,7 @@ let rec junk = begin fun src ->
   begin match (peek src) with
     | None ->
       ()
-    | (Some ('\n')) ->
+    | (Some '\n') ->
       begin
       (src.lnum <- ((( + ) src.lnum) 1));
       begin
@@ -45,7 +45,7 @@ let rec junk = begin fun src ->
       end
       end
       end
-    | (Some (_)) ->
+    | (Some _) ->
       begin
       (src.cnum <- ((( + ) src.cnum) 1));
       (Stream.junk src.strm)

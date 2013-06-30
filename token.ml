@@ -22,7 +22,7 @@ type t =
 
 let rec get_op = begin fun token ->
   begin match token with
-    | ((((((((AssignOp (str)) | (OrOp (str))) | (AndOp (str))) | (CmpOp (str))) | (ConsOp (str))) | (AddOp (str))) | (MulOp (str))) | (PowOp (str))) ->
+    | ((((((((AssignOp str) | (OrOp str)) | (AndOp str)) | (CmpOp str)) | (ConsOp str)) | (AddOp str)) | (MulOp str)) | (PowOp str)) ->
       (Some str)
     | _ ->
       None
@@ -37,17 +37,17 @@ let rec show = begin fun token ->
       "newline"
     | Undent ->
       "undent"
-    | (Int (_)) ->
+    | (Int _) ->
       "integer"
-    | (String (_)) ->
+    | (String _) ->
       "string"
-    | (Char (_)) ->
+    | (Char _) ->
       "character"
-    | (LowId (_)) ->
+    | (LowId _) ->
       "lowercase identifier"
-    | (CapId (_)) ->
+    | (CapId _) ->
       "capitalized identifier"
-    | (((((((((Reserved (s)) | (AssignOp (s))) | (OrOp (s))) | (AndOp (s))) | (CmpOp (s))) | (ConsOp (s))) | (AddOp (s))) | (MulOp (s))) | (PowOp (s))) ->
+    | (((((((((Reserved s) | (AssignOp s)) | (OrOp s)) | (AndOp s)) | (CmpOp s)) | (ConsOp s)) | (AddOp s)) | (MulOp s)) | (PowOp s)) ->
       ((sprintf "'%s'") s)
   end
 end

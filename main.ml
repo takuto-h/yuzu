@@ -16,7 +16,7 @@ let rec main = begin fun () ->
   begin match result with
     | None ->
       (exit 1)
-    | (Some (compiler)) ->
+    | (Some compiler) ->
       (exit 0)
   end
   end

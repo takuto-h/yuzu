@@ -231,13 +231,13 @@ let rec infer_literal = begin fun lit ->
   begin match lit with
     | Literal.Unit ->
       unit_type
-    | (Literal.Int (_)) ->
+    | (Literal.Int _) ->
       int_type
-    | (Literal.String (_)) ->
+    | (Literal.String _) ->
       string_type
-    | (Literal.Char (_)) ->
+    | (Literal.Char _) ->
       char_type
-    | (Literal.Bool (_)) ->
+    | (Literal.Bool _) ->
       bool_type
   end
 end
@@ -291,13 +291,13 @@ end
 let rec infer_pattern = begin fun inf ->
   begin fun pat ->
     begin match pat.Pattern.raw with
-      | (Pattern.Con (lit)) ->
+      | (Pattern.Con lit) ->
         (inf, ((Type.at (Some pat.Pattern.pos)) (infer_literal lit)), ValNameMap.empty)
-      | (Pattern.Var (name)) ->
+      | (Pattern.Var name) ->
         begin let (inf, t) = ((add_asp inf) name) in
         (inf, t, ((ValNameMap.singleton name) t))
         end
-      | (Pattern.Tuple (pats)) ->
+      | (Pattern.Tuple pats) ->
         begin let init = (inf, ( [] ), ValNameMap.empty) in
         begin let (inf, ts, map) = (((YzList.fold_right pats) init) begin fun elem ->
           begin fun (inf, ts, map1) ->
@@ -317,11 +317,11 @@ let rec infer_pattern = begin fun inf ->
         begin match (req_arg, opt_pat) with
           | (false, None) ->
             (inf, ctor_type, ValNameMap.empty)
-          | (false, (Some (pat))) ->
+          | (false, (Some pat)) ->
             (failwith (((wrong_number_of_arguments pat.Pattern.pos) 0) 1))
           | (true, None) ->
             (failwith (((wrong_number_of_arguments pat.Pattern.pos) 1) 0))
-          | (true, (Some (pat))) ->
+          | (true, (Some pat)) ->
             begin let (inf, param_type, map) = ((infer_pattern inf) pat) in
             begin let ret_type = ((((apply inf.let_level) pat.Pattern.pos) ctor_type) param_type) in
             (inf, ret_type, map)
@@ -395,9 +395,9 @@ end
 let rec infer_expr = begin fun inf ->
   begin fun expr ->
     begin match expr.Expr.raw with
-      | (Expr.Con (lit)) ->
+      | (Expr.Con lit) ->
         ((Type.at (Some expr.Expr.pos)) (infer_literal lit))
-      | (Expr.Var (path)) ->
+      | (Expr.Var path) ->
         begin try
           ((instantiate inf.let_level) ((search_asp inf) path))
         with
@@ -421,11 +421,11 @@ let rec infer_expr = begin fun inf ->
           begin match (((search_ctors inf) ctor), opt_arg_expr) with
             | ((false, scm), None) ->
               ((instantiate inf.let_level) scm)
-            | ((false, scm), (Some (arg_expr))) ->
+            | ((false, scm), (Some arg_expr)) ->
               (failwith (((wrong_number_of_arguments expr.Expr.pos) 1) 0))
             | ((true, scm), None) ->
               (failwith (((wrong_number_of_arguments expr.Expr.pos) 0) 1))
-            | ((true, scm), (Some (arg_expr))) ->
+            | ((true, scm), (Some arg_expr)) ->
               begin let arg_type = ((infer_expr inf) arg_expr) in
               ((((apply inf.let_level) expr.Expr.pos) ((instantiate inf.let_level) scm)) arg_type)
               end
@@ -453,7 +453,7 @@ let rec infer_expr = begin fun inf ->
         end
         end
         end
-      | (Expr.Tuple (exprs)) ->
+      | (Expr.Tuple exprs) ->
         ((Type.at (Some expr.Expr.pos)) (Type.Tuple ((List.map (infer_expr inf)) exprs)))
       | (Expr.Or (lhs, rhs)) ->
         begin let pos = expr.Expr.pos in
@@ -526,7 +526,7 @@ let rec infer_expr = begin fun inf ->
             begin match opt_guard with
               | None ->
                 ()
-              | (Some (guard)) ->
+              | (Some guard) ->
                 begin let guard_type = ((infer_expr inf) guard) in
                 (((require guard.Expr.pos) ((Type.at None) bool_type)) guard_type)
                 end
@@ -577,7 +577,7 @@ let rec eval = begin fun inf ->
   begin fun env_ref ->
     begin fun type_expr ->
       begin match type_expr.TypeExpr.raw with
-        | (TypeExpr.Con (typector)) ->
+        | (TypeExpr.Con typector) ->
           begin try
             begin let (typector, param_num, opt_conv) = ((search_typectors inf) typector) in
             begin if ((( = ) param_num) 0) then
@@ -585,7 +585,7 @@ let rec eval = begin fun inf ->
               begin match opt_conv with
                 | None ->
                   t
-                | (Some (conv_fun_scm)) ->
+                | (Some conv_fun_scm) ->
                   begin let conv_fun_type = ((instantiate inf.let_level) conv_fun_scm) in
                   ((((apply inf.let_level) type_expr.TypeExpr.pos) conv_fun_type) t)
                   end
@@ -599,7 +599,7 @@ let rec eval = begin fun inf ->
             | Not_found ->
               (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
           end
-        | (TypeExpr.Var (name)) ->
+        | (TypeExpr.Var name) ->
           begin try
             ((List.assoc name) (( ! ) env_ref))
           with
@@ -621,7 +621,7 @@ let rec eval = begin fun inf ->
               begin match opt_conv with
                 | None ->
                   t
-                | (Some (conv_fun_scm)) ->
+                | (Some conv_fun_scm) ->
                   begin let conv_fun_type = ((instantiate inf.let_level) conv_fun_scm) in
                   ((((apply inf.let_level) type_expr.TypeExpr.pos) conv_fun_type) t)
                   end
@@ -637,7 +637,7 @@ let rec eval = begin fun inf ->
             | Not_found ->
               (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
           end
-        | (TypeExpr.Tuple (ts)) ->
+        | (TypeExpr.Tuple ts) ->
           ((Type.at (Some type_expr.TypeExpr.pos)) (Type.Tuple ((List.map ((eval inf) env_ref)) ts)))
         | (TypeExpr.Fun (t1, t2)) ->
           begin let t10 = (((eval inf) env_ref) t1) in
@@ -653,7 +653,7 @@ end
 let rec load_type_info = begin fun inf ->
   begin fun type_info ->
     begin match type_info with
-      | (TypeInfo.Variant (ctor_decls)) ->
+      | (TypeInfo.Variant ctor_decls) ->
         begin let let_level = inf.let_level in
         begin let tmp_inf = (incr_let_level inf) in
         (((YzList.fold_left inf) ctor_decls) begin fun inf ->
@@ -666,7 +666,7 @@ let rec load_type_info = begin fun inf ->
                   inf with
                   ctors = (( :: ) ((ctor_name, (false, ctor_scm)), inf.ctors));
                 }
-              | (Some (_)) ->
+              | (Some _) ->
                 {
                   inf with
                   ctors = (( :: ) ((ctor_name, (true, ctor_scm)), inf.ctors));
@@ -685,7 +685,7 @@ end
 let rec infer_top = begin fun inf ->
   begin fun top ->
     begin match top.Top.raw with
-      | (Top.Expr (expr)) ->
+      | (Top.Expr expr) ->
         (inf, (( :: ) ((Decl.Val ((Names.Id "_"), (Scheme.mono ((infer_expr inf) expr)))), ( [] ))))
       | (Top.LetVal (pat, val_expr)) ->
         begin let val_type = ((infer_expr inf) val_expr) in
@@ -696,7 +696,7 @@ let rec infer_top = begin fun inf ->
         end
         end
         end
-      | (Top.LetFun (defs)) ->
+      | (Top.LetFun defs) ->
         begin let let_level = inf.let_level in
         begin let tmp_inf = (incr_let_level inf) in
         begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
@@ -723,7 +723,7 @@ let rec infer_top = begin fun inf ->
         end
         end
         end
-      | (Top.Type (defs)) ->
+      | (Top.Type defs) ->
         begin let inf = (((YzList.fold_left inf) defs) begin fun inf ->
           begin fun type_def ->
             begin match type_def with
@@ -788,7 +788,7 @@ let rec load_decl = begin fun inf ->
           typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
         }
         end
-      | (DeclExpr.ConcrType ((TypeDef.Repr (name, type_params, type_info)))) ->
+      | (DeclExpr.ConcrType (TypeDef.Repr (name, type_params, type_info))) ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
         begin let param_num = (List.length type_params) in
         begin let inf = {
@@ -799,7 +799,7 @@ let rec load_decl = begin fun inf ->
         end
         end
         end
-      | (DeclExpr.ConcrType ((TypeDef.Abbrev (name, type_params, _, conv_type_expr)))) ->
+      | (DeclExpr.ConcrType (TypeDef.Abbrev (name, type_params, _, conv_type_expr))) ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
         begin let param_num = (List.length type_params) in
         begin let tmp_inf = {
@@ -899,7 +899,7 @@ let app_expr = ((Expr.at pos) (Expr.App (int_expr, string_expr)))
 let () = begin try
   (ignore ((infer_expr inf) app_expr))
 with
-  | (Failure (got)) ->
+  | (Failure got) ->
     begin let req = (((((((((sprintf "%s%s%s%s%s%s%s%s") "<assertion>:1:0: error: invalid application\n") "function type: Pervasives.int\n") "argument type: Pervasives.string\n") "<assertion>\n") "^\n") "<assertion>:1:0: 'Pervasives.int' of function type\n") "<assertion>\n") "^\n") in
     (assert ((( = ) got) req))
     end

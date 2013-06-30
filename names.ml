@@ -21,9 +21,9 @@ type ctor = (mod_path * ctor_name)
 
 let rec show_val_name = begin fun name ->
   begin match name with
-    | (Id (str)) ->
+    | (Id str) ->
       str
-    | (Op (str)) ->
+    | (Op str) ->
       ((sprintf "( %s )") str)
   end
 end

@@ -61,7 +61,7 @@ let rec show_source = begin fun {fname;lnum;cnum;bol;source;} ->
             ""
         end
       end)
-    | (String (str)) ->
+    | (String str) ->
       begin let str = (((String.sub str) bol) ((( - ) (String.length str)) bol)) in
       begin let str_line = begin try
         (((String.sub str) 0) ((String.index str) '\n'))
