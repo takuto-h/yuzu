@@ -356,7 +356,7 @@ let rec translate_ctor_decl = begin fun ctor_decl ->
   end
 end
 
-let rec translate_field_decl = begin fun (is_mutable, field_name, t) ->
+let rec translate_field_decl = begin fun (is_mutable, field_name, t, _) ->
   begin if is_mutable then
     (((sprintf "mutable %s : %s;\n") (Names.show_val_name field_name)) (translate_type_expr t))
   else

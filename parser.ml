@@ -1604,7 +1604,7 @@ and parse_type_info = begin fun parser ->
           | (Token.Reserved "def") ->
             (TypeInfo.Variant ((parse_indented_elems parser) (parse_ctor_decl defined_type)))
           | _ ->
-            (TypeInfo.Record ((parse_indented_elems parser) parse_field_decl))
+            (TypeInfo.Record ((parse_indented_elems parser) (parse_field_decl defined_type)))
         end
         end
         end
@@ -1615,7 +1615,7 @@ and parse_type_info = begin fun parser ->
           | (Token.Reserved "def") ->
             (TypeInfo.Variant ((parse_braced_elems parser) (parse_ctor_decl defined_type)))
           | _ ->
-            (TypeInfo.Record ((parse_braced_elems parser) parse_field_decl))
+            (TypeInfo.Record ((parse_braced_elems parser) (parse_field_decl defined_type)))
         end
         end
       | _ ->
@@ -1649,23 +1649,27 @@ and parse_ctor_decl = begin fun ret_type ->
   end
 end
 
-and parse_field_decl = begin fun parser ->
-  begin let is_mutable = ((( = ) parser.token) (Token.Reserved "mutable")) in
-  begin
-  begin if is_mutable then
-    (lookahead parser)
-  else
-    ()
-  end;
-  begin let field_name = (parse_val_name parser) in
-  begin
-  ((parse_token parser) (Token.Reserved ":"));
-  begin let t = (parse_type parser) in
-  (is_mutable, field_name, t)
-  end
-  end
-  end
-  end
+and parse_field_decl = begin fun record_type ->
+  begin fun parser ->
+    begin let pos = parser.pos in
+    begin let is_mutable = ((( = ) parser.token) (Token.Reserved "mutable")) in
+    begin
+    begin if is_mutable then
+      (lookahead parser)
+    else
+      ()
+    end;
+    begin let field_name = (parse_val_name parser) in
+    begin
+    ((parse_token parser) (Token.Reserved ":"));
+    begin let t = (parse_type parser) in
+    (is_mutable, field_name, t, ((TypeExpr.at pos) (TypeExpr.Fun (record_type, t))))
+    end
+    end
+    end
+    end
+    end
+    end
   end
 end
 

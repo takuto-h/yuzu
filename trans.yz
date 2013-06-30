@@ -253,7 +253,7 @@ def translate_ctor_decl(ctor_decl):
       var str_type = translate_type_expr(t)
       sprintf("| %s of %s\n", Names.show_ctor_name(ctor_name), str_type)
 
-def translate_field_decl((is_mutable, field_name, t)):
+def translate_field_decl((is_mutable, field_name, t, _)):
   if is_mutable:
     sprintf("mutable %s : %s;\n", Names.show_val_name(field_name), translate_type_expr(t))
   else:

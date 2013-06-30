@@ -855,6 +855,23 @@ let rec load_type_info = begin fun inf ->
         end)
         end
         end
+      | (TypeInfo.Record field_decls) ->
+        begin let let_level = inf.let_level in
+        begin let tmp_inf = (incr_let_level inf) in
+        (((YzList.fold_left inf) field_decls) begin fun inf ->
+          begin fun (is_mutable, field_name, _, access_type_expr) ->
+            begin let access_type = (((eval tmp_inf) (ref ( [] ))) access_type_expr) in
+            begin let access_scm = ((generalize let_level) access_type) in
+            {
+              inf with
+              fields = (( :: ) ((field_name, (is_mutable, access_scm)), inf.fields));
+            }
+            end
+            end
+          end
+        end)
+        end
+        end
     end
   end
 end

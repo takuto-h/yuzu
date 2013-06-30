@@ -515,6 +515,13 @@ def load_type_info(inf, type_info):
             inf.{ctors = (ctor_name, (false, ctor_scm))::inf.ctors}
           case Some(_):
             inf.{ctors = (ctor_name, (true, ctor_scm))::inf.ctors}
+    case TypeInfo.Record(field_decls):
+      var let_level = inf.let_level
+      var tmp_inf = incr_let_level(inf)
+      YzList.fold_left(inf, field_decls)^(inf, (is_mutable,field_name,_,access_type_expr)):
+        var access_type = eval(tmp_inf, ref([]), access_type_expr)
+        var access_scm = generalize(let_level, access_type)
+        inf.{fields = (field_name, (is_mutable, access_scm))::inf.fields}
 
 def infer_top(inf, top):
   match top.Top.raw:

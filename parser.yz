@@ -968,14 +968,14 @@ rec:
           case Token.Reserved("def"):
             TypeInfo.Variant(parse_indented_elems(parser, parse_ctor_decl(defined_type)))
           case _:
-            TypeInfo.Record(parse_indented_elems(parser, parse_field_decl))
+            TypeInfo.Record(parse_indented_elems(parser, parse_field_decl(defined_type)))
       case Token.Reserved("{"):
         lookahead(parser)
         match parser.token:
           case Token.Reserved("def"):
             TypeInfo.Variant(parse_braced_elems(parser, parse_ctor_decl(defined_type)))
           case _:
-            TypeInfo.Record(parse_braced_elems(parser, parse_field_decl))
+            TypeInfo.Record(parse_braced_elems(parser, parse_field_decl(defined_type)))
       case _:
         failwith(expected(parser, "':' or '{'"))
   
@@ -991,7 +991,8 @@ rec:
     else:
       (ctor_name, None, ret_type)
   
-  def parse_field_decl(parser):
+  def parse_field_decl(record_type, parser):
+    var pos = parser.pos
     var is_mutable = (parser.token = Token.Reserved("mutable"))
     if is_mutable:
       lookahead(parser)
@@ -1000,7 +1001,7 @@ rec:
     var field_name = parse_val_name(parser)
     parse_token(parser, Token.Reserved(":"))
     var t = parse_type(parser)
-    (is_mutable, field_name, t)
+    (is_mutable, field_name, t, TypeExpr.at(pos, TypeExpr.Fun(record_type, t)))
 
 // END rec: def parse_top
 
