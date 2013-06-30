@@ -56,8 +56,8 @@ def compile_file(compiler, fname_in):
           case None:
             Some(compiler.{inf = Inf.leave_module(compiler.inf, mod_name)})
           case Some(top):
-            //var (inf, decl) = Inf.infer_top(compiler.inf, top)
-            var inf = compiler.inf
+            var (inf, decl) = Inf.infer_top(compiler.inf, top)
+            //var inf = compiler.inf
             var result = Trans.translate_top(trans, top)
             fprintf(chan_out, "%s\n", result)
             loop(compiler.{inf = inf})

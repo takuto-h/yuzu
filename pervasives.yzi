@@ -1,4 +1,5 @@
 
+type unit
 type int
 type bool
 type string
@@ -21,6 +22,14 @@ val $(&&) : bool -> bool -> bool
 type in_channel
 
 val open_in : string -> in_channel
+val close_in : in_channel -> unit
+val close_in_noerr : in_channel -> unit
+
+type out_channel
+
+val open_out : string -> out_channel
+val close_out : out_channel -> unit
+val close_out_noerr : out_channel -> unit
 
 type exn
 exception Exit
