@@ -1,3 +1,8 @@
+type ('a, 'b) either = 
+  | Left of 'a
+  | Right of 'b
+
+
 let rec with_open_in = begin fun fname_in ->
   begin fun func ->
     begin let chan_in = (open_in fname_in) in

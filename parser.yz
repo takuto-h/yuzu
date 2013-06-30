@@ -1,4 +1,5 @@
 
+open YzPervasives
 open Printf
 
 type t:
@@ -877,7 +878,7 @@ rec:
         Top.at(pos, Top.LetFun([parse_top_let_fun(parser)]))
       case Token.Reserved("type"):
         var pos = parser.pos
-        Top.at(pos, Top.Type([parse_top_typedef(parser)]))
+        Top.at(pos, Top.Type([parse_top_type_def(parser)]))
       case Token.Reserved("open"):
         var pos = parser.pos
         lookahead(parser)
@@ -930,20 +931,27 @@ rec:
         lookahead(parser)
         match parser.token:
           case Token.Reserved("type"):
-            Top.at(pos, Top.Type(parse_indented_elems(parser, parse_top_typedef)))
+            Top.at(pos, Top.Type(parse_indented_elems(parser, parse_top_type_def)))
           case _:
             Top.at(pos, Top.LetFun(parse_indented_elems(parser, parse_top_let_fun)))
       case Token.Reserved("{"):
         lookahead(parser)
         match parser.token:
           case Token.Reserved("type"):
-            Top.at(pos, Top.Type(parse_braced_elems(parser, parse_top_typedef)))
+            Top.at(pos, Top.Type(parse_braced_elems(parser, parse_top_type_def)))
           case _:
             Top.at(pos, Top.LetFun(parse_braced_elems(parser, parse_top_let_fun)))
       case _:
         failwith(expected(parser, "':' or '{'"))
-        
-  def parse_top_typedef(parser):
+
+  def parse_top_type_def(parser):
+    match parse_type_def(parser):
+      case Left(typector_name, type_params):
+        failwith(expected(parser, "'=' or ':' or '{'"))
+      case Right(type_def):
+        type_def
+
+  def parse_type_def(parser):
     parse_token(parser, Token.Reserved("type"))
     var pos = parser.pos
     var typector_name = parse_lowid(parser)
@@ -957,11 +965,12 @@ rec:
         lookahead(parser)
         var t = parse_type(parser)
         var conv_fun_type_expr = TypeExpr.at(pos, TypeExpr.Fun(defined_type, t))
-        TypeDef.Abbrev(typector_name, type_params, t, conv_fun_type_expr)
+        Right(TypeDef.Abbrev(typector_name, type_params, t, conv_fun_type_expr))
       case Token.Reserved(":") | Token.Reserved("{"):
-        TypeDef.Repr(typector_name, type_params, parse_type_info(parser, defined_type))
+        var type_info = parse_type_info(parser, defined_type)
+        Right(TypeDef.Repr(typector_name, type_params, type_info))
       case _:
-        failwith(expected(parser, "'=' or ':' or '{'"))
+        Left(typector_name, type_params)
   
   def parse_type_info(parser, defined_type):
     match parser.token:
@@ -1018,25 +1027,11 @@ def parse_decl_expr(parser):
       var type_expr = parse_type(parser)
       DeclExpr.Val(name, type_expr)
     case Token.Reserved("type"):
-      lookahead(parser)
-      var pos = parser.pos
-      var typector_name = parse_lowid(parser)
-      var type_params = parse_type_params(parser)
-      var defined_type = if List.length(type_params) = 0:
-        TypeExpr.at(pos, TypeExpr.Con([],typector_name))
-      else:
-        TypeExpr.at(pos, TypeExpr.App(([],typector_name), type_params))
-      match parser.token:
-        case Token.CmpOp("="):
-          lookahead(parser)
-          var t = parse_type(parser)
-          var conv_fun = TypeExpr.at(pos, TypeExpr.Fun(defined_type, t))
-          DeclExpr.ConcrType(TypeDef.Abbrev(typector_name, type_params, t, conv_fun))
-        case Token.Reserved(":") | Token.Reserved("{"):
-          var type_info = parse_type_info(parser, defined_type)
-          DeclExpr.ConcrType(TypeDef.Repr(typector_name, type_params, type_info))
-        case _:
-          DeclExpr.AbstrType(typector_name, List.length(type_params))
+      match parse_type_def(parser):
+      case Left(typector_name, type_params):
+        DeclExpr.AbstrType(typector_name, List.length(type_params))
+      case Right(type_def):
+        DeclExpr.ConcrType(type_def)
     case Token.Reserved("exception"):
       var pos = parser.pos
       lookahead(parser)

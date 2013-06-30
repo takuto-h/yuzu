@@ -1,4 +1,8 @@
 
+type either(`a, `b):
+  def Left(`a)
+  def Right(`b)
+
 def with_open_in(fname_in, func):
   var chan_in = open_in(fname_in)
   try:

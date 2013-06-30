@@ -1,3 +1,5 @@
+open YzPervasives
+
 open Printf
 
 type t = {
@@ -1446,7 +1448,7 @@ let rec parse_top = begin fun parser ->
       end
     | (Token.Reserved "type") ->
       begin let pos = parser.pos in
-      ((Top.at pos) (Top.Type (( :: ) ((parse_top_typedef parser), ( [] )))))
+      ((Top.at pos) (Top.Type (( :: ) ((parse_top_type_def parser), ( [] )))))
       end
     | (Token.Reserved "open") ->
       begin let pos = parser.pos in
@@ -1544,7 +1546,7 @@ and parse_top_rec = begin fun parser ->
         (lookahead parser);
         begin match parser.token with
           | (Token.Reserved "type") ->
-            ((Top.at pos) (Top.Type ((parse_indented_elems parser) parse_top_typedef)))
+            ((Top.at pos) (Top.Type ((parse_indented_elems parser) parse_top_type_def)))
           | _ ->
             ((Top.at pos) (Top.LetFun ((parse_indented_elems parser) parse_top_let_fun)))
         end
@@ -1555,7 +1557,7 @@ and parse_top_rec = begin fun parser ->
         (lookahead parser);
         begin match parser.token with
           | (Token.Reserved "type") ->
-            ((Top.at pos) (Top.Type ((parse_braced_elems parser) parse_top_typedef)))
+            ((Top.at pos) (Top.Type ((parse_braced_elems parser) parse_top_type_def)))
           | _ ->
             ((Top.at pos) (Top.LetFun ((parse_braced_elems parser) parse_top_let_fun)))
         end
@@ -1566,7 +1568,16 @@ and parse_top_rec = begin fun parser ->
   end
 end
 
-and parse_top_typedef = begin fun parser ->
+and parse_top_type_def = begin fun parser ->
+  begin match (parse_type_def parser) with
+    | (Left (typector_name, type_params)) ->
+      (failwith ((expected parser) "'=' or ':' or '{'"))
+    | (Right type_def) ->
+      type_def
+  end
+end
+
+and parse_type_def = begin fun parser ->
   begin
   ((parse_token parser) (Token.Reserved "type"));
   begin let pos = parser.pos in
@@ -1583,14 +1594,16 @@ and parse_top_typedef = begin fun parser ->
       (lookahead parser);
       begin let t = (parse_type parser) in
       begin let conv_fun_type_expr = ((TypeExpr.at pos) (TypeExpr.Fun (defined_type, t))) in
-      (TypeDef.Abbrev (typector_name, type_params, t, conv_fun_type_expr))
+      (Right (TypeDef.Abbrev (typector_name, type_params, t, conv_fun_type_expr)))
       end
       end
       end
     | ((Token.Reserved ":") | (Token.Reserved "{")) ->
-      (TypeDef.Repr (typector_name, type_params, ((parse_type_info parser) defined_type)))
+      begin let type_info = ((parse_type_info parser) defined_type) in
+      (Right (TypeDef.Repr (typector_name, type_params, type_info)))
+      end
     | _ ->
-      (failwith ((expected parser) "'=' or ':' or '{'"))
+      (Left (typector_name, type_params))
   end
   end
   end
@@ -1695,37 +1708,11 @@ let rec parse_decl_expr = begin fun parser ->
       end
       end
     | (Token.Reserved "type") ->
-      begin
-      (lookahead parser);
-      begin let pos = parser.pos in
-      begin let typector_name = (parse_lowid parser) in
-      begin let type_params = (parse_type_params parser) in
-      begin let defined_type = begin if ((( = ) (List.length type_params)) 0) then
-        ((TypeExpr.at pos) (TypeExpr.Con (( [] ), typector_name)))
-      else
-        ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params)))
-      end in
-      begin match parser.token with
-        | (Token.CmpOp "=") ->
-          begin
-          (lookahead parser);
-          begin let t = (parse_type parser) in
-          begin let conv_fun = ((TypeExpr.at pos) (TypeExpr.Fun (defined_type, t))) in
-          (DeclExpr.ConcrType (TypeDef.Abbrev (typector_name, type_params, t, conv_fun)))
-          end
-          end
-          end
-        | ((Token.Reserved ":") | (Token.Reserved "{")) ->
-          begin let type_info = ((parse_type_info parser) defined_type) in
-          (DeclExpr.ConcrType (TypeDef.Repr (typector_name, type_params, type_info)))
-          end
-        | _ ->
+      begin match (parse_type_def parser) with
+        | (Left (typector_name, type_params)) ->
           (DeclExpr.AbstrType (typector_name, (List.length type_params)))
-      end
-      end
-      end
-      end
-      end
+        | (Right type_def) ->
+          (DeclExpr.ConcrType type_def)
       end
     | (Token.Reserved "exception") ->
       begin let pos = parser.pos in
