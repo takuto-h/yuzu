@@ -1,1 +1,3 @@
 
+val chop_suffix : string -> string -> string
+val check_suffix : string -> string -> bool

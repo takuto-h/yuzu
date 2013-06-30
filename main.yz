@@ -13,6 +13,7 @@ var preloads = [
   "stack.yzi";
   "string.yzi";
   "stream.yzi";
+  "sys.yzi";
 ]
 
 def main():

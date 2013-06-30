@@ -1,5 +1,7 @@
 
 type t(`a)
 
+val of_string : string -> t(char)
+val of_channel : in_channel -> t(char)
 val peek : t(`a) -> option(`a)
 val junk : t(`a) -> unit
