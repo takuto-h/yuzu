@@ -2,3 +2,5 @@
 type t(`a)
 val create : unit -> t(`a)
 val is_empty : t(`a) -> bool
+val top : t(`a) -> `a
+val pop : t(`a) -> `a

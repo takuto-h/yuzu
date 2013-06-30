@@ -16,9 +16,18 @@ type list(`a):
 val $(+) : int -> int -> int
 val $(-) : int -> int -> int
 val $(*) : int -> int -> int
+
 val $(=) : `a -> `a -> bool
+val $(<>) : `a -> `a -> bool
+val $(<) : `a -> `a -> bool
+val $(>) : `a -> `a -> bool
+val $(<=) : `a -> `a -> bool
+val $(>=) : `a -> `a -> bool
+
 val $(||) : bool -> bool -> bool
 val $(&&) : bool -> bool -> bool
+
+val ignore : `a -> unit
 
 type in_channel
 
