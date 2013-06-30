@@ -3,8 +3,12 @@ open Printf
 
 var preloads = [
   "pervasives.yzi";
+
+  "buffer.yzi";
   "list.yzi";
   "printf.yzi";
+  "string.yzi";
+  "stream.yzi";
 ]
 
 def main():

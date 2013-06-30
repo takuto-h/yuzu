@@ -2,6 +2,7 @@
 type unit
 type int
 type bool
+type char
 type string
 
 type option(`a):
