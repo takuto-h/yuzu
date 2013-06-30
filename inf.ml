@@ -842,11 +842,17 @@ let rec load_decl = begin fun inf ->
   begin fun decl ->
     begin match decl with
       | (DeclExpr.Val (name, type_expr)) ->
-        begin let scm = (Scheme.mono (((eval inf) (ref ( [] ))) type_expr)) in
+        begin let let_level = inf.let_level in
+        begin let tmp_inf = (incr_let_level inf) in
+        begin let t = (((eval tmp_inf) (ref ( [] ))) type_expr) in
+        begin let scm = ((generalize let_level) t) in
         {
           inf with
           asp = (( :: ) ((name, scm), inf.asp));
         }
+        end
+        end
+        end
         end
       | (DeclExpr.AbstrType (name, param_num)) ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in

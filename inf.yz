@@ -496,7 +496,10 @@ def infer_top(inf, top):
 def load_decl(inf, decl):
   match decl:
     case DeclExpr.Val(name, type_expr):
-      var scm = Scheme.mono(eval(inf, ref([]), type_expr))
+      var let_level = inf.let_level
+      var tmp_inf = incr_let_level(inf)
+      var t = eval(tmp_inf, ref([]), type_expr)
+      var scm = generalize(let_level, t)
       inf.{asp = (name, scm)::inf.asp}
     case DeclExpr.AbstrType(name, param_num):
       var typector = ([inf.mod_name], name)
