@@ -14,12 +14,33 @@ def create(): {
   dummy = ();
 }
 
+
+def load_iface_file(compiler, fname_in):
+  var chopped = Filename.chop_suffix(fname_in, ".yzi")
+  var mod_name = String.capitalize(chopped)
+  with_open_in(fname_in)^(chan_in):
+    var strm = Stream.of_channel(chan_in)
+    var src = Source.create(fname_in, strm, Pos.File)
+    var lexer = Lexer.create(src)
+    var parser = Parser.create(lexer)
+    var compiler = compiler.{inf  = Inf.enter_module(compiler.inf, mod_name)}
+    try:
+      def loop(compiler):
+        match Parser.parse_decl(parser):
+          case None:
+            Some(compiler.{inf = Inf.leave_module(compiler.inf, mod_name)})
+          case Some(decl):
+            var inf = Inf.load_decl(compiler.inf, decl)
+            loop(compiler.{inf = inf})
+      loop(compiler)
+    with:
+      case Failure(message):
+        eprintf("%s", message)
+        flush(stderr)
+        None
+
 def compile_file(compiler, fname_in):
-  var chopped = try:
-    Filename.chop_extension(fname_in)
-  with:
-    case Invalid_argument(_):
-      fname_in
+  var chopped = Filename.chop_suffix(fname_in, ".yz")
   var fname_out = sprintf("%s.ml", chopped)
   var mod_name = String.capitalize(chopped)
   with_open_in(fname_in)^(chan_in):
@@ -73,17 +94,6 @@ def compile_string(compiler, fname_in, str):
       flush(stderr)
       None
 
-def compile_files(compiler, fnames):
-  match fnames:
-    case []:
-      Some(compiler)
-    case fname_in::fnames:
-      match compile_file(compiler, fname_in):
-        case None:
-          None
-        case Some(compiler):
-          compile_files(compiler, fnames)
-
 def read(buf):
   var line = read_line()
   if line = "":
@@ -110,31 +120,16 @@ def interactive(compiler):
         compiler
   loop(compiler)
   
-
-def load_iface_file(compiler, fname_in):
-  var chopped = try:
-    Filename.chop_extension(fname_in)
-  with:
-    case Invalid_argument(_):
-      fname_in
-  var mod_name = String.capitalize(chopped)
-  with_open_in(fname_in)^(chan_in):
-    var strm = Stream.of_channel(chan_in)
-    var src = Source.create(fname_in, strm, Pos.File)
-    var lexer = Lexer.create(src)
-    var parser = Parser.create(lexer)
-    var compiler = compiler.{inf  = Inf.enter_module(compiler.inf, mod_name)}
-    try:
-      def loop(compiler):
-        match Parser.parse_decl(parser):
-          case None:
-            Some(compiler.{inf = Inf.leave_module(compiler.inf, mod_name)})
-          case Some(decl):
-            var inf = Inf.load_decl(compiler.inf, decl)
-            loop(compiler.{inf = inf})
-      loop(compiler)
-    with:
-      case Failure(message):
-        eprintf("%s", message)
-        flush(stderr)
-        None
+def load_and_compile(compiler, fnames):
+  match fnames:
+    case []:
+      Some(compiler)
+    case fname_in::fnames when Filename.check_suffix(fname_in, ".yz"):
+      YzOption.bind(compile_file(compiler, fname_in))^(compiler):
+      load_and_compile(compiler, fnames)
+    case fname_in::fnames when Filename.check_suffix(fname_in, ".yzi"):
+      YzOption.bind(load_iface_file(compiler, fname_in))^(compiler):
+      load_and_compile(compiler, fnames)
+    case fname_in::_:
+      eprintf("Not knowing what to do with '%s'\n", fname_in)
+      None

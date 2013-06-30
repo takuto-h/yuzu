@@ -18,14 +18,62 @@ let rec create = begin fun () ->
   }
 end
 
+let rec load_iface_file = begin fun compiler ->
+  begin fun fname_in ->
+    begin let chopped = ((Filename.chop_suffix fname_in) ".yzi") in
+    begin let mod_name = (String.capitalize chopped) in
+    ((with_open_in fname_in) begin fun chan_in ->
+      begin let strm = (Stream.of_channel chan_in) in
+      begin let src = (((Source.create fname_in) strm) Pos.File) in
+      begin let lexer = (Lexer.create src) in
+      begin let parser = (Parser.create lexer) in
+      begin let compiler = {
+        compiler with
+        inf = ((Inf.enter_module compiler.inf) mod_name);
+      } in
+      begin try
+        begin let rec loop = begin fun compiler ->
+          begin match (Parser.parse_decl parser) with
+            | None ->
+              (Some {
+                compiler with
+                inf = ((Inf.leave_module compiler.inf) mod_name);
+              })
+            | (Some decl) ->
+              begin let inf = ((Inf.load_decl compiler.inf) decl) in
+              (loop {
+                compiler with
+                inf = inf;
+              })
+              end
+          end
+        end in
+        (loop compiler)
+        end
+      with
+        | (Failure message) ->
+          begin
+          ((eprintf "%s") message);
+          begin
+          (flush stderr);
+          None
+          end
+          end
+      end
+      end
+      end
+      end
+      end
+      end
+    end)
+    end
+    end
+  end
+end
+
 let rec compile_file = begin fun compiler ->
   begin fun fname_in ->
-    begin let chopped = begin try
-      (Filename.chop_extension fname_in)
-    with
-      | (Invalid_argument _) ->
-        fname_in
-    end in
+    begin let chopped = ((Filename.chop_suffix fname_in) ".yz") in
     begin let fname_out = ((sprintf "%s.ml") chopped) in
     begin let mod_name = (String.capitalize chopped) in
     ((with_open_in fname_in) begin fun chan_in ->
@@ -139,22 +187,6 @@ let rec compile_string = begin fun compiler ->
   end
 end
 
-let rec compile_files = begin fun compiler ->
-  begin fun fnames ->
-    begin match fnames with
-      | ( [] ) ->
-        (Some compiler)
-      | (( :: ) (fname_in, fnames)) ->
-        begin match ((compile_file compiler) fname_in) with
-          | None ->
-            None
-          | (Some compiler) ->
-            ((compile_files compiler) fnames)
-        end
-    end
-  end
-end
-
 let rec read = begin fun buf ->
   begin let line = (read_line ()) in
   begin if ((( = ) line) "") then
@@ -202,60 +234,24 @@ let rec interactive = begin fun compiler ->
   end
 end
 
-let rec load_iface_file = begin fun compiler ->
-  begin fun fname_in ->
-    begin let chopped = begin try
-      (Filename.chop_extension fname_in)
-    with
-      | (Invalid_argument _) ->
-        fname_in
-    end in
-    begin let mod_name = (String.capitalize chopped) in
-    ((with_open_in fname_in) begin fun chan_in ->
-      begin let strm = (Stream.of_channel chan_in) in
-      begin let src = (((Source.create fname_in) strm) Pos.File) in
-      begin let lexer = (Lexer.create src) in
-      begin let parser = (Parser.create lexer) in
-      begin let compiler = {
-        compiler with
-        inf = ((Inf.enter_module compiler.inf) mod_name);
-      } in
-      begin try
-        begin let rec loop = begin fun compiler ->
-          begin match (Parser.parse_decl parser) with
-            | None ->
-              (Some {
-                compiler with
-                inf = ((Inf.leave_module compiler.inf) mod_name);
-              })
-            | (Some decl) ->
-              begin let inf = ((Inf.load_decl compiler.inf) decl) in
-              (loop {
-                compiler with
-                inf = inf;
-              })
-              end
-          end
-        end in
-        (loop compiler)
+let rec load_and_compile = begin fun compiler ->
+  begin fun fnames ->
+    begin match fnames with
+      | ( [] ) ->
+        (Some compiler)
+      | (( :: ) (fname_in, fnames)) when ((Filename.check_suffix fname_in) ".yz") ->
+        ((YzOption.bind ((compile_file compiler) fname_in)) begin fun compiler ->
+          ((load_and_compile compiler) fnames)
+        end)
+      | (( :: ) (fname_in, fnames)) when ((Filename.check_suffix fname_in) ".yzi") ->
+        ((YzOption.bind ((load_iface_file compiler) fname_in)) begin fun compiler ->
+          ((load_and_compile compiler) fnames)
+        end)
+      | (( :: ) (fname_in, _)) ->
+        begin
+        ((eprintf "Not knowing what to do with '%s'\n") fname_in);
+        None
         end
-      with
-        | (Failure message) ->
-          begin
-          ((eprintf "%s") message);
-          begin
-          (flush stderr);
-          None
-          end
-          end
-      end
-      end
-      end
-      end
-      end
-      end
-    end)
-    end
     end
   end
 end
