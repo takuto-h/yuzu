@@ -14,6 +14,22 @@ def create(): {
   dummy = ();
 }
 
+def compile_source(compiler, src, parse, compile):
+  var lexer = Lexer.create(src)
+  var parser = Parser.create(lexer)
+  try:
+    def loop(compiler):
+      match parse(parser):
+        case None:
+          Some(compiler)
+        case Some(expr):
+          loop(compile(compiler, expr))
+    loop(compiler)
+  with:
+    case Failure(message):
+      eprintf("%s", message)
+      flush(stderr)
+      None
 
 def load_iface_file(compiler, fname_in):
   var chopped = Filename.chop_suffix(fname_in, ".yzi")
@@ -21,23 +37,11 @@ def load_iface_file(compiler, fname_in):
   with_open_in(fname_in)^(chan_in):
     var strm = Stream.of_channel(chan_in)
     var src = Source.create(fname_in, strm, Pos.File)
-    var lexer = Lexer.create(src)
-    var parser = Parser.create(lexer)
     var compiler = compiler.{inf  = Inf.enter_module(compiler.inf, mod_name)}
-    try:
-      def loop(compiler):
-        match Parser.parse_decl(parser):
-          case None:
-            Some(compiler.{inf = Inf.leave_module(compiler.inf, mod_name)})
-          case Some(decl):
-            var inf = Inf.load_decl(compiler.inf, decl)
-            loop(compiler.{inf = inf})
-      loop(compiler)
-    with:
-      case Failure(message):
-        eprintf("%s", message)
-        flush(stderr)
-        None
+    var status = compile_source(compiler, src, Parser.parse_decl)^(compiler, decl):
+      compiler.{inf = Inf.load_decl(compiler.inf, decl)}
+    YzOption.bind(status)^(compiler):
+    YzOption.return(compiler.{inf = Inf.leave_module(compiler.inf, mod_name)})
 
 def compile_file(compiler, fname_in):
   var chopped = Filename.chop_suffix(fname_in, ".yz")
@@ -47,53 +51,30 @@ def compile_file(compiler, fname_in):
   with_open_out(fname_out)^(chan_out):
     var strm = Stream.of_channel(chan_in)
     var src = Source.create(fname_in, strm, Pos.File)
-    var lexer = Lexer.create(src)
-    var parser = Parser.create(lexer)
     var trans = Trans.create(basic_offset)
     var compiler = compiler.{inf  = Inf.enter_module(compiler.inf, mod_name)}
-    try:
-      def loop(compiler):
-        match Parser.parse(parser):
-          case None:
-            Some(compiler.{inf = Inf.leave_module(compiler.inf, mod_name)})
-          case Some(top):
-            var (inf, decl) = Inf.infer_top(compiler.inf, top)
-            //var inf = compiler.inf
-            var result = Trans.translate_top(trans, top)
-            fprintf(chan_out, "%s\n", result)
-            loop(compiler.{inf = inf})
-      loop(compiler)
-    with:
-      case Failure(message):
-        eprintf("%s", message)
-        flush(stderr)
-        None
+    var status = compile_source(compiler, src, Parser.parse)^(compiler, top):
+      var (inf, decl) = Inf.infer_top(compiler.inf, top)
+      var result = Trans.translate_top(trans, top)
+      fprintf(chan_out, "%s\n", result)
+      compiler.{inf = inf}
+    YzOption.bind(status)^(compiler):
+    YzOption.return(compiler.{inf = Inf.leave_module(compiler.inf, mod_name)})
 
 def compile_string(compiler, fname_in, str):
   var buf_decls = Buffer.create(initial_buffer_size)
   var buf_output = Buffer.create(initial_buffer_size)
   var strm = Stream.of_string(str)
   var src = Source.create(fname_in, strm, Pos.String(str))
-  var lexer = Lexer.create(src)
-  var parser = Parser.create(lexer)
   var trans = Trans.create(basic_offset)
-  try:
-    def loop(compiler):
-      match Parser.parse(parser):
-        case None:
-          Some(compiler, Buffer.contents(buf_decls), Buffer.contents(buf_output))
-        case Some(top):
-          var (inf, decls) = Inf.infer_top(compiler.inf, top)
-          List.iter^(decl){Buffer.add_string(buf_decls, Decl.show(decl))}(decls)
-          var result = Trans.translate_top(trans, top)
-          Buffer.add_string(buf_output, result)
-          loop(compiler.{inf = inf})
-    loop(compiler)
-  with:
-    case Failure(message):
-      eprintf("%s", message)
-      flush(stderr)
-      None
+  var status = compile_source(compiler, src, Parser.parse)^(compiler, top):
+    var (inf, decls) = Inf.infer_top(compiler.inf, top)
+    List.iter^(decl){Buffer.add_string(buf_decls, Decl.show(decl))}(decls)
+    var result = Trans.translate_top(trans, top)
+    Buffer.add_string(buf_output, result)
+    compiler.{inf = inf}
+  YzOption.bind(status)^(compiler):
+  YzOption.return((compiler, Buffer.contents(buf_decls), Buffer.contents(buf_output)))
 
 def read(buf):
   var line = read_line()
