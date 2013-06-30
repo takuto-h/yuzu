@@ -1,0 +1,5 @@
+
+type t(`a)
+
+val peek : t(`a) -> option(`a)
+val junk : t(`a) -> unit

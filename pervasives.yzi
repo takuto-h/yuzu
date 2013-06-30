@@ -23,6 +23,8 @@ val $(&&) : bool -> bool -> bool
 type in_channel
 
 val open_in : string -> in_channel
+val seek_in : in_channel -> int -> unit
+val input_line : in_channel -> string
 val close_in : in_channel -> unit
 val close_in_noerr : in_channel -> unit
 
@@ -37,5 +39,6 @@ exception Exit
 exception Not_found
 exception Failure(string)
 exception Invalid_argument(string)
+exception End_of_file
 
 val raise : exn -> `a

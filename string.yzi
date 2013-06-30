@@ -1,2 +1,6 @@
 
 val make : int -> char -> string
+val set : string -> int -> char -> unit
+val sub : string -> int -> int -> string
+val length : string -> int
+val index : string -> char -> int
