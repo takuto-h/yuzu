@@ -29,6 +29,11 @@ val $(&&) : bool -> bool -> bool
 
 val ignore : `a -> unit
 
+type ref(`a)
+
+val ref : `a -> ref(`a)
+//val $(!) : ref(`a) -> `a
+
 type in_channel
 
 val open_in : string -> in_channel
@@ -52,3 +57,4 @@ exception End_of_file
 
 val raise : exn -> `a
 val failwith : string -> `a
+val assert : bool -> `a

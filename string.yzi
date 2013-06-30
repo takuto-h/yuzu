@@ -5,3 +5,4 @@ val sub : string -> int -> int -> string
 val length : string -> int
 val index : string -> char -> int
 val contains : string -> char -> bool
+val compare : string -> string -> int
