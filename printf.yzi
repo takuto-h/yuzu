@@ -1,0 +1,5 @@
+
+val fprintf : out_channel -> string -> `a
+val printf : string -> `a
+val eprintf : string -> `a
+val sprintf : string -> `a

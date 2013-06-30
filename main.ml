@@ -1,6 +1,6 @@
 open Printf
 
-let preloads = (( :: ) ("pervasives.yzi", (( :: ) ("list.yzi", ( [] )))))
+let preloads = (( :: ) ("pervasives.yzi", (( :: ) ("list.yzi", (( :: ) ("printf.yzi", ( [] )))))))
 
 let rec main = begin fun () ->
   begin let compiler = (Compiler.create ()) in
