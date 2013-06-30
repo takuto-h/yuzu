@@ -141,6 +141,12 @@ let rec inconsistent_var_occurrence = begin fun pos ->
   ((Pos.show_error pos) "inconsistent variable occurrence\n")
 end
 
+let rec field_not_mutable = begin fun pos ->
+  begin fun path ->
+    ((Pos.show_error pos) ((sprintf "field not mutable: %s\n") (Names.show_val_path path)))
+  end
+end
+
 let rec search_mods = begin fun search_mod ->
   begin fun mods ->
     begin fun mod_name ->
@@ -650,13 +656,17 @@ let rec infer_expr = begin fun inf ->
         begin let val_type = ((infer_expr inf) val_expr) in
         begin try
           begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
-          begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
-          begin let field_type = ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type) in
-          begin
-          (((require val_expr.Expr.pos) field_type) val_type);
-          ((Type.at (Some expr.Expr.pos)) unit_type)
-          end
-          end
+          begin if (not is_mutable) then
+            (failwith ((field_not_mutable expr.Expr.pos) path))
+          else
+            begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
+            begin let field_type = ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type) in
+            begin
+            (((require val_expr.Expr.pos) field_type) val_type);
+            ((Type.at (Some expr.Expr.pos)) unit_type)
+            end
+            end
+            end
           end
           end
         with

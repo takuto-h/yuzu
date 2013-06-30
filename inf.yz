@@ -119,6 +119,9 @@ def inconsistent_types(pos, type1, type2, t1, t2):
 def inconsistent_var_occurrence(pos):
   Pos.show_error(pos, "inconsistent variable occurrence\n")
 
+def field_not_mutable(pos, path):
+  Pos.show_error(pos, sprintf("field not mutable: %s\n", Names.show_val_path(path)))
+
 def search_mods(search_mod, mods, mod_name, mod_path, name):
   var modl = List.assoc(mod_name, mods)
   search_mod(modl, mod_path, name)
@@ -401,6 +404,9 @@ rec:
         var val_type = infer_expr(inf, val_expr)
         try:
           var (is_mutable, access_fun_scm) = search_fields(inf, path)
+          if not(is_mutable):
+            failwith(field_not_mutable(expr.Expr.pos, path))
+          else:
           var access_fun_type = instantiate(inf.let_level, access_fun_scm)
           var field_type = apply(inf.let_level, expr.Expr.pos, access_fun_type, record_type)
           require(val_expr.Expr.pos, field_type, val_type)
