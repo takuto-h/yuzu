@@ -1,10 +1,12 @@
 type require_argument = bool
 
+type mutability = bool
+
 type t = {
   mods : ((Names.mod_name * t)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
-  fields : ((Names.ctor_name * Scheme.t)) list;
+  fields : ((Names.ctor_name * (mutability * Scheme.t))) list;
   typectors : ((Names.typector_name * (Names.typector * int * (Scheme.t) option))) list;
 }
 

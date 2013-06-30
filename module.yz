@@ -1,11 +1,12 @@
 
 type require_argument = bool
+type mutability = bool
 
 type t:
   mods : list(Names.mod_name * t)
   asp : list(Names.val_name * Scheme.t)
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
-  fields : list(Names.ctor_name * Scheme.t)
+  fields : list(Names.ctor_name * (mutability * Scheme.t))
   typectors : list(Names.typector_name * (Names.typector * int * option(Scheme.t)))
 
 def make(mods, asp, ctors, fields, typectors): {

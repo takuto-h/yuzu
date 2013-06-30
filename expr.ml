@@ -21,7 +21,7 @@ and raw =
   | Record of ((Names.val_path * t)) list
   | Update of (t * ((Names.val_path * t)) list)
   | Field of (t * Names.val_path)
-  | Assign of (t * t)
+  | Assign of (t * Names.val_path * t)
 
 
 let rec at = begin fun pos ->

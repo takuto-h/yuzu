@@ -2,13 +2,14 @@
 open Printf
 
 type require_argument = bool
+type mutability = bool
 
 type t:
   mods : list(Names.mod_name * Module.t)
   opens : list(Names.mod_name * Names.mod_path)
   asp : list(Names.val_name * Scheme.t)
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
-  fields : list(Names.ctor_name * Scheme.t)
+  fields : list(Names.ctor_name * (mutability * Scheme.t))
   typectors : list(Names.typector_name * (Names.typector * int * option(Scheme.t)))
   let_level : int
   mod_name : Names.mod_name
@@ -369,17 +370,24 @@ rec:
       case Expr.Field(record_expr,path):
         var record_type = infer_expr(inf, record_expr)
         try:
-          var access_fun_scm = search_fields(inf, path)
+          var (is_mutable, access_fun_scm) = search_fields(inf, path)
           var access_fun_type = instantiate(inf.let_level, access_fun_scm)
           apply(inf.let_level, expr.Expr.pos, access_fun_type, record_type)
         with:
           case Not_found:
             failwith(unbound_field_label(expr.Expr.pos, path))
-      case Expr.Assign(field_expr, val_expr):
-        var field_type = infer_expr(inf, field_expr)
+      case Expr.Assign(record_expr, path, val_expr):
+        var record_type = infer_expr(inf, record_expr)
         var val_type = infer_expr(inf, val_expr)
-        require(val_expr.Expr.pos, field_type, val_type)
-        Type.at(Some(expr.Expr.pos), unit_type)
+        try:
+          var (is_mutable, access_fun_scm) = search_fields(inf, path)
+          var access_fun_type = instantiate(inf.let_level, access_fun_scm)
+          var field_type = apply(inf.let_level, expr.Expr.pos, access_fun_type, record_type)
+          require(val_expr.Expr.pos, field_type, val_type)
+          Type.at(Some(expr.Expr.pos), unit_type)
+        with:
+          case Not_found:
+            failwith(unbound_field_label(expr.Expr.pos, path))
         
   def require(pos, req_type, got_type):
     try:

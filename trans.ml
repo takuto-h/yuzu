@@ -249,10 +249,12 @@ let rec translate_expr = begin fun trans ->
         (((sprintf "%s.%s") str_expr) str_path)
         end
         end
-      | (Expr.Assign (lhs, rhs)) ->
-        begin let str_lhs = ((translate_expr trans) lhs) in
-        begin let str_rhs = ((translate_expr trans) rhs) in
-        (((sprintf "(%s <- %s)") str_lhs) str_rhs)
+      | (Expr.Assign (record_expr, path, val_expr)) ->
+        begin let str_record = ((translate_expr trans) record_expr) in
+        begin let str_path = (Names.show_val_path path) in
+        begin let str_value = ((translate_expr trans) val_expr) in
+        ((((sprintf "(%s.%s <- %s)") str_record) str_path) str_value)
+        end
         end
         end
       | (Expr.Try (expr, cases)) ->

@@ -22,7 +22,7 @@ rec:
     def Record(list(Names.val_path * t))
     def Update(t * list(Names.val_path * t))
     def Field(t * Names.val_path)
-    def Assign(t * t)
+    def Assign(t * Names.val_path * t)
 
 def at(pos, raw): {
   pos = pos;

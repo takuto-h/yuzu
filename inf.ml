@@ -2,12 +2,14 @@ open Printf
 
 type require_argument = bool
 
+type mutability = bool
+
 type t = {
   mods : ((Names.mod_name * Module.t)) list;
   opens : ((Names.mod_name * Names.mod_path)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
-  fields : ((Names.ctor_name * Scheme.t)) list;
+  fields : ((Names.ctor_name * (mutability * Scheme.t))) list;
   typectors : ((Names.typector_name * (Names.typector * int * (Scheme.t) option))) list;
   let_level : int;
   mod_name : Names.mod_name;
@@ -596,7 +598,7 @@ let rec infer_expr = begin fun inf ->
       | (Expr.Field (record_expr, path)) ->
         begin let record_type = ((infer_expr inf) record_expr) in
         begin try
-          begin let access_fun_scm = ((search_fields inf) path) in
+          begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
           begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
           ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type)
           end
@@ -606,12 +608,23 @@ let rec infer_expr = begin fun inf ->
             (failwith ((unbound_field_label expr.Expr.pos) path))
         end
         end
-      | (Expr.Assign (field_expr, val_expr)) ->
-        begin let field_type = ((infer_expr inf) field_expr) in
+      | (Expr.Assign (record_expr, path, val_expr)) ->
+        begin let record_type = ((infer_expr inf) record_expr) in
         begin let val_type = ((infer_expr inf) val_expr) in
-        begin
-        (((require val_expr.Expr.pos) field_type) val_type);
-        ((Type.at (Some expr.Expr.pos)) unit_type)
+        begin try
+          begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
+          begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
+          begin let field_type = ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type) in
+          begin
+          (((require val_expr.Expr.pos) field_type) val_type);
+          ((Type.at (Some expr.Expr.pos)) unit_type)
+          end
+          end
+          end
+          end
+        with
+          | Not_found ->
+            (failwith ((unbound_field_label expr.Expr.pos) path))
         end
         end
         end

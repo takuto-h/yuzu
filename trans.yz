@@ -184,10 +184,11 @@ rec:
         var str_expr = translate_expr(trans, expr)
         var str_path = Names.show_val_path(path)
         sprintf("%s.%s", str_expr, str_path)
-      case Expr.Assign(lhs,rhs):
-        var str_lhs = translate_expr(trans, lhs)
-        var str_rhs = translate_expr(trans, rhs)
-        sprintf("(%s <- %s)", str_lhs, str_rhs)
+      case Expr.Assign(record_expr,path,val_expr):
+        var str_record = translate_expr(trans, record_expr)
+        var str_path = Names.show_val_path(path)
+        var str_value = translate_expr(trans, val_expr)
+        sprintf("(%s.%s <- %s)", str_record, str_path, str_value)
       case Expr.Try(expr,cases):
         var trans_expr = incr_indent_level(trans)
         var str_expr = translate_expr(trans_expr, expr)

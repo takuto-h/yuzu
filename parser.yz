@@ -489,11 +489,6 @@ rec:
   def parse_assign_expr(parser):
     var lhs = parse_or_expr(parser)
     match parser.token:
-      case Token.AssignOp("<-"):
-        var pos = parser.pos
-        lookahead(parser)
-        var rhs = parse_assign_expr(parser)
-        Expr.at(pos, Expr.Assign(lhs, rhs))
       case Token.AssignOp(":="):
         var pos = parser.pos
         lookahead(parser)
@@ -604,7 +599,14 @@ rec:
             Expr.at(pos, Expr.Update(expr, parse_braced_elems(parser, parse_field_def)))
           case _:
             var path = parse_val_path(parser, [])
-            Expr.at(pos, Expr.Field(expr, path))
+            match parser.token:
+              case Token.AssignOp("<-"):
+                var pos = parser.pos
+                lookahead(parser)
+                var rhs = parse_expr(parser)
+                Expr.at(pos, Expr.Assign(expr, path, rhs))
+              case _:
+                Expr.at(pos, Expr.Field(expr, path))
       case _:
         expr
 

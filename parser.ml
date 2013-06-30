@@ -791,15 +791,6 @@ end
 and parse_assign_expr = begin fun parser ->
   begin let lhs = (parse_or_expr parser) in
   begin match parser.token with
-    | (Token.AssignOp "<-") ->
-      begin let pos = parser.pos in
-      begin
-      (lookahead parser);
-      begin let rhs = (parse_assign_expr parser) in
-      ((Expr.at pos) (Expr.Assign (lhs, rhs)))
-      end
-      end
-      end
     | (Token.AssignOp ":=") ->
       begin let pos = parser.pos in
       begin
@@ -972,7 +963,19 @@ and parse_dot_expr = begin fun parser ->
           end
         | _ ->
           begin let path = ((parse_val_path parser) ( [] )) in
-          ((Expr.at pos) (Expr.Field (expr, path)))
+          begin match parser.token with
+            | (Token.AssignOp "<-") ->
+              begin let pos = parser.pos in
+              begin
+              (lookahead parser);
+              begin let rhs = (parse_expr parser) in
+              ((Expr.at pos) (Expr.Assign (expr, path, rhs)))
+              end
+              end
+              end
+            | _ ->
+              ((Expr.at pos) (Expr.Field (expr, path)))
+          end
           end
       end
       end
