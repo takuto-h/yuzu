@@ -9,7 +9,7 @@ type t = {
   opens : ((Names.mod_name * Names.mod_path)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
-  typectors : ((Names.typector_name * (Names.typector * int * (Scheme.t) option))) list;
+  typectors : ((Names.typector_name * (Names.typector * int * ((Scheme.t) option) ref))) list;
   let_level : int;
   mod_name : Names.mod_name;
 }
@@ -579,10 +579,10 @@ let rec eval = begin fun inf ->
       begin match type_expr.TypeExpr.raw with
         | (TypeExpr.Con (typector)) ->
           begin try
-            begin let (typector, param_num, opt_conv) = ((search_typectors inf) typector) in
+            begin let (typector, param_num, opt_conv_ref) = ((search_typectors inf) typector) in
             begin if ((( = ) param_num) 0) then
               begin let t = ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.Con (typector))) in
-              begin match opt_conv with
+              begin match (( ! ) opt_conv_ref) with
                 | None ->
                   t
                 | (Some (conv_fun_scm)) ->
@@ -613,12 +613,12 @@ let rec eval = begin fun inf ->
           end
         | (TypeExpr.App (typector, ts)) ->
           begin try
-            begin let (typector, param_num, opt_conv) = ((search_typectors inf) typector) in
+            begin let (typector, param_num, opt_conv_ref) = ((search_typectors inf) typector) in
             begin let arg_num = (List.length ts) in
             begin if ((( = ) param_num) arg_num) then
               begin let ts = ((List.map ((eval inf) env_ref)) ts) in
               begin let t = ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.App (typector, ts))) in
-              begin match opt_conv with
+              begin match (( ! ) opt_conv_ref) with
                 | None ->
                   t
                 | (Some (conv_fun_scm)) ->
@@ -732,7 +732,7 @@ let rec infer_top = begin fun inf ->
                 begin let param_num = (List.length type_params) in
                 {
                   inf with
-                  typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
+                  typectors = (( :: ) ((name, (typector, param_num, (ref None))), inf.typectors));
                 }
                 end
                 end
@@ -768,7 +768,7 @@ let rec load_decl = begin fun inf ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
         {
           inf with
-          typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
+          typectors = (( :: ) ((name, (typector, param_num, (ref None))), inf.typectors));
         }
         end
       | (DeclExpr.ConcrType ((TypeDef.Repr (name, type_params, type_info)))) ->
@@ -776,9 +776,33 @@ let rec load_decl = begin fun inf ->
         begin let param_num = (List.length type_params) in
         begin let inf = {
           inf with
-          typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
+          typectors = (( :: ) ((name, (typector, param_num, (ref None))), inf.typectors));
         } in
         ((load_type_info inf) type_info)
+        end
+        end
+        end
+      | (DeclExpr.ConcrType ((TypeDef.Abbrev (name, type_params, _, conv_fun_type_expr)))) ->
+        begin let opt_conv_ref = (ref None) in
+        begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
+        begin let param_num = (List.length type_params) in
+        begin let inf = {
+          inf with
+          typectors = (( :: ) ((name, (typector, param_num, opt_conv_ref)), inf.typectors));
+        } in
+        begin let let_level = inf.let_level in
+        begin let inf = (incr_let_level inf) in
+        begin let conv_fun_type = (((eval inf) (ref ( [] ))) conv_fun_type_expr) in
+        begin let conv_fun_scm = ((generalize let_level) conv_fun_type) in
+        begin
+        ((( := ) opt_conv_ref) (Some (conv_fun_scm)));
+        inf
+        end
+        end
+        end
+        end
+        end
+        end
         end
         end
         end

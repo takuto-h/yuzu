@@ -1,4 +1,4 @@
 
 type t:
-  def Abbrev(Names.typector_name * list(TypeExpr.t) * TypeExpr.t)
+  def Abbrev(Names.typector_name * list(TypeExpr.t) * TypeExpr.t * TypeExpr.t)
   def Repr(Names.typector_name * list(TypeExpr.t) *  TypeInfo.t)

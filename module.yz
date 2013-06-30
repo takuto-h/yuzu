@@ -5,7 +5,7 @@ type t:
   mods : list(Names.mod_name * t)
   asp : list(Names.val_name * Scheme.t)
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
-  typectors : list(Names.typector_name * (Names.typector * int * option(Scheme.t)))
+  typectors : list(Names.typector_name * (Names.typector * int * ref(option(Scheme.t))))
 
 def make(mods, asp, ctors, typectors): {
   mods = mods;

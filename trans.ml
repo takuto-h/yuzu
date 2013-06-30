@@ -420,7 +420,7 @@ end
 let rec translate_type_def = begin fun trans ->
   begin fun type_def ->
     begin match type_def with
-      | (TypeDef.Abbrev (name, params, t)) ->
+      | (TypeDef.Abbrev (name, params, t, _)) ->
         begin let str_head = ((translate_type_head name) params) in
         begin let str_type = (translate_type_expr t) in
         (((sprintf "%s = %s") str_head) str_type)

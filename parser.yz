@@ -940,16 +940,17 @@ rec:
     var pos = parser.pos
     var typector_name = parse_lowid(parser)
     var type_params = parse_type_params(parser)
+    var defined_type = if List.length(type_params) = 0:
+      TypeExpr.at(pos, TypeExpr.Con([],typector_name))
+    else:
+      TypeExpr.at(pos, TypeExpr.App(([],typector_name), type_params))
     match parser.token:
       case Token.CmpOp("="):
         lookahead(parser)
         var t = parse_type(parser)
-        TypeDef.Abbrev(typector_name, type_params, t)
+        var conv_fun_type_expr = TypeExpr.at(pos, TypeExpr.Fun(defined_type, t))
+        TypeDef.Abbrev(typector_name, type_params, t, conv_fun_type_expr)
       case Token.Reserved(":") | Token.Reserved("{"):
-        var defined_type = if List.length(type_params) = 0:
-            TypeExpr.at(pos, TypeExpr.Con([],typector_name))
-          else:
-            TypeExpr.at(pos, TypeExpr.App(([],typector_name), type_params))
         TypeDef.Repr(typector_name, type_params, parse_type_info(parser, defined_type))
       case _:
         failwith(expected(parser, "'=' or ':' or '{'"))
@@ -1012,16 +1013,17 @@ def parse_decl_expr(parser):
       var pos = parser.pos
       var typector_name = parse_lowid(parser)
       var type_params = parse_type_params(parser)
+      var defined_type = if List.length(type_params) = 0:
+        TypeExpr.at(pos, TypeExpr.Con([],typector_name))
+      else:
+        TypeExpr.at(pos, TypeExpr.App(([],typector_name), type_params))
       match parser.token:
         case Token.CmpOp("="):
           lookahead(parser)
           var t = parse_type(parser)
-          DeclExpr.ConcrType(TypeDef.Abbrev(typector_name, type_params, t))
+          var conv_fun = TypeExpr.at(pos, TypeExpr.Fun(defined_type, t))
+          DeclExpr.ConcrType(TypeDef.Abbrev(typector_name, type_params, t, conv_fun))
         case Token.Reserved(":") | Token.Reserved("{"):
-          var defined_type = if List.length(type_params) = 0:
-            TypeExpr.at(pos, TypeExpr.Con([],typector_name))
-          else:
-            TypeExpr.at(pos, TypeExpr.App(([],typector_name), type_params))
           var type_info = parse_type_info(parser, defined_type)
           DeclExpr.ConcrType(TypeDef.Repr(typector_name, type_params, type_info))
         case _:

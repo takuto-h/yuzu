@@ -290,7 +290,7 @@ def translate_type_head(name, params):
 
 def translate_type_def(trans, type_def):
   match type_def:
-    case TypeDef.Abbrev(name,params,t):
+    case TypeDef.Abbrev(name,params,t,_):
       var str_head = translate_type_head(name, params)
       var str_type = translate_type_expr(t)
       sprintf("%s = %s", str_head, str_type)

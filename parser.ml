@@ -1584,24 +1584,26 @@ and parse_top_typedef = begin fun parser ->
   begin let pos = parser.pos in
   begin let typector_name = (parse_lowid parser) in
   begin let type_params = (parse_type_params parser) in
+  begin let defined_type = begin if ((( = ) (List.length type_params)) 0) then
+    ((TypeExpr.at pos) (TypeExpr.Con (( [] ), typector_name)))
+  else
+    ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params)))
+  end in
   begin match parser.token with
     | (Token.CmpOp ("=")) ->
       begin
       (lookahead parser);
       begin let t = (parse_type parser) in
-      (TypeDef.Abbrev (typector_name, type_params, t))
+      begin let conv_fun_type_expr = ((TypeExpr.at pos) (TypeExpr.Fun (defined_type, t))) in
+      (TypeDef.Abbrev (typector_name, type_params, t, conv_fun_type_expr))
+      end
       end
       end
     | ((Token.Reserved (":")) | (Token.Reserved ("{"))) ->
-      begin let defined_type = begin if ((( = ) (List.length type_params)) 0) then
-        ((TypeExpr.at pos) (TypeExpr.Con (( [] ), typector_name)))
-      else
-        ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params)))
-      end in
       (TypeDef.Repr (typector_name, type_params, ((parse_type_info parser) defined_type)))
-      end
     | _ ->
       (failwith ((expected parser) "'=' or ':' or '{'"))
+  end
   end
   end
   end
@@ -1706,26 +1708,28 @@ let rec parse_decl_expr = begin fun parser ->
       begin let pos = parser.pos in
       begin let typector_name = (parse_lowid parser) in
       begin let type_params = (parse_type_params parser) in
+      begin let defined_type = begin if ((( = ) (List.length type_params)) 0) then
+        ((TypeExpr.at pos) (TypeExpr.Con (( [] ), typector_name)))
+      else
+        ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params)))
+      end in
       begin match parser.token with
         | (Token.CmpOp ("=")) ->
           begin
           (lookahead parser);
           begin let t = (parse_type parser) in
-          (DeclExpr.ConcrType ((TypeDef.Abbrev (typector_name, type_params, t))))
+          begin let conv_fun = ((TypeExpr.at pos) (TypeExpr.Fun (defined_type, t))) in
+          (DeclExpr.ConcrType ((TypeDef.Abbrev (typector_name, type_params, t, conv_fun))))
+          end
           end
           end
         | ((Token.Reserved (":")) | (Token.Reserved ("{"))) ->
-          begin let defined_type = begin if ((( = ) (List.length type_params)) 0) then
-            ((TypeExpr.at pos) (TypeExpr.Con (( [] ), typector_name)))
-          else
-            ((TypeExpr.at pos) (TypeExpr.App ((( [] ), typector_name), type_params)))
-          end in
           begin let type_info = ((parse_type_info parser) defined_type) in
           (DeclExpr.ConcrType ((TypeDef.Repr (typector_name, type_params, type_info))))
           end
-          end
         | _ ->
           (DeclExpr.AbstrType (typector_name, (List.length type_params)))
+      end
       end
       end
       end
