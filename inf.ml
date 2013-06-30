@@ -1,7 +1,5 @@
 open Printf
 
-module ValNameMap = Map.Make(ValName)
-
 type require_argument = bool
 
 type t = {
