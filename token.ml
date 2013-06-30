@@ -23,7 +23,7 @@ type t =
 let rec get_op = begin fun token ->
   begin match token with
     | ((((((((AssignOp (str)) | (OrOp (str))) | (AndOp (str))) | (CmpOp (str))) | (ConsOp (str))) | (AddOp (str))) | (MulOp (str))) | (PowOp (str))) ->
-      (Some (str))
+      (Some str)
     | _ ->
       None
   end

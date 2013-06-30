@@ -308,7 +308,7 @@ let rec infer_pattern = begin fun inf ->
             end
           end
         end) in
-        (inf, ((Type.at None) (Type.Tuple (ts))), map)
+        (inf, ((Type.at None) (Type.Tuple ts)), map)
         end
         end
       | (Pattern.Ctor (ctor, opt_pat)) ->
@@ -367,7 +367,7 @@ let rec generalize = begin fun let_level ->
               ((List.assq ref) (( ! ) alist_ref))
             with
               | Not_found ->
-                begin let gen = ((Type.at t.Type.pos) (Type.Gen ((List.length (( ! ) alist_ref))))) in
+                begin let gen = ((Type.at t.Type.pos) (Type.Gen (List.length (( ! ) alist_ref)))) in
                 begin
                 ((( := ) alist_ref) (( :: ) ((ref, gen), (( ! ) alist_ref))));
                 gen
@@ -396,7 +396,7 @@ let rec infer_expr = begin fun inf ->
   begin fun expr ->
     begin match expr.Expr.raw with
       | (Expr.Con (lit)) ->
-        ((Type.at (Some (expr.Expr.pos))) (infer_literal lit))
+        ((Type.at (Some expr.Expr.pos)) (infer_literal lit))
       | (Expr.Var (path)) ->
         begin try
           ((instantiate inf.let_level) ((search_asp inf) path))
@@ -407,7 +407,7 @@ let rec infer_expr = begin fun inf ->
       | (Expr.Abs (pat, body_expr)) ->
         begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
         begin let body_type = ((infer_expr inf) body_expr) in
-        ((Type.at (Some (expr.Expr.pos))) (Type.Fun (pat_type, body_type)))
+        ((Type.at (Some expr.Expr.pos)) (Type.Fun (pat_type, body_type)))
         end
         end
       | (Expr.App (fun_expr, arg_expr)) ->
@@ -454,10 +454,10 @@ let rec infer_expr = begin fun inf ->
         end
         end
       | (Expr.Tuple (exprs)) ->
-        ((Type.at (Some (expr.Expr.pos))) (Type.Tuple (((List.map (infer_expr inf)) exprs))))
+        ((Type.at (Some expr.Expr.pos)) (Type.Tuple ((List.map (infer_expr inf)) exprs)))
       | (Expr.Or (lhs, rhs)) ->
         begin let pos = expr.Expr.pos in
-        begin let or_op = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op ("||"))))) in
+        begin let or_op = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op "||")))) in
         begin let or_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (or_op, lhs))), rhs))) in
         ((infer_expr inf) or_expr)
         end
@@ -465,7 +465,7 @@ let rec infer_expr = begin fun inf ->
         end
       | (Expr.And (lhs, rhs)) ->
         begin let pos = expr.Expr.pos in
-        begin let and_op = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op ("&&"))))) in
+        begin let and_op = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op "&&")))) in
         begin let and_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (and_op, lhs))), rhs))) in
         ((infer_expr inf) and_expr)
         end
@@ -581,7 +581,7 @@ let rec eval = begin fun inf ->
           begin try
             begin let (typector, param_num, opt_conv) = ((search_typectors inf) typector) in
             begin if ((( = ) param_num) 0) then
-              begin let t = ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.Con (typector))) in
+              begin let t = ((Type.at (Some type_expr.TypeExpr.pos)) (Type.Con typector)) in
               begin match opt_conv with
                 | None ->
                   t
@@ -617,7 +617,7 @@ let rec eval = begin fun inf ->
             begin let arg_num = (List.length ts) in
             begin if ((( = ) param_num) arg_num) then
               begin let ts = ((List.map ((eval inf) env_ref)) ts) in
-              begin let t = ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.App (typector, ts))) in
+              begin let t = ((Type.at (Some type_expr.TypeExpr.pos)) (Type.App (typector, ts))) in
               begin match opt_conv with
                 | None ->
                   t
@@ -638,11 +638,11 @@ let rec eval = begin fun inf ->
               (failwith ((unbound_type_constructor type_expr.TypeExpr.pos) typector))
           end
         | (TypeExpr.Tuple (ts)) ->
-          ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.Tuple (((List.map ((eval inf) env_ref)) ts))))
+          ((Type.at (Some type_expr.TypeExpr.pos)) (Type.Tuple ((List.map ((eval inf) env_ref)) ts)))
         | (TypeExpr.Fun (t1, t2)) ->
           begin let t10 = (((eval inf) env_ref) t1) in
           begin let t20 = (((eval inf) env_ref) t2) in
-          ((Type.at (Some (type_expr.TypeExpr.pos))) (Type.Fun (t10, t20)))
+          ((Type.at (Some type_expr.TypeExpr.pos)) (Type.Fun (t10, t20)))
           end
           end
       end
@@ -686,7 +686,7 @@ let rec infer_top = begin fun inf ->
   begin fun top ->
     begin match top.Top.raw with
       | (Top.Expr (expr)) ->
-        (inf, (( :: ) ((Decl.Val ((Names.Id ("_")), (Scheme.mono ((infer_expr inf) expr)))), ( [] ))))
+        (inf, (( :: ) ((Decl.Val ((Names.Id "_"), (Scheme.mono ((infer_expr inf) expr)))), ( [] ))))
       | (Top.LetVal (pat, val_expr)) ->
         begin let val_type = ((infer_expr inf) val_expr) in
         begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
@@ -727,7 +727,7 @@ let rec infer_top = begin fun inf ->
         begin let inf = (((YzList.fold_left inf) defs) begin fun inf ->
           begin fun type_def ->
             begin match type_def with
-              | (TypeDef.Repr (name, type_params, type_info)) ->
+              | ((TypeDef.Repr (name, type_params, _)) | (TypeDef.Abbrev (name, type_params, _, _))) ->
                 begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
                 begin let param_num = (List.length type_params) in
                 {
@@ -744,6 +744,23 @@ let rec infer_top = begin fun inf ->
             begin match type_def with
               | (TypeDef.Repr (name, type_params, type_info)) ->
                 ((load_type_info inf) type_info)
+              | (TypeDef.Abbrev (name, type_params, _, conv_type_expr)) ->
+                begin let let_level = inf.let_level in
+                begin let tmp_inf = (incr_let_level inf) in
+                begin let conv_type = (((eval tmp_inf) (ref ( [] ))) conv_type_expr) in
+                begin let conv_scm = ((generalize let_level) conv_type) in
+                begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
+                begin let param_num = (List.length type_params) in
+                {
+                  inf with
+                  typectors = (( :: ) ((name, (typector, param_num, (Some conv_scm))), inf.typectors));
+                }
+                end
+                end
+                end
+                end
+                end
+                end
             end
           end
         end) in
@@ -795,7 +812,7 @@ let rec load_decl = begin fun inf ->
         begin let conv_scm = ((generalize let_level) conv_type) in
         {
           inf with
-          typectors = (( :: ) ((name, (typector, param_num, (Some (conv_scm)))), inf.typectors));
+          typectors = (( :: ) ((name, (typector, param_num, (Some conv_scm))), inf.typectors));
         }
         end
         end
@@ -833,18 +850,18 @@ let rec leave_module = begin fun inf ->
   end
 end
 
-let pos = (((((Pos.make "<assertion>") 1) 0) 0) (Pos.String ("<assertion>")))
+let pos = (((((Pos.make "<assertion>") 1) 0) 0) (Pos.String "<assertion>"))
 
-let mod_B = ((((Module.make ( [] )) (( :: ) (((Names.Id ("b1")), (Scheme.mono ((Type.at (Some (pos))) char_type))), (( :: ) (((Names.Id ("b2")), (Scheme.mono ((Type.at (Some (pos))) int_type))), ( [] )))))) ( [] )) ( [] ))
+let mod_B = ((((Module.make ( [] )) (( :: ) (((Names.Id "b1"), (Scheme.mono ((Type.at (Some pos)) char_type))), (( :: ) (((Names.Id "b2"), (Scheme.mono ((Type.at (Some pos)) int_type))), ( [] )))))) ( [] )) ( [] ))
 
-let mod_A = ((((Module.make (( :: ) (("B", mod_B), ( [] )))) (( :: ) (((Names.Id ("a1")), (Scheme.mono ((Type.at (Some (pos))) int_type))), (( :: ) (((Names.Id ("a2")), (Scheme.mono ((Type.at (Some (pos))) string_type))), ( [] )))))) ( [] )) ( [] ))
+let mod_A = ((((Module.make (( :: ) (("B", mod_B), ( [] )))) (( :: ) (((Names.Id "a1"), (Scheme.mono ((Type.at (Some pos)) int_type))), (( :: ) (((Names.Id "a2"), (Scheme.mono ((Type.at (Some pos)) string_type))), ( [] )))))) ( [] )) ( [] ))
 
-let mod_Pervasives = ((((Module.make ( [] )) (( :: ) (((Names.Op ("+")), (Scheme.mono ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) (Type.Fun (((Type.at (Some (pos))) int_type), ((Type.at (Some (pos))) int_type))))))))), ( [] )))) ( [] )) ( [] ))
+let mod_Pervasives = ((((Module.make ( [] )) (( :: ) (((Names.Op "+"), (Scheme.mono ((Type.at (Some pos)) (Type.Fun (((Type.at (Some pos)) int_type), ((Type.at (Some pos)) (Type.Fun (((Type.at (Some pos)) int_type), ((Type.at (Some pos)) int_type))))))))), ( [] )))) ( [] )) ( [] ))
 
 let inf = {
   mods = (( :: ) (("A", mod_A), (( :: ) (("Pervasives", mod_Pervasives), ( [] )))));
   opens = (( :: ) (("Pervasives", ( [] )), ( [] )));
-  asp = (( :: ) (((Names.Id ("ans")), (Scheme.mono ((Type.at (Some (pos))) int_type))), ( [] )));
+  asp = (( :: ) (((Names.Id "ans"), (Scheme.mono ((Type.at (Some pos)) int_type))), ( [] )));
   ctors = ( [] );
   typectors = ( [] );
   let_level = 0;
@@ -853,11 +870,11 @@ let inf = {
 
 let shower = (Type.create_shower 0)
 
-let int_expr = ((Expr.at pos) (Expr.Con ((Literal.Int (123)))))
+let int_expr = ((Expr.at pos) (Expr.Con (Literal.Int 123)))
 
-let string_expr = ((Expr.at pos) (Expr.Con ((Literal.String ("abc")))))
+let string_expr = ((Expr.at pos) (Expr.Con (Literal.String "abc")))
 
-let char_expr = ((Expr.at pos) (Expr.Con ((Literal.Char ("x")))))
+let char_expr = ((Expr.at pos) (Expr.Con (Literal.Char "x")))
 
 let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) int_expr))) "Pervasives.int"))
 
@@ -865,11 +882,11 @@ let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) string_expr))) "P
 
 let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) char_expr))) "Pervasives.char"))
 
-let ans = ((Expr.at pos) (Expr.Var (( [] ), (Names.Id ("ans")))))
+let ans = ((Expr.at pos) (Expr.Var (( [] ), (Names.Id "ans"))))
 
-let _A_a2 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", ( [] ))), (Names.Id ("a2")))))
+let _A_a2 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", ( [] ))), (Names.Id "a2"))))
 
-let _A_B_b1 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", (( :: ) ("B", ( [] ))))), (Names.Id ("b1")))))
+let _A_B_b1 = ((Expr.at pos) (Expr.Var ((( :: ) ("A", (( :: ) ("B", ( [] ))))), (Names.Id "b1"))))
 
 let () = (assert ((( = ) ((Type.show shower) ((infer_expr inf) ans))) "Pervasives.int"))
 
@@ -888,7 +905,7 @@ with
     end
 end
 
-let add = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op ("+")))))
+let add = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op "+"))))
 
 let add_int = ((Expr.at pos) (Expr.App (add, int_expr)))
 

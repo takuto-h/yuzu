@@ -33,7 +33,7 @@ let rec make = begin fun fname ->
   end
 end
 
-let dummy = (((((make "<dummy>") 1) 0) 0) (String ("<dummy>")))
+let dummy = (((((make "<dummy>") 1) 0) 0) (String "<dummy>"))
 
 let rec show = begin fun {fname;lnum;cnum;bol;} ->
   begin let offset = ((( - ) cnum) bol) in

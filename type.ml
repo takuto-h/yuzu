@@ -50,7 +50,7 @@ let rec map = begin fun var_func ->
           end
         | (Tuple (ts)) ->
           begin let ts = ((List.map ((map var_func) gen_func)) ts) in
-          ((at t.pos) (Tuple (ts)))
+          ((at t.pos) (Tuple ts))
           end
         | (Fun (t_param, t_ret)) ->
           begin let t_param = (((map var_func) gen_func) t_param) in
@@ -101,11 +101,11 @@ let rec unify = begin fun t1 ->
           | (_, (Some (t20))) ->
             ((unify t1) t20)
           | (None, None) when ((( > ) lv1) lv2) ->
-            ((( := ) t1_ref) (Some (t2)))
+            ((( := ) t1_ref) (Some t2))
           | (None, None) when ((( < ) lv1) lv2) ->
-            ((( := ) t2_ref) (Some (t1)))
+            ((( := ) t2_ref) (Some t1))
           | (None, None) ->
-            ((( := ) t2_ref) (Some (t1)))
+            ((( := ) t2_ref) (Some t1))
         end
       | ((Var (lv1, t1_ref)), _) ->
         begin match (( ! ) t1_ref) with
@@ -115,7 +115,7 @@ let rec unify = begin fun t1 ->
             begin if ((occurs t1_ref) t2) then
               (raise (Unification_error (t1, t2)))
             else
-              ((( := ) t1_ref) (Some (t2)))
+              ((( := ) t1_ref) (Some t2))
             end
         end
       | (_, (Var (lv2, t2_ref))) ->
@@ -126,7 +126,7 @@ let rec unify = begin fun t1 ->
             begin if ((occurs t2_ref) t1) then
               (raise (Unification_error (t1, t2)))
             else
-              ((( := ) t2_ref) (Some (t1)))
+              ((( := ) t2_ref) (Some t1))
             end
         end
       | ((Con (tc1)), (Con (tc2))) when ((( = ) tc1) tc2) ->

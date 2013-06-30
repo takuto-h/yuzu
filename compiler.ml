@@ -39,10 +39,10 @@ let rec compile_file = begin fun compiler ->
           begin let rec loop = begin fun compiler ->
             begin match (Parser.parse parser) with
               | None ->
-                (Some ({
+                (Some {
                   compiler with
                   inf = ((Inf.leave_module compiler.inf) mod_name);
-                }))
+                })
               | (Some (top)) ->
                 begin let inf = compiler.inf in
                 begin let result = ((Trans.translate_top trans) top) in
@@ -88,7 +88,7 @@ let rec compile_string = begin fun compiler ->
       begin let buf_decls = (Buffer.create initial_buffer_size) in
       begin let buf_output = (Buffer.create initial_buffer_size) in
       begin let strm = (Stream.of_string str) in
-      begin let src = (((Source.create fname_in) strm) (Pos.String (str))) in
+      begin let src = (((Source.create fname_in) strm) (Pos.String str)) in
       begin let lexer = (Lexer.create src) in
       begin let parser = (Parser.create lexer) in
       begin let trans = (Trans.create basic_offset) in
@@ -143,7 +143,7 @@ let rec compile_files = begin fun compiler ->
   begin fun fnames ->
     begin match fnames with
       | ( [] ) ->
-        (Some (compiler))
+        (Some compiler)
       | (( :: ) (fname_in, fnames)) ->
         begin match ((compile_file compiler) fname_in) with
           | None ->
@@ -224,10 +224,10 @@ let rec load_iface_file = begin fun compiler ->
         begin let rec loop = begin fun compiler ->
           begin match (Parser.parse_decl parser) with
             | None ->
-              (Some ({
+              (Some {
                 compiler with
                 inf = ((Inf.leave_module compiler.inf) mod_name);
-              }))
+              })
             | (Some (decl)) ->
               begin let inf = ((Inf.load_decl compiler.inf) decl) in
               (loop {

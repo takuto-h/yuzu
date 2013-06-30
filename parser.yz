@@ -675,7 +675,13 @@ rec:
         var pos_paren = parser.pos
         lookahead(parser)
         var arg_exprs = parse_args(parser, pos_paren)
-        Expr.at(pos, Expr.Ctor(ctor, Some(Expr.at(pos_paren, Expr.Tuple(arg_exprs)))))
+        match arg_exprs:
+          case []:
+            assert(false)
+          case [arg_expr]:
+            Expr.at(pos, Expr.Ctor(ctor, Some(arg_expr)))
+          case (_::_):
+            Expr.at(pos, Expr.Ctor(ctor, Some(Expr.at(pos_paren, Expr.Tuple(arg_exprs)))))
       case Token.Reserved("^"):
         lookahead(parser)
         var arg_expr = parse_abs(parser, pos)

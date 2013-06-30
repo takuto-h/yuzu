@@ -10,7 +10,7 @@ let rec bind = begin fun opt ->
 end
 
 let rec return = begin fun x ->
-  (Some (x))
+  (Some x)
 end
 
 let rec or_ = begin fun opt1 ->

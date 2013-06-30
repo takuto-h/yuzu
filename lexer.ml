@@ -69,7 +69,7 @@ let rec lex_close_paren = begin fun lexer ->
         else
           begin
           (ignore (Stack.pop lexer.parens));
-          (Token.Reserved (close_paren))
+          (Token.Reserved close_paren)
           end
         end
       end
@@ -103,7 +103,7 @@ let rec lex_int = begin fun lexer ->
         ((lex_int lexer) ((( + ) ((( * ) n) 10)) (int_of_digit c)))
         end
       | ((Some (_)) | None) ->
-        (Token.Int (n))
+        (Token.Int n)
     end
   end
 end
@@ -114,7 +114,7 @@ let rec lex_string = begin fun lexer ->
       | (Some ('"')) ->
         begin
         (Source.junk lexer.source);
-        (Token.String ((Buffer.contents buf)))
+        (Token.String (Buffer.contents buf))
         end
       | (Some ('\\')) ->
         begin
@@ -167,7 +167,7 @@ let rec lex_char = begin fun lexer ->
       | (Some ('\'')) ->
         begin
         (Source.junk lexer.source);
-        (Token.Char ((Buffer.contents buf)))
+        (Token.Char (Buffer.contents buf))
         end
       | (Some ('\\')) ->
         begin
@@ -216,9 +216,9 @@ end
 
 let rec lowid_or_reserved = begin fun str ->
   begin if ((List.mem str) reserved) then
-    (Token.Reserved (str))
+    (Token.Reserved str)
   else
-    (Token.LowId (str))
+    (Token.LowId str)
   end
 end
 
@@ -251,7 +251,7 @@ let rec lex_capid = begin fun lexer ->
         end
         end
       | ((Some (_)) | None) ->
-        (Token.CapId ((Buffer.contents buf)))
+        (Token.CapId (Buffer.contents buf))
     end
   end
 end
@@ -263,11 +263,11 @@ let rec lex_visible_token = begin fun lexer ->
       (Source.junk lexer.source);
       begin match c with
         | (((((';' | ',') | '^') | '.') | '$') | '`') ->
-          (Token.Reserved (((sprintf "%c") c)))
+          (Token.Reserved ((sprintf "%c") c))
         | (('(' | '{') | '[') ->
           begin
           ((Stack.push ((sprintf "%c") c)) lexer.parens);
-          (Token.Reserved (((sprintf "%c") c)))
+          (Token.Reserved ((sprintf "%c") c))
           end
         | ')' ->
           ((((lex_close_paren lexer) pos) "(") ")")
@@ -280,13 +280,13 @@ let rec lex_visible_token = begin fun lexer ->
             | (Some ('-')) ->
               begin
               (Source.junk lexer.source);
-              (Token.AssignOp ("<-"))
+              (Token.AssignOp "<-")
               end
             | ((Some (_)) | None) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
-              (Token.CmpOp (((lex_op lexer) buf)))
+              (Token.CmpOp ((lex_op lexer) buf))
               end
               end
           end
@@ -295,13 +295,13 @@ let rec lex_visible_token = begin fun lexer ->
             | (Some ('|')) ->
               begin
               (Source.junk lexer.source);
-              (Token.OrOp ("||"))
+              (Token.OrOp "||")
               end
             | ((Some (_)) | None) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
-              (Token.CmpOp (((lex_op lexer) buf)))
+              (Token.CmpOp ((lex_op lexer) buf))
               end
               end
           end
@@ -310,13 +310,13 @@ let rec lex_visible_token = begin fun lexer ->
             | (Some ('&')) ->
               begin
               (Source.junk lexer.source);
-              (Token.AndOp ("&&"))
+              (Token.AndOp "&&")
               end
             | ((Some (_)) | None) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
-              (Token.CmpOp (((lex_op lexer) buf)))
+              (Token.CmpOp ((lex_op lexer) buf))
               end
               end
           end
@@ -324,14 +324,14 @@ let rec lex_visible_token = begin fun lexer ->
           begin let buf = (Buffer.create initial_buffer_size) in
           begin
           ((Buffer.add_char buf) c);
-          (Token.CmpOp (((lex_op lexer) buf)))
+          (Token.CmpOp ((lex_op lexer) buf))
           end
           end
         | ('+' | '-') ->
           begin let buf = (Buffer.create initial_buffer_size) in
           begin
           ((Buffer.add_char buf) c);
-          (Token.AddOp (((lex_op lexer) buf)))
+          (Token.AddOp ((lex_op lexer) buf))
           end
           end
         | '!' ->
@@ -340,17 +340,17 @@ let rec lex_visible_token = begin fun lexer ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) '!');
-              (Token.CmpOp (((lex_op lexer) buf)))
+              (Token.CmpOp ((lex_op lexer) buf))
               end
               end
             | ((Some (_)) | None) ->
-              (Token.Reserved ("!"))
+              (Token.Reserved "!")
           end
         | '%' ->
           begin let buf = (Buffer.create initial_buffer_size) in
           begin
           ((Buffer.add_char buf) c);
-          (Token.MulOp (((lex_op lexer) buf)))
+          (Token.MulOp ((lex_op lexer) buf))
           end
           end
         | '*' ->
@@ -358,13 +358,13 @@ let rec lex_visible_token = begin fun lexer ->
             | (Some ('*')) ->
               begin
               (Source.junk lexer.source);
-              (Token.PowOp ("**"))
+              (Token.PowOp "**")
               end
             | ((Some (_)) | None) ->
               begin let buf = (Buffer.create initial_buffer_size) in
               begin
               ((Buffer.add_char buf) c);
-              (Token.MulOp (((lex_op lexer) buf)))
+              (Token.MulOp ((lex_op lexer) buf))
               end
               end
           end
@@ -373,15 +373,15 @@ let rec lex_visible_token = begin fun lexer ->
             | (Some (':')) ->
               begin
               (Source.junk lexer.source);
-              (Token.ConsOp ("::"))
+              (Token.ConsOp "::")
               end
             | (Some ('=')) ->
               begin
               (Source.junk lexer.source);
-              (Token.AssignOp (":="))
+              (Token.AssignOp ":=")
               end
             | ((Some (_)) | None) ->
-              (Token.Reserved (":"))
+              (Token.Reserved ":")
           end
         | '"' ->
           begin let buf = (Buffer.create initial_buffer_size) in
@@ -481,7 +481,7 @@ let rec next = begin fun lexer ->
     | None ->
       begin
       (ignore (Stack.pop lexer.offside_lines));
-      ((Some (Token.Undent)), pos)
+      ((Some Token.Undent), pos)
       end
     | (Some ('\n')) when (Stack.is_empty lexer.parens) ->
       begin
@@ -512,13 +512,13 @@ let rec next = begin fun lexer ->
           begin let buf = (Buffer.create initial_buffer_size) in
           begin
           ((Buffer.add_char buf) '/');
-          ((Some ((Token.MulOp (((lex_op lexer) buf))))), pos)
+          ((Some (Token.MulOp ((lex_op lexer) buf))), pos)
           end
           end
       end
       end
     | (Some (c)) ->
-      ((Some ((((lex_token lexer) pos) c))), pos)
+      ((Some (((lex_token lexer) pos) c)), pos)
   end
   end
 end
