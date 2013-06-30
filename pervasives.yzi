@@ -23,5 +23,9 @@ type in_channel
 val open_in : string -> in_channel
 
 type exn
+exception Exit
+exception Not_found
+exception Failure(string)
+exception Invalid_argument(string)
 
 val raise : exn -> `a

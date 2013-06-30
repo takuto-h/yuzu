@@ -1043,8 +1043,21 @@ def parse_decl_expr(parser):
           DeclExpr.ConcrType(TypeDef.Repr(typector_name, type_params, type_info))
         case _:
           DeclExpr.AbstrType(typector_name, List.length(type_params))
+    case Token.Reserved("exception"):
+      lookahead(parser)
+      var pos = parser.pos
+      var exn_name = Names.Id(parse_capid(parser))
+      var ret_type_expr = TypeExpr.at(pos, exn_type_expr)
+      if parser.token = Token.Reserved("("):
+        lookahead(parser)
+        var t = parse_type(parser)
+        parse_token(parser, Token.Reserved(")"))
+        var ctor_type_expr = TypeExpr.at(pos, TypeExpr.Fun(t, ret_type_expr))
+        DeclExpr.Exception(exn_name, Some(t), ctor_type_expr)
+      else:
+        DeclExpr.Exception(exn_name, None, ret_type_expr)
     case _:
-      failwith(expected(parser, "'type' or 'val'"))
+      failwith(expected(parser, "declaration"))
 
 def parse_decl_stmt(parser):
   var decl_expr = parse_decl_expr(parser)

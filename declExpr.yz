@@ -3,3 +3,4 @@ type t:
   def Val(Names.val_name * TypeExpr.t)
   def AbstrType(Names.typector_name * int)
   def ConcrType(TypeDef.t)
+  def Exception(Names.ctor_name * option(TypeExpr.t) * TypeExpr.t)

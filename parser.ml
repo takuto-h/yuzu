@@ -1741,8 +1741,33 @@ let rec parse_decl_expr = begin fun parser ->
       end
       end
       end
+    | (Token.Reserved "exception") ->
+      begin
+      (lookahead parser);
+      begin let pos = parser.pos in
+      begin let exn_name = (Names.Id (parse_capid parser)) in
+      begin let ret_type_expr = ((TypeExpr.at pos) exn_type_expr) in
+      begin if ((( = ) parser.token) (Token.Reserved "(")) then
+        begin
+        (lookahead parser);
+        begin let t = (parse_type parser) in
+        begin
+        ((parse_token parser) (Token.Reserved ")"));
+        begin let ctor_type_expr = ((TypeExpr.at pos) (TypeExpr.Fun (t, ret_type_expr))) in
+        (DeclExpr.Exception (exn_name, (Some t), ctor_type_expr))
+        end
+        end
+        end
+        end
+      else
+        (DeclExpr.Exception (exn_name, None, ret_type_expr))
+      end
+      end
+      end
+      end
+      end
     | _ ->
-      (failwith ((expected parser) "'type' or 'val'"))
+      (failwith ((expected parser) "declaration"))
   end
 end
 

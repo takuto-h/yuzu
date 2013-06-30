@@ -888,6 +888,27 @@ let rec load_decl = begin fun inf ->
         end
         end
         end
+      | (DeclExpr.Exception (ctor_name, opt_param, ctor_type_expr)) ->
+        begin let let_level = inf.let_level in
+        begin let tmp_inf = (incr_let_level inf) in
+        begin let ctor_type = (((eval tmp_inf) (ref ( [] ))) ctor_type_expr) in
+        begin let ctor_scm = ((generalize let_level) ctor_type) in
+        begin match opt_param with
+          | None ->
+            {
+              inf with
+              ctors = (( :: ) ((ctor_name, (false, ctor_scm)), inf.ctors));
+            }
+          | (Some _) ->
+            {
+              inf with
+              ctors = (( :: ) ((ctor_name, (true, ctor_scm)), inf.ctors));
+            }
+        end
+        end
+        end
+        end
+        end
     end
   end
 end
