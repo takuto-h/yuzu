@@ -1,0 +1,3 @@
+
+val init : int -> (int -> `a) -> array(`a)
+val get : array(`a) -> int -> `a

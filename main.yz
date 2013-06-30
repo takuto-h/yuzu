@@ -4,6 +4,7 @@ open Printf
 var preloads = [
   "pervasives.yzi";
 
+  "array.yzi";
   "buffer.yzi";
   "char.yzi";
   "list.yzi";

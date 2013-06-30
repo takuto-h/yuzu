@@ -1,0 +1,9 @@
+
+type t(`a)
+
+val empty : t(`a)
+val singleton : ValName.t -> `a -> t(`a)
+val add : ValName.t -> `a -> t(`a) -> t(`a)
+val merge : (ValName.t -> option(`a) -> option(`b) -> option(`c)) -> t(`a) -> t(`b) -> t(`c)
+val equal_keys : t(`a) -> t(`b) -> bool
+val fold : (ValName.t -> `a -> `b -> `b) -> t(`a) -> `b -> `b

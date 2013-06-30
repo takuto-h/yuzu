@@ -9,3 +9,5 @@ val map : (`a -> `b) -> list(`a) -> list(`b)
 val iter2 : (`a -> `b -> unit) -> list(`a) -> list(`b) -> unit
 val fold_left : (`a -> `b -> `a) -> `a -> list(`b) -> `a
 val fold_right : (`a -> `b -> `b) -> list(`a) -> `b -> `b
+val assoc : `a -> list(`a * `b) -> `b
+val assq : `a -> list(`a * `b) -> `b
