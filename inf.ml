@@ -7,6 +7,7 @@ type t = {
   opens : ((Names.mod_name * Names.mod_path)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
+  fields : ((Names.ctor_name * Scheme.t)) list;
   typectors : ((Names.typector_name * (Names.typector * int * (Scheme.t) option))) list;
   let_level : int;
   mod_name : Names.mod_name;
@@ -20,6 +21,7 @@ let rec create = begin fun () ->
     opens = default_opens;
     asp = ( [] );
     ctors = ( [] );
+    fields = ( [] );
     typectors = ( [] );
     let_level = 0;
     mod_name = "Dummy";
@@ -54,6 +56,12 @@ end
 let rec unbound_constructor = begin fun pos ->
   begin fun ctor ->
     ((Pos.show_error pos) ((sprintf "unbound constructor: %s\n") (Names.show_ctor ctor)))
+  end
+end
+
+let rec unbound_field_label = begin fun pos ->
+  begin fun path ->
+    ((Pos.show_error pos) ((sprintf "unbound field label: %s\n") (Names.show_val_path path)))
   end
 end
 
@@ -194,6 +202,12 @@ end
 let rec search_ctors = begin fun inf ->
   begin fun ctor ->
     ((((search_alist Module.search_ctors) inf.ctors) inf) ctor)
+  end
+end
+
+let rec search_fields = begin fun inf ->
+  begin fun path ->
+    ((((search_alist Module.search_fields) inf.fields) inf) path)
   end
 end
 
@@ -579,6 +593,19 @@ let rec infer_expr = begin fun inf ->
         ret_type
         end
         end
+      | (Expr.Field (arg_expr, path)) ->
+        begin let arg_type = ((infer_expr inf) arg_expr) in
+        begin try
+          begin let access_fun_scm = ((search_fields inf) path) in
+          begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
+          ((((apply inf.let_level) expr.Expr.pos) access_fun_type) arg_type)
+          end
+          end
+        with
+          | Not_found ->
+            (failwith ((unbound_field_label expr.Expr.pos) path))
+        end
+        end
     end
   end
 end
@@ -928,12 +955,13 @@ end
 
 let rec leave_module = begin fun inf ->
   begin fun mod_name ->
-    begin let new_mod = ((((Module.make ( [] )) inf.asp) inf.ctors) inf.typectors) in
+    begin let new_mod = (((((Module.make ( [] )) inf.asp) inf.ctors) inf.fields) inf.typectors) in
     {
       mods = (( :: ) ((mod_name, new_mod), inf.mods));
       opens = default_opens;
       asp = ( [] );
       ctors = ( [] );
+      fields = ( [] );
       typectors = ( [] );
       let_level = 0;
       mod_name = "Pervasives";
@@ -944,17 +972,18 @@ end
 
 let pos = (((((Pos.make "<assertion>") 1) 0) 0) (Pos.String "<assertion>"))
 
-let mod_B = ((((Module.make ( [] )) (( :: ) (((Names.Id "b1"), (Scheme.mono ((Type.at (Some pos)) char_type))), (( :: ) (((Names.Id "b2"), (Scheme.mono ((Type.at (Some pos)) int_type))), ( [] )))))) ( [] )) ( [] ))
+let mod_B = (((((Module.make ( [] )) (( :: ) (((Names.Id "b1"), (Scheme.mono ((Type.at (Some pos)) char_type))), (( :: ) (((Names.Id "b2"), (Scheme.mono ((Type.at (Some pos)) int_type))), ( [] )))))) ( [] )) ( [] )) ( [] ))
 
-let mod_A = ((((Module.make (( :: ) (("B", mod_B), ( [] )))) (( :: ) (((Names.Id "a1"), (Scheme.mono ((Type.at (Some pos)) int_type))), (( :: ) (((Names.Id "a2"), (Scheme.mono ((Type.at (Some pos)) string_type))), ( [] )))))) ( [] )) ( [] ))
+let mod_A = (((((Module.make (( :: ) (("B", mod_B), ( [] )))) (( :: ) (((Names.Id "a1"), (Scheme.mono ((Type.at (Some pos)) int_type))), (( :: ) (((Names.Id "a2"), (Scheme.mono ((Type.at (Some pos)) string_type))), ( [] )))))) ( [] )) ( [] )) ( [] ))
 
-let mod_Pervasives = ((((Module.make ( [] )) (( :: ) (((Names.Op "+"), (Scheme.mono ((Type.at (Some pos)) (Type.Fun (((Type.at (Some pos)) int_type), ((Type.at (Some pos)) (Type.Fun (((Type.at (Some pos)) int_type), ((Type.at (Some pos)) int_type))))))))), ( [] )))) ( [] )) ( [] ))
+let mod_Pervasives = (((((Module.make ( [] )) (( :: ) (((Names.Op "+"), (Scheme.mono ((Type.at (Some pos)) (Type.Fun (((Type.at (Some pos)) int_type), ((Type.at (Some pos)) (Type.Fun (((Type.at (Some pos)) int_type), ((Type.at (Some pos)) int_type))))))))), ( [] )))) ( [] )) ( [] )) ( [] ))
 
 let inf = {
   mods = (( :: ) (("A", mod_A), (( :: ) (("Pervasives", mod_Pervasives), ( [] )))));
   opens = (( :: ) (("Pervasives", ( [] )), ( [] )));
   asp = (( :: ) (((Names.Id "ans"), (Scheme.mono ((Type.at (Some pos)) int_type))), ( [] )));
   ctors = ( [] );
+  fields = ( [] );
   typectors = ( [] );
   let_level = 0;
   mod_name = "Pervasives";

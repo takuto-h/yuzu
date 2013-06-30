@@ -4,19 +4,23 @@ type t = {
   mods : ((Names.mod_name * t)) list;
   asp : ((Names.val_name * Scheme.t)) list;
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
+  fields : ((Names.ctor_name * Scheme.t)) list;
   typectors : ((Names.typector_name * (Names.typector * int * (Scheme.t) option))) list;
 }
 
 let rec make = begin fun mods ->
   begin fun asp ->
     begin fun ctors ->
-      begin fun typectors ->
-        {
-          mods = mods;
-          asp = asp;
-          ctors = ctors;
-          typectors = typectors;
-        }
+      begin fun fields ->
+        begin fun typectors ->
+          {
+            mods = mods;
+            asp = asp;
+            ctors = ctors;
+            fields = fields;
+            typectors = typectors;
+          }
+        end
       end
     end
   end
@@ -54,6 +58,16 @@ let rec search_ctors = begin fun modl ->
     begin fun name ->
       ((((search_alist begin fun modl ->
         modl.ctors
+      end) modl) mod_path) name)
+    end
+  end
+end
+
+let rec search_fields = begin fun modl ->
+  begin fun mod_path ->
+    begin fun name ->
+      ((((search_alist begin fun modl ->
+        modl.fields
       end) modl) mod_path) name)
     end
   end

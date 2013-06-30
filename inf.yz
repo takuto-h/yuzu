@@ -8,6 +8,7 @@ type t:
   opens : list(Names.mod_name * Names.mod_path)
   asp : list(Names.val_name * Scheme.t)
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
+  fields : list(Names.ctor_name * Scheme.t)
   typectors : list(Names.typector_name * (Names.typector * int * option(Scheme.t)))
   let_level : int
   mod_name : Names.mod_name
@@ -19,6 +20,7 @@ def create(): {
   opens = default_opens;
   asp = [];
   ctors = [];
+  fields = [];
   typectors = [];
   let_level = 0;
   mod_name = "Dummy";
@@ -40,6 +42,9 @@ def unbound_variable(pos, path):
 
 def unbound_constructor(pos, ctor):
   Pos.show_error(pos, sprintf("unbound constructor: %s\n", Names.show_ctor(ctor)))
+
+def unbound_field_label(pos, path):
+  Pos.show_error(pos, sprintf("unbound field label: %s\n", Names.show_val_path(path)))
 
 def unbound_type_constructor(pos, typector):
   Pos.show_error(pos, sprintf("unbound type constructor: %s\n", Names.show_typector(typector)))
@@ -144,6 +149,9 @@ def search_asp(inf, path):
 
 def search_ctors(inf, ctor):
   search_alist(Module.search_ctors, inf.ctors, inf, ctor)
+
+def search_fields(inf, path):
+  search_alist(Module.search_fields, inf.fields, inf, path)
 
 def search_typectors(inf, typector):
   search_alist(Module.search_typectors, inf.typectors, inf, typector)
@@ -358,6 +366,15 @@ rec:
           var body_type = infer_expr(inf, body_expr)
           require(body_expr.Expr.pos, ret_type, body_type)
         ret_type
+      case Expr.Field(arg_expr,path):
+        var arg_type = infer_expr(inf, arg_expr)
+        try:
+          var access_fun_scm = search_fields(inf, path)
+          var access_fun_type = instantiate(inf.let_level, access_fun_scm)
+          apply(inf.let_level, expr.Expr.pos, access_fun_type, arg_type)
+        with:
+          case Not_found:
+            failwith(unbound_field_label(expr.Expr.pos, path))
 
   def require(pos, req_type, got_type):
     try:
@@ -531,12 +548,13 @@ def enter_module(inf, mod_name):
   inf.{mod_name = mod_name}
 
 def leave_module(inf, mod_name):
-  var new_mod = Module.make([], inf.asp, inf.ctors, inf.typectors)
+  var new_mod = Module.make([], inf.asp, inf.ctors, inf.fields, inf.typectors)
   {
     mods = (mod_name, new_mod)::inf.mods;
     opens = default_opens;
     asp = [];
     ctors = [];
+    fields = [];
     typectors = [];
     let_level = 0;
     mod_name = "Pervasives";
@@ -553,12 +571,14 @@ var mod_B = Module.make(
   ],
   [],
   [],
+  [],
 )
 var mod_A = Module.make(
   [("B", mod_B)],
   [(Names.Id("a1"), Scheme.mono(Type.at(Some(pos),int_type)));
    (Names.Id("a2"), Scheme.mono(Type.at(Some(pos),string_type)));
   ],
+  [],
   [],
   [],
 )
@@ -573,6 +593,7 @@ var mod_Pervasives = Module.make(
   ],
   [],
   [],
+  [],
 )
 var inf = {
   mods = [
@@ -582,6 +603,7 @@ var inf = {
   opens = [("Pervasives", [])];
   asp = [(Names.Id("ans"), Scheme.mono(Type.at(Some(pos),int_type)))];
   ctors = [];
+  fields = [];
   typectors = [];
   let_level = 0;
   mod_name = "Pervasives";

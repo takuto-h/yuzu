@@ -5,12 +5,14 @@ type t:
   mods : list(Names.mod_name * t)
   asp : list(Names.val_name * Scheme.t)
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
+  fields : list(Names.ctor_name * Scheme.t)
   typectors : list(Names.typector_name * (Names.typector * int * option(Scheme.t)))
 
-def make(mods, asp, ctors, typectors): {
+def make(mods, asp, ctors, fields, typectors): {
   mods = mods;
   asp = asp;
   ctors = ctors;
+  fields = fields;
   typectors = typectors;
 }
 
@@ -27,6 +29,9 @@ def search_asp(modl, mod_path, name):
 
 def search_ctors(modl, mod_path, name):
   search_alist^(modl){modl.ctors}(modl, mod_path, name)
+
+def search_fields(modl, mod_path, name):
+  search_alist^(modl){modl.fields}(modl, mod_path, name)
 
 def search_typectors(modl, mod_path, name):
   search_alist^(modl){modl.typectors}(modl, mod_path, name)
