@@ -330,11 +330,6 @@ def translate_top(trans, top):
       str_type
     case Top.Type([]):
       assert(false)
-    case Top.Module(name,ftor,arg):
-      var str_name = name
-      var str_ftor = Names.show_mod_path(ftor)
-      var str_arg = Names.show_mod_path(arg)
-      sprintf("module %s = %s(%s)\n", str_name, str_ftor, str_arg)
     case Top.Exception(exn_decl):
       var str_exn_decl = translate_exn_decl(exn_decl)
       sprintf("exception %s\n", str_exn_decl)

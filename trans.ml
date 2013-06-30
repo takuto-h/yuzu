@@ -487,14 +487,6 @@ let rec translate_top = begin fun trans ->
         end
       | (Top.Type ( [] )) ->
         (assert false)
-      | (Top.Module (name, ftor, arg)) ->
-        begin let str_name = name in
-        begin let str_ftor = (Names.show_mod_path ftor) in
-        begin let str_arg = (Names.show_mod_path arg) in
-        ((((sprintf "module %s = %s(%s)\n") str_name) str_ftor) str_arg)
-        end
-        end
-        end
       | (Top.Exception exn_decl) ->
         begin let str_exn_decl = (translate_exn_decl exn_decl) in
         ((sprintf "exception %s\n") str_exn_decl)
