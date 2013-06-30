@@ -230,6 +230,26 @@ def infer_pattern(inf, pat):
       with:
         case Not_found:
           failwith(unbound_constructor(pat.Pattern.pos, ctor))
+    case Pattern.Record(fields):
+      var record_type = Type.make_var(inf.let_level)
+      var init = (inf, ValNameMap.empty)
+      var (inf, map) = YzList.fold_left(init, fields)^((inf, map1), (path, opt_pat)):
+        try:
+          var (mod_path, name) = path
+          var (is_mutable, access_fun_scm) = search_fields(inf, path)
+          var access_fun_type = instantiate(inf.let_level, access_fun_scm)
+          ignore(apply(inf.let_level, pat.Pattern.pos, access_fun_type, record_type))
+          match opt_pat:
+            case None:
+              var (inf, t) = add_asp(inf, name)
+              (inf, ValNameMap.add(name, t, map1))
+            case Some(pat):
+              var (inf, t, map2) = infer_pattern(inf, pat)
+              (inf, ValNameMap.merge^(_){YzOption.or_}(map1, map2))
+        with:
+          case Not_found:
+            failwith(unbound_field_label(pat.Pattern.pos, path))
+      (inf, record_type, map)
     case Pattern.As(pat,name):
       var (inf, t, map) = infer_pattern(inf, pat)
       var inf = inf.{asp = (name, Scheme.mono(t))::inf.asp}

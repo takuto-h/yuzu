@@ -351,6 +351,43 @@ let rec infer_pattern = begin fun inf ->
           | Not_found ->
             (failwith ((unbound_constructor pat.Pattern.pos) ctor))
         end
+      | (Pattern.Record fields) ->
+        begin let record_type = (Type.make_var inf.let_level) in
+        begin let init = (inf, ValNameMap.empty) in
+        begin let (inf, map) = (((YzList.fold_left init) fields) begin fun (inf, map1) ->
+          begin fun (path, opt_pat) ->
+            begin try
+              begin let (mod_path, name) = path in
+              begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
+              begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
+              begin
+              (ignore ((((apply inf.let_level) pat.Pattern.pos) access_fun_type) record_type));
+              begin match opt_pat with
+                | None ->
+                  begin let (inf, t) = ((add_asp inf) name) in
+                  (inf, (((ValNameMap.add name) t) map1))
+                  end
+                | (Some pat) ->
+                  begin let (inf, t, map2) = ((infer_pattern inf) pat) in
+                  (inf, (((ValNameMap.merge begin fun _ ->
+                    YzOption.or_
+                  end) map1) map2))
+                  end
+              end
+              end
+              end
+              end
+              end
+            with
+              | Not_found ->
+                (failwith ((unbound_field_label pat.Pattern.pos) path))
+            end
+          end
+        end) in
+        (inf, record_type, map)
+        end
+        end
+        end
       | (Pattern.As (pat, name)) ->
         begin let (inf, t, map) = ((infer_pattern inf) pat) in
         begin let inf = {
