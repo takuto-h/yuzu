@@ -457,6 +457,11 @@ def infer_top(inf, top):
             var param_num = List.length(type_params)
             inf.{typectors = (name, (typector, param_num, Some(conv_scm)))::inf.typectors}
       (inf, [])
+    case Top.Open(mod_name::mod_path):
+      var inf = inf.{opens = (mod_name, mod_path)::inf.opens}
+      (inf, [])
+    case Top.Open([]):
+      assert(false)
 
 def load_decl(inf, decl):
   match decl:

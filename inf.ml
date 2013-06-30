@@ -767,6 +767,15 @@ let rec infer_top = begin fun inf ->
         (inf, ( [] ))
         end
         end
+      | (Top.Open (( :: ) (mod_name, mod_path))) ->
+        begin let inf = {
+          inf with
+          opens = (( :: ) ((mod_name, mod_path), inf.opens));
+        } in
+        (inf, ( [] ))
+        end
+      | (Top.Open ( [] )) ->
+        (assert false)
     end
   end
 end
