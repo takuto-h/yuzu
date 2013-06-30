@@ -4,6 +4,7 @@ type int
 type bool
 type char
 type string
+type array(`a)
 
 type option(`a):
   def None
@@ -23,6 +24,8 @@ val $(<) : `a -> `a -> bool
 val $(>) : `a -> `a -> bool
 val $(<=) : `a -> `a -> bool
 val $(>=) : `a -> `a -> bool
+val $(==) : `a -> `a -> bool
+val $(!=) : `a -> `a -> bool
 
 val $(||) : bool -> bool -> bool
 val $(&&) : bool -> bool -> bool
@@ -33,6 +36,7 @@ type ref(`a)
 
 val ref : `a -> ref(`a)
 val $(!) : ref(`a) -> `a
+val $(:=) : ref(`a) -> `a -> unit
 
 type in_channel
 
