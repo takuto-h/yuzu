@@ -35,6 +35,7 @@ var int_type = Type.Con(["Pervasives"], "int")
 var string_type = Type.Con(["Pervasives"], "string")
 var char_type = Type.Con(["Pervasives"], "char")
 var bool_type = Type.Con(["Pervasives"], "bool")
+var exn_type = Type.Con(["Pervasives"], "exn")
 
 def unbound_variable(pos, path):
   Pos.show_error(pos, sprintf("unbound variable: %s\n", Names.show_val_path(path)))
@@ -205,19 +206,23 @@ def infer_pattern(inf, pat):
         (inf, t::ts, ValNameMap.merge^(_){YzOption.or_}(map1, map2))
       (inf, Type.at(Some(pat.Pattern.pos), Type.Tuple(ts)), map)
     case Pattern.Ctor(ctor, opt_pat):
-      var (req_arg, ctor_scm) = search_ctors(inf, ctor)
-      var ctor_type = instantiate(inf.let_level, ctor_scm)
-      match (req_arg, opt_pat):
-        case (false, None):
-          (inf, ctor_type, ValNameMap.empty)
-        case (false, Some(pat)):
-          failwith(wrong_number_of_arguments(pat.Pattern.pos, 0, 1))
-        case (true, None):
-          failwith(wrong_number_of_arguments(pat.Pattern.pos, 1, 0))
-        case (true, Some(pat)):
-          var (inf, param_type, map) = infer_pattern(inf, pat)
-          var ret_type = apply(inf.let_level, pat.Pattern.pos, ctor_type, param_type)
-          (inf, ret_type, map)
+      try:
+        var (req_arg, ctor_scm) = search_ctors(inf, ctor)
+        var ctor_type = instantiate(inf.let_level, ctor_scm)
+        match (req_arg, opt_pat):
+          case (false, None):
+            (inf, ctor_type, ValNameMap.empty)
+          case (false, Some(pat)):
+            failwith(wrong_number_of_arguments(pat.Pattern.pos, 0, 1))
+          case (true, None):
+            failwith(wrong_number_of_arguments(pat.Pattern.pos, 1, 0))
+          case (true, Some(pat)):
+            var (inf, param_type, map) = infer_pattern(inf, pat)
+            var ret_type = apply(inf.let_level, pat.Pattern.pos, ctor_type, param_type)
+            (inf, ret_type, map)
+      with:
+        case Not_found:
+          failwith(unbound_constructor(pat.Pattern.pos, ctor))
     case Pattern.As(pat,name):
       var (inf, t, map) = infer_pattern(inf, pat)
       var inf = inf.{asp = (name, Scheme.mono(t))::inf.asp}
@@ -337,7 +342,21 @@ rec:
               var guard_type = infer_expr(inf, guard)
               require(guard.Expr.pos, Type.at(None, bool_type), guard_type)
           var (inf, pat_type, map) = infer_pattern(inf, pat)
-          require(target_expr.Expr.pos, target_type, pat_type)
+          require(pat.Pattern.pos, target_type, pat_type)
+          var body_type = infer_expr(inf, body_expr)
+          require(body_expr.Expr.pos, ret_type, body_type)
+        ret_type
+      case Expr.Try(expr, cases):
+        var ret_type = infer_expr(inf, expr)
+        YzList.fold_left((), cases)^((), (pat, opt_guard, body_expr)):
+          match opt_guard:
+            case None:
+              ()
+            case Some(guard):
+              var guard_type = infer_expr(inf, guard)
+              require(guard.Expr.pos, Type.at(None, bool_type), guard_type)
+          var (inf, pat_type, map) = infer_pattern(inf, pat)
+          require(pat.Pattern.pos, Type.at(None, exn_type), pat_type)
           var body_type = infer_expr(inf, body_expr)
           require(body_expr.Expr.pos, ret_type, body_type)
         ret_type

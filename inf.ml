@@ -45,6 +45,8 @@ let char_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "char"))
 
 let bool_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "bool"))
 
+let exn_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "exn"))
+
 let rec unbound_variable = begin fun pos ->
   begin fun path ->
     ((Pos.show_error pos) ((sprintf "unbound variable: %s\n") (Names.show_val_path path)))
@@ -312,23 +314,28 @@ let rec infer_pattern = begin fun inf ->
         end
         end
       | (Pattern.Ctor (ctor, opt_pat)) ->
-        begin let (req_arg, ctor_scm) = ((search_ctors inf) ctor) in
-        begin let ctor_type = ((instantiate inf.let_level) ctor_scm) in
-        begin match (req_arg, opt_pat) with
-          | (false, None) ->
-            (inf, ctor_type, ValNameMap.empty)
-          | (false, (Some pat)) ->
-            (failwith (((wrong_number_of_arguments pat.Pattern.pos) 0) 1))
-          | (true, None) ->
-            (failwith (((wrong_number_of_arguments pat.Pattern.pos) 1) 0))
-          | (true, (Some pat)) ->
-            begin let (inf, param_type, map) = ((infer_pattern inf) pat) in
-            begin let ret_type = ((((apply inf.let_level) pat.Pattern.pos) ctor_type) param_type) in
-            (inf, ret_type, map)
-            end
-            end
-        end
-        end
+        begin try
+          begin let (req_arg, ctor_scm) = ((search_ctors inf) ctor) in
+          begin let ctor_type = ((instantiate inf.let_level) ctor_scm) in
+          begin match (req_arg, opt_pat) with
+            | (false, None) ->
+              (inf, ctor_type, ValNameMap.empty)
+            | (false, (Some pat)) ->
+              (failwith (((wrong_number_of_arguments pat.Pattern.pos) 0) 1))
+            | (true, None) ->
+              (failwith (((wrong_number_of_arguments pat.Pattern.pos) 1) 0))
+            | (true, (Some pat)) ->
+              begin let (inf, param_type, map) = ((infer_pattern inf) pat) in
+              begin let ret_type = ((((apply inf.let_level) pat.Pattern.pos) ctor_type) param_type) in
+              (inf, ret_type, map)
+              end
+              end
+          end
+          end
+          end
+        with
+          | Not_found ->
+            (failwith ((unbound_constructor pat.Pattern.pos) ctor))
         end
       | (Pattern.As (pat, name)) ->
         begin let (inf, t, map) = ((infer_pattern inf) pat) in
@@ -533,7 +540,7 @@ let rec infer_expr = begin fun inf ->
             end;
             begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
             begin
-            (((require target_expr.Expr.pos) target_type) pat_type);
+            (((require pat.Pattern.pos) target_type) pat_type);
             begin let body_type = ((infer_expr inf) body_expr) in
             (((require body_expr.Expr.pos) ret_type) body_type)
             end
@@ -544,6 +551,34 @@ let rec infer_expr = begin fun inf ->
         end);
         ret_type
         end
+        end
+        end
+      | (Expr.Try (expr, cases)) ->
+        begin let ret_type = ((infer_expr inf) expr) in
+        begin
+        (((YzList.fold_left ()) cases) begin fun () ->
+          begin fun (pat, opt_guard, body_expr) ->
+            begin
+            begin match opt_guard with
+              | None ->
+                ()
+              | (Some guard) ->
+                begin let guard_type = ((infer_expr inf) guard) in
+                (((require guard.Expr.pos) ((Type.at None) bool_type)) guard_type)
+                end
+            end;
+            begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+            begin
+            (((require pat.Pattern.pos) ((Type.at None) exn_type)) pat_type);
+            begin let body_type = ((infer_expr inf) body_expr) in
+            (((require body_expr.Expr.pos) ret_type) body_type)
+            end
+            end
+            end
+            end
+          end
+        end);
+        ret_type
         end
         end
     end
