@@ -16,7 +16,7 @@ rec:
     def And(t * t)
     def Seq(t * t)
     def LetVal(Pattern.t * t * t)
-    def LetFun(list(Names.val_name * t) * t)
+    def LetFun(list(Names.val_name * t * ref(unit)) * t)
     def Match(t * list(Pattern.t * option(t) * t))
     def Try(t * list(Pattern.t * option(t) * t))
     def Record(list(Names.val_path * t))

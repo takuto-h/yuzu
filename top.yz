@@ -2,7 +2,7 @@
 type raw:
   def Expr(Expr.t)
   def LetVal(Pattern.t * Expr.t)
-  def LetFun(list(Names.val_name * Expr.t))
+  def LetFun(list(Names.val_name * Expr.t * ref(unit)))
   def Open(Names.mod_path)
   def Type(list(TypeDef.t))
   def Exception(ExnDecl.t)

@@ -789,7 +789,7 @@ rec:
     var fun_name = parse_val_name(parser)
     var params = parse_params(parser)
     var body_expr = parse_block(parser)
-    (fun_name, make_abs(pos, params, body_expr))
+    (fun_name, make_abs(pos, params, body_expr), ref())
     
   def parse_sep(parser, sep_or_term):
     match sep_or_term(parser.token):
@@ -908,7 +908,7 @@ rec:
     var fun_name = parse_val_name(parser)
     var params = parse_params(parser)
     var body_expr = parse_block(parser)
-    (fun_name, make_abs(pos, params, body_expr))
+    (fun_name, make_abs(pos, params, body_expr), ref())
   
   def parse_top_open(parser, pos):
     var mod_path = parse_mod_path(parser, [])

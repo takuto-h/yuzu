@@ -798,16 +798,16 @@ and infer_let_fun = begin fun inf ->
   begin fun defs ->
     begin let init = (inf, ( [] )) in
     begin let (tmp_inf, defs) = (((YzList.fold_left init) defs) begin fun (tmp_inf, defs) ->
-      begin fun (name, val_expr) ->
+      begin fun (name, val_expr, r) ->
         begin let (tmp_inf, t) = ((add_type_var tmp_inf) name) in
-        (tmp_inf, (( :: ) ((name, val_expr, t), defs)))
+        (tmp_inf, (( :: ) ((name, val_expr, r, t), defs)))
         end
       end
     end) in
     begin let let_level = tmp_inf.let_level in
     begin let tmp_inf = (incr_let_level tmp_inf) in
     (((YzList.fold_left (inf, ( [] ))) defs) begin fun (inf, decls) ->
-      begin fun (name, val_expr, type_var) ->
+      begin fun (name, val_expr, r, type_var) ->
         begin let (val_type, cstrs) = (((infer_expr tmp_inf) ( [] )) val_expr) in
         begin
         (((require val_expr.Expr.pos) type_var) val_type);

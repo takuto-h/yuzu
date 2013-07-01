@@ -205,12 +205,12 @@ let rec translate_expr = begin fun trans ->
         end
         end
         end
-      | (Expr.LetFun ((( :: ) ((name, val_expr), defs)), cont_expr)) ->
+      | (Expr.LetFun ((( :: ) ((name, val_expr, _), defs)), cont_expr)) ->
         begin let str_name = (Names.show_val_name name) in
         begin let str_val = ((translate_expr trans) val_expr) in
         begin let str_let_rec = (((sprintf "let rec %s = %s") str_name) str_val) in
         begin let str_let_rec = (((YzList.fold_left str_let_rec) defs) begin fun acc ->
-          begin fun (name, val_expr) ->
+          begin fun (name, val_expr, _) ->
             begin let str_name = (Names.show_val_name name) in
             begin let str_val = ((translate_expr trans) val_expr) in
             ((((sprintf "%s\nand %s = %s") acc) str_name) str_val)
@@ -453,12 +453,12 @@ let rec translate_top = begin fun trans ->
         (((sprintf "let %s = %s\n") str_pat) str_expr)
         end
         end
-      | (Top.LetFun (( :: ) ((name, expr), defs))) ->
+      | (Top.LetFun (( :: ) ((name, expr, _), defs))) ->
         begin let str_name = (Names.show_val_name name) in
         begin let str_expr = ((translate_expr trans) expr) in
         begin let str_let_rec = (((sprintf "let rec %s = %s\n") str_name) str_expr) in
         (((YzList.fold_left str_let_rec) defs) begin fun acc ->
-          begin fun (name, expr) ->
+          begin fun (name, expr, _) ->
             begin let str_name = (Names.show_val_name name) in
             begin let str_expr = ((translate_expr trans) expr) in
             ((((sprintf "%s\nand %s = %s\n") acc) str_name) str_expr)

@@ -15,7 +15,7 @@ and raw =
   | And of (t * t)
   | Seq of (t * t)
   | LetVal of (Pattern.t * t * t)
-  | LetFun of (((Names.val_name * t)) list * t)
+  | LetFun of (((Names.val_name * t * (unit) ref)) list * t)
   | Match of (t * ((Pattern.t * (t) option * t)) list)
   | Try of (t * ((Pattern.t * (t) option * t)) list)
   | Record of ((Names.val_path * t)) list

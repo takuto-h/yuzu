@@ -1291,7 +1291,7 @@ and parse_let_fun = begin fun parser ->
   begin let fun_name = (parse_val_name parser) in
   begin let params = (parse_params parser) in
   begin let body_expr = (parse_block parser) in
-  (fun_name, (((make_abs pos) params) body_expr))
+  (fun_name, (((make_abs pos) params) body_expr), (ref ()))
   end
   end
   end
@@ -1500,7 +1500,7 @@ and parse_top_let_fun = begin fun parser ->
   begin let fun_name = (parse_val_name parser) in
   begin let params = (parse_params parser) in
   begin let body_expr = (parse_block parser) in
-  (fun_name, (((make_abs pos) params) body_expr))
+  (fun_name, (((make_abs pos) params) body_expr), (ref ()))
   end
   end
   end
