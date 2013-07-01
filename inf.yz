@@ -542,6 +542,26 @@ def load_exn_decl(inf, (ctor_name, opt_param, ctor_type_expr)):
     case Some(_):
       add_ctor(inf, ctor_name, (true, ctor_scm))
 
+def load_type_defs(inf, defs):
+  var inf = YzList.fold_left(inf, defs)^(inf, type_def):
+    match type_def:
+      case TypeDef.Repr(name,type_params,_) | TypeDef.Abbrev(name,type_params,_,_):
+        var typector = ([inf.mod_name], name)
+        var param_num = List.length(type_params)
+        add_typector(inf, name, (typector, param_num, None))
+  YzList.fold_left(inf, defs)^(inf, type_def):
+    match type_def:
+      case TypeDef.Repr(name, type_params, type_info):
+        load_type_info(inf, type_info)
+      case TypeDef.Abbrev(name, type_params, _, conv_type_expr):
+        var let_level = inf.let_level
+        var tmp_inf = incr_let_level(inf)
+        var conv_type = eval(tmp_inf, ref([]), conv_type_expr)
+        var conv_scm = generalize(let_level, conv_type)
+        var typector = ([inf.mod_name], name)
+        var param_num = List.length(type_params)
+        add_typector(inf, name, (typector, param_num, Some(conv_scm)))
+
 def infer_top(inf, top):
   match top.Top.raw:
     case Top.Expr(expr):
@@ -602,20 +622,8 @@ def load_decl(inf, decl):
     case DeclExpr.AbstrType(name, param_num):
       var typector = ([inf.mod_name], name)
       add_typector(inf, name, (typector, param_num, None))
-    case DeclExpr.ConcrType(TypeDef.Repr(name, type_params, type_info)):
-      var typector = ([inf.mod_name], name)
-      var param_num = List.length(type_params)
-      var inf = add_typector(inf, name, (typector, param_num, None))
-      load_type_info(inf, type_info)
-    case DeclExpr.ConcrType(TypeDef.Abbrev(name, type_params, _, conv_type_expr)):
-      var typector = ([inf.mod_name], name)
-      var param_num = List.length(type_params)
-      var tmp_inf = add_typector(inf, name, (typector, param_num, None))
-      var let_level = tmp_inf.let_level
-      var tmp_inf = incr_let_level(tmp_inf)
-      var conv_type = eval(tmp_inf, ref([]), conv_type_expr)
-      var conv_scm = generalize(let_level, conv_type)
-      add_typector(inf, name, (typector, param_num, Some(conv_scm)))
+    case DeclExpr.ConcrType(defs):
+      load_type_defs(inf, defs)
     case DeclExpr.Exception(exn_decl):
       load_exn_decl(inf, exn_decl)
       

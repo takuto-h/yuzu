@@ -2,5 +2,5 @@
 type t:
   def Val(Names.val_name * TypeExpr.t)
   def AbstrType(Names.typector_name * int)
-  def ConcrType(TypeDef.t)
+  def ConcrType(list(TypeDef.t))
   def Exception(ExnDecl.t)

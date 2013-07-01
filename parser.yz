@@ -1033,7 +1033,7 @@ def parse_decl_expr(parser):
       case Left(typector_name, type_params):
         DeclExpr.AbstrType(typector_name, List.length(type_params))
       case Right(type_def):
-        DeclExpr.ConcrType(type_def)
+        DeclExpr.ConcrType([type_def])
     case Token.Reserved("exception"):
       var pos = parser.pos
       lookahead(parser)

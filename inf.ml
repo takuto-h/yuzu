@@ -929,6 +929,46 @@ let rec load_exn_decl = begin fun inf ->
   end
 end
 
+let rec load_type_defs = begin fun inf ->
+  begin fun defs ->
+    begin let inf = (((YzList.fold_left inf) defs) begin fun inf ->
+      begin fun type_def ->
+        begin match type_def with
+          | ((TypeDef.Repr (name, type_params, _)) | (TypeDef.Abbrev (name, type_params, _, _))) ->
+            begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
+            begin let param_num = (List.length type_params) in
+            (((add_typector inf) name) (typector, param_num, None))
+            end
+            end
+        end
+      end
+    end) in
+    (((YzList.fold_left inf) defs) begin fun inf ->
+      begin fun type_def ->
+        begin match type_def with
+          | (TypeDef.Repr (name, type_params, type_info)) ->
+            ((load_type_info inf) type_info)
+          | (TypeDef.Abbrev (name, type_params, _, conv_type_expr)) ->
+            begin let let_level = inf.let_level in
+            begin let tmp_inf = (incr_let_level inf) in
+            begin let conv_type = (((eval tmp_inf) (ref ( [] ))) conv_type_expr) in
+            begin let conv_scm = ((generalize let_level) conv_type) in
+            begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
+            begin let param_num = (List.length type_params) in
+            (((add_typector inf) name) (typector, param_num, (Some conv_scm)))
+            end
+            end
+            end
+            end
+            end
+            end
+        end
+      end
+    end)
+    end
+  end
+end
+
 let rec infer_top = begin fun inf ->
   begin fun top ->
     begin match top.Top.raw with
@@ -1039,30 +1079,8 @@ let rec load_decl = begin fun inf ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
         (((add_typector inf) name) (typector, param_num, None))
         end
-      | (DeclExpr.ConcrType (TypeDef.Repr (name, type_params, type_info))) ->
-        begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
-        begin let param_num = (List.length type_params) in
-        begin let inf = (((add_typector inf) name) (typector, param_num, None)) in
-        ((load_type_info inf) type_info)
-        end
-        end
-        end
-      | (DeclExpr.ConcrType (TypeDef.Abbrev (name, type_params, _, conv_type_expr))) ->
-        begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
-        begin let param_num = (List.length type_params) in
-        begin let tmp_inf = (((add_typector inf) name) (typector, param_num, None)) in
-        begin let let_level = tmp_inf.let_level in
-        begin let tmp_inf = (incr_let_level tmp_inf) in
-        begin let conv_type = (((eval tmp_inf) (ref ( [] ))) conv_type_expr) in
-        begin let conv_scm = ((generalize let_level) conv_type) in
-        (((add_typector inf) name) (typector, param_num, (Some conv_scm)))
-        end
-        end
-        end
-        end
-        end
-        end
-        end
+      | (DeclExpr.ConcrType defs) ->
+        ((load_type_defs inf) defs)
       | (DeclExpr.Exception exn_decl) ->
         ((load_exn_decl inf) exn_decl)
     end

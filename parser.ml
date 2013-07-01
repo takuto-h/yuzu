@@ -1716,7 +1716,7 @@ let rec parse_decl_expr = begin fun parser ->
         | (Left (typector_name, type_params)) ->
           (DeclExpr.AbstrType (typector_name, (List.length type_params)))
         | (Right type_def) ->
-          (DeclExpr.ConcrType type_def)
+          (DeclExpr.ConcrType (( :: ) (type_def, ( [] ))))
       end
     | (Token.Reserved "exception") ->
       begin let pos = parser.pos in
