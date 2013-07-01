@@ -591,37 +591,12 @@ let rec infer_expr = begin fun inf ->
         end
         end
       | (Expr.LetVal (pat, val_expr, cont_expr)) ->
-        begin let val_type = ((infer_expr inf) val_expr) in
-        begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
-        begin
-        (((require val_expr.Expr.pos) pat_type) val_type);
+        begin let (inf, map) = (((infer_let_val inf) pat) val_expr) in
         ((infer_expr inf) cont_expr)
-        end
-        end
         end
       | (Expr.LetFun (defs, cont_expr)) ->
-        begin let let_level = inf.let_level in
-        begin let tmp_inf = (incr_let_level inf) in
-        begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
-          begin fun (name, val_expr) ->
-            begin let (tmp_inf, t) = ((add_type_var tmp_inf) name) in
-            tmp_inf
-            end
-          end
-        end) in
-        begin let inf = (((YzList.fold_left inf) defs) begin fun inf ->
-          begin fun (name, val_expr) ->
-            begin let val_type = ((infer_expr tmp_inf) val_expr) in
-            begin let scm = ((generalize let_level) val_type) in
-            (((add_asp inf) name) scm)
-            end
-            end
-          end
-        end) in
+        begin let (inf, decls) = ((infer_let_fun inf) defs) in
         ((infer_expr inf) cont_expr)
-        end
-        end
-        end
         end
       | (Expr.Match (target_expr, cases)) ->
         begin let target_type = ((infer_expr inf) target_expr) in
@@ -766,6 +741,47 @@ let rec infer_expr = begin fun inf ->
         record_type
         end
         end
+    end
+  end
+end
+
+and infer_let_val = begin fun inf ->
+  begin fun pat ->
+    begin fun val_expr ->
+      begin let val_type = ((infer_expr inf) val_expr) in
+      begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+      begin
+      (((require val_expr.Expr.pos) pat_type) val_type);
+      (inf, map)
+      end
+      end
+      end
+    end
+  end
+end
+
+and infer_let_fun = begin fun inf ->
+  begin fun defs ->
+    begin let let_level = inf.let_level in
+    begin let tmp_inf = (incr_let_level inf) in
+    begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
+      begin fun (name, val_expr) ->
+        begin let (tmp_inf, t) = ((add_type_var tmp_inf) name) in
+        tmp_inf
+        end
+      end
+    end) in
+    (((YzList.fold_left (inf, ( [] ))) defs) begin fun (inf, decls) ->
+      begin fun (name, val_expr) ->
+        begin let val_type = ((infer_expr tmp_inf) val_expr) in
+        begin let scm = ((generalize let_level) val_type) in
+        ((((add_asp inf) name) scm), (( :: ) ((Decl.Val (name, scm)), decls)))
+        end
+        end
+      end
+    end)
+    end
+    end
     end
   end
 end
@@ -975,37 +991,12 @@ let rec infer_top = begin fun inf ->
       | (Top.Expr expr) ->
         (inf, (( :: ) ((Decl.Val ((Names.Id "_"), (Scheme.mono ((infer_expr inf) expr)))), ( [] ))))
       | (Top.LetVal (pat, val_expr)) ->
-        begin let val_type = ((infer_expr inf) val_expr) in
-        begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
-        begin
-        (((require val_expr.Expr.pos) pat_type) val_type);
+        begin let (inf, map) = (((infer_let_val inf) pat) val_expr) in
         (inf, (make_decls map))
         end
-        end
-        end
       | (Top.LetFun defs) ->
-        begin let let_level = inf.let_level in
-        begin let tmp_inf = (incr_let_level inf) in
-        begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
-          begin fun (name, val_expr) ->
-            begin let (tmp_inf, t) = ((add_type_var tmp_inf) name) in
-            tmp_inf
-            end
-          end
-        end) in
-        begin let (inf, decls) = (((YzList.fold_left (inf, ( [] ))) defs) begin fun (inf, decls) ->
-          begin fun (name, val_expr) ->
-            begin let val_type = ((infer_expr tmp_inf) val_expr) in
-            begin let scm = ((generalize let_level) val_type) in
-            ((((add_asp inf) name) scm), (( :: ) ((Decl.Val (name, scm)), decls)))
-            end
-            end
-          end
-        end) in
+        begin let (inf, decls) = ((infer_let_fun inf) defs) in
         (inf, decls)
-        end
-        end
-        end
         end
       | (Top.Type defs) ->
         begin let inf = ((load_type_defs inf) defs) in

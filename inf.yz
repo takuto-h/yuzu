@@ -354,20 +354,10 @@ rec:
         require(lhs.Expr.pos, Type.at(None, unit_type), lhs_type)
         rhs_type
       case Expr.LetVal(pat,val_expr,cont_expr):
-        var val_type = infer_expr(inf, val_expr)
-        var (inf, pat_type, map) = infer_pattern(inf, pat)
-        require(val_expr.Expr.pos, pat_type, val_type)
+        var (inf, map) = infer_let_val(inf, pat, val_expr)
         infer_expr(inf, cont_expr)
       case Expr.LetFun(defs, cont_expr):
-        var let_level = inf.let_level
-        var tmp_inf = incr_let_level(inf)
-        var tmp_inf = YzList.fold_left(tmp_inf, defs)^(tmp_inf, (name, val_expr)):
-          var (tmp_inf, t) = add_type_var(tmp_inf, name)
-          tmp_inf
-        var inf = YzList.fold_left(inf, defs)^(inf, (name, val_expr)):
-          var val_type = infer_expr(tmp_inf, val_expr)
-          var scm = generalize(let_level, val_type)
-          add_asp(inf, name, scm)
+        var (inf, decls) = infer_let_fun(inf, defs)
         infer_expr(inf, cont_expr)
       case Expr.Match(target_expr, cases):
         var target_type = infer_expr(inf, target_expr)
@@ -448,7 +438,24 @@ rec:
             case Not_found:
               failwith(unbound_field_label(expr.Expr.pos, path))
         record_type
-        
+
+  def infer_let_val(inf, pat, val_expr):
+    var val_type = infer_expr(inf, val_expr)
+    var (inf, pat_type, map) = infer_pattern(inf, pat)
+    require(val_expr.Expr.pos, pat_type, val_type)
+    (inf, map)
+
+  def infer_let_fun(inf, defs):
+    var let_level = inf.let_level
+    var tmp_inf = incr_let_level(inf)
+    var tmp_inf = YzList.fold_left(tmp_inf, defs)^(tmp_inf, (name, val_expr)):
+      var (tmp_inf, t) = add_type_var(tmp_inf, name)
+      tmp_inf
+    YzList.fold_left((inf, []), defs)^((inf, decls), (name, val_expr)):
+      var val_type = infer_expr(tmp_inf, val_expr)
+      var scm = generalize(let_level, val_type)
+      (add_asp(inf, name, scm), Decl.Val(name, scm)::decls)
+
   def require(pos, req_type, got_type):
     try:
       Type.unify(req_type, got_type)
@@ -567,20 +574,10 @@ def infer_top(inf, top):
     case Top.Expr(expr):
       (inf, [Decl.Val(Names.Id("_"), Scheme.mono(infer_expr(inf, expr)))])
     case Top.LetVal(pat,val_expr):
-      var val_type = infer_expr(inf, val_expr)
-      var (inf, pat_type, map) = infer_pattern(inf, pat)
-      require(val_expr.Expr.pos, pat_type, val_type)
+      var (inf, map) = infer_let_val(inf, pat, val_expr)
       (inf, make_decls(map))
     case Top.LetFun(defs):
-      var let_level = inf.let_level
-      var tmp_inf = incr_let_level(inf)
-      var tmp_inf = YzList.fold_left(tmp_inf, defs)^(tmp_inf, (name, val_expr)):
-        var (tmp_inf, t) = add_type_var(tmp_inf, name)
-        tmp_inf
-      var (inf, decls) = YzList.fold_left((inf, []), defs)^((inf, decls), (name, val_expr)):
-        var val_type = infer_expr(tmp_inf, val_expr)
-        var scm = generalize(let_level, val_type)
-        (add_asp(inf, name, scm), Decl.Val(name, scm)::decls)
+      var (inf, decls) = infer_let_fun(inf, defs)
       (inf, decls)
     case Top.Type(defs):
       var inf = load_type_defs(inf, defs)
