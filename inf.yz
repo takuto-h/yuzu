@@ -170,8 +170,8 @@ def search_fields(inf, path):
 def search_typectors(inf, typector):
   search_alist(Module.search_typectors, inf.curr_mod.Module.typectors, inf, typector)
 
-def search_typeclasses(inf, typeclass):
-  search_alist(Module.search_typeclasses, inf.curr_mod.Module.typeclasses, inf, typeclass)
+def search_instances(inf, typeclass):
+  search_alist(Module.search_instances, inf.curr_mod.Module.instances, inf, typeclass)
 
 def add_asp(inf, name, scm):
   inf.{curr_mod = inf.curr_mod.{Module.asp = (name, scm)::inf.curr_mod.Module.asp}}
@@ -318,7 +318,7 @@ def infer_pattern(inf, pat):
 def solve_constraints(inf, pos, cstrs):
   YzList.fold_left([], cstrs)^(preds, ((tc, t), inst_ref)):
     try:
-      var insts = search_typeclasses(inf, tc)
+      var insts = search_instances(inf, tc)
       match t.Type.raw:
         case Type.Con(typector) | Type.App(typector,_):
           try:

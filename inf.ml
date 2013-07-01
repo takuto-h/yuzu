@@ -235,9 +235,9 @@ let rec search_typectors = begin fun inf ->
   end
 end
 
-let rec search_typeclasses = begin fun inf ->
+let rec search_instances = begin fun inf ->
   begin fun typeclass ->
-    ((((search_alist Module.search_typeclasses) inf.curr_mod.Module.typeclasses) inf) typeclass)
+    ((((search_alist Module.search_instances) inf.curr_mod.Module.instances) inf) typeclass)
   end
 end
 
@@ -548,7 +548,7 @@ let rec solve_constraints = begin fun inf ->
       (((YzList.fold_left ( [] )) cstrs) begin fun preds ->
         begin fun ((tc, t), inst_ref) ->
           begin try
-            begin let insts = ((search_typeclasses inf) tc) in
+            begin let insts = ((search_instances inf) tc) in
             begin match t.Type.raw with
               | ((Type.Con typector) | (Type.App (typector, _))) ->
                 begin try

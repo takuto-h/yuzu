@@ -8,15 +8,15 @@ type t:
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
   fields : list(Names.ctor_name * (mutability * Scheme.t))
   typectors : list(Names.typector_name * (Names.typector * int * option(Scheme.t)))
-  typeclasses : list(Names.typeclass_name * list(Names.typector * unit))
+  instances : list(Names.typeclass_name * list(Names.typector * unit))
 
-def make(mods, asp, ctors, fields, typectors, typeclasses): {
+def make(mods, asp, ctors, fields, typectors, instances): {
   mods = mods;
   asp = asp;
   ctors = ctors;
   fields = fields;
   typectors = typectors;
-  typeclasses = typeclasses;
+  instances = instances;
 }
 
 def search_alist(get_alist, modl, mod_path, name):
@@ -39,5 +39,5 @@ def search_fields(modl, mod_path, name):
 def search_typectors(modl, mod_path, name):
   search_alist^(modl){modl.typectors}(modl, mod_path, name)
 
-def search_typeclasses(modl, mod_path, name):
-  search_alist^(modl){modl.typeclasses}(modl, mod_path, name)
+def search_instances(modl, mod_path, name):
+  search_alist^(modl){modl.instances}(modl, mod_path, name)
