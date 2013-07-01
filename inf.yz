@@ -362,32 +362,11 @@ rec:
       case Expr.Match(target_expr, cases):
         var target_type = infer_expr(inf, target_expr)
         var ret_type = Type.make_var(inf.let_level)
-        YzList.fold_left((), cases)^((), (pat, opt_guard, body_expr)):
-          var (inf, pat_type, map) = infer_pattern(inf, pat)
-          require(pat.Pattern.pos, target_type, pat_type)
-          match opt_guard:
-            case None:
-              ()
-            case Some(guard):
-              var guard_type = infer_expr(inf, guard)
-              require(guard.Expr.pos, Type.at(None, bool_type), guard_type)
-          var body_type = infer_expr(inf, body_expr)
-          require(body_expr.Expr.pos, ret_type, body_type)
-        ret_type
+        infer_cases(inf, target_type, ret_type, cases)
       case Expr.Try(expr, cases):
+        var target_type = Type.at(None, exn_type)
         var ret_type = infer_expr(inf, expr)
-        YzList.fold_left((), cases)^((), (pat, opt_guard, body_expr)):
-          var (inf, pat_type, map) = infer_pattern(inf, pat)
-          require(pat.Pattern.pos, Type.at(None, exn_type), pat_type)
-          match opt_guard:
-            case None:
-              ()
-            case Some(guard):
-              var guard_type = infer_expr(inf, guard)
-              require(guard.Expr.pos, Type.at(None, bool_type), guard_type)
-          var body_type = infer_expr(inf, body_expr)
-          require(body_expr.Expr.pos, ret_type, body_type)
-        ret_type
+        infer_cases(inf, target_type, ret_type, cases)
       case Expr.Field(record_expr,path):
         var record_type = infer_expr(inf, record_expr)
         try:
@@ -457,6 +436,20 @@ rec:
       require(val_expr.Expr.pos, type_var, val_type)
       var scm = generalize(let_level, val_type)
       (add_asp(inf, name, scm), Decl.Val(name, scm)::decls)
+
+  def infer_cases(inf, target_type, ret_type, cases):
+    YzList.fold_left((), cases)^((), (pat, opt_guard, body_expr)):
+      var (inf, pat_type, map) = infer_pattern(inf, pat)
+      require(pat.Pattern.pos, target_type, pat_type)
+      match opt_guard:
+        case None:
+          ()
+        case Some(guard):
+          var guard_type = infer_expr(inf, guard)
+          require(guard.Expr.pos, Type.at(None, bool_type), guard_type)
+      var body_type = infer_expr(inf, body_expr)
+      require(body_expr.Expr.pos, ret_type, body_type)
+    ret_type
 
   def require(pos, req_type, got_type):
     try:
