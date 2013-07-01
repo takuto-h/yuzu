@@ -5,13 +5,17 @@ type val_name:
   def Id(string)
   def Op(string)
 
-type typector_name = string
 type ctor_name = val_name
+type typector_name = string
+type typeclass_name = string
+
 type mod_name = string
 type mod_path = list(mod_name)
+
 type val_path = mod_path * val_name
-type typector = mod_path * typector_name
 type ctor = mod_path * ctor_name
+type typector = mod_path * typector_name
+type typeclass = mod_path * typeclass_name
 
 def show_val_name(name):
   match name:
@@ -34,6 +38,9 @@ def show_val_path(path):
     case (mod_path, val_name):
       sprintf("%s.%s", show_mod_path(mod_path), show_val_name(val_name))
 
+var show_ctor_name = show_val_name
+var show_ctor = show_val_path
+
 def show_typector(typector):
   match typector:
     case ([], typector_name):
@@ -41,5 +48,4 @@ def show_typector(typector):
     case (mod_path, typector_name):
       sprintf("%s.%s", show_mod_path(mod_path), typector_name)
 
-var show_ctor_name = show_val_name
-var show_ctor = show_val_path
+var show_typeclass = show_typector

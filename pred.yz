@@ -1,0 +1,19 @@
+
+open Printf
+
+type t:
+  def IsIn(Names.typeclass * Type.t)
+
+def show(shower, pred):
+  match pred:
+    case IsIn(tc, t):
+      sprintf("%s(%s)", Names.show_typeclass(tc), Type.show(shower, t))
+
+def show_list(shower, preds):
+  match preds:
+    case []:
+      ""
+    case (pred::preds):
+      var str_list = YzList.fold_left(show(shower, pred), preds)^(acc, pred):
+        sprintf("%s, %s", acc, show(shower, pred))
+      sprintf("(%s) =>", str_list)

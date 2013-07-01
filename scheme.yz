@@ -1,18 +1,23 @@
 
+open Printf
+
 type t:
   gen_num : int
+  preds : list(Pred.t)
   body : Type.t
 
 def mono(t): {
   gen_num = 0;
+  preds = [];
   body = t;
 }
 
-def poly(n, t): {
+def poly(n, preds, t): {
   gen_num = n;
+  preds = preds;
   body = t;
 }
 
-def show({gen_num;body}):
+def show({gen_num;preds;body}):
   var shower = Type.create_shower(gen_num)
-  Type.show(shower, body)
+  sprintf("%s%s", Pred.show_list(shower, preds), Type.show(shower, body))

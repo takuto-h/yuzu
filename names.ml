@@ -5,9 +5,11 @@ type val_name =
   | Op of string
 
 
+type ctor_name = val_name
+
 type typector_name = string
 
-type ctor_name = val_name
+type typeclass_name = string
 
 type mod_name = string
 
@@ -15,9 +17,11 @@ type mod_path = (mod_name) list
 
 type val_path = (mod_path * val_name)
 
+type ctor = (mod_path * ctor_name)
+
 type typector = (mod_path * typector_name)
 
-type ctor = (mod_path * ctor_name)
+type typeclass = (mod_path * typeclass_name)
 
 let rec show_val_name = begin fun name ->
   begin match name with
@@ -46,6 +50,10 @@ let rec show_val_path = begin fun path ->
   end
 end
 
+let show_ctor_name = show_val_name
+
+let show_ctor = show_val_path
+
 let rec show_typector = begin fun typector ->
   begin match typector with
     | (( [] ), typector_name) ->
@@ -55,7 +63,5 @@ let rec show_typector = begin fun typector ->
   end
 end
 
-let show_ctor_name = show_val_name
-
-let show_ctor = show_val_path
+let show_typeclass = show_typector
 
