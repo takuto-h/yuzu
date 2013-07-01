@@ -329,10 +329,12 @@ def infer_pattern(inf, pat):
         require_consistent(pat.Pattern.pos, lhs_type, rhs_type)
         (rhs_inf, rhs_type, rhs_map)
 
-var unique_num = 0
+var unique_num = ref(0)
 
 def generate_mod_path():
-  [sprintf("Mod%d", unique_num)]
+  var path = [sprintf("Mod%d", !unique_num)]
+  unique_num := !unique_num + 1
+  path
 
 def solve_constraints(inf, pos, cstrs):
   YzList.fold_left([], cstrs)^(ans, ((tc, t), inst_ref)):

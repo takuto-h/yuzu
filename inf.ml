@@ -546,10 +546,15 @@ let rec infer_pattern = begin fun inf ->
   end
 end
 
-let unique_num = 0
+let unique_num = (ref 0)
 
 let rec generate_mod_path = begin fun () ->
-  (( :: ) (((sprintf "Mod%d") unique_num), ( [] )))
+  begin let path = (( :: ) (((sprintf "Mod%d") (( ! ) unique_num)), ( [] ))) in
+  begin
+  ((( := ) unique_num) ((( + ) (( ! ) unique_num)) 1));
+  path
+  end
+  end
 end
 
 let rec solve_constraints = begin fun inf ->
@@ -803,7 +808,6 @@ let rec infer_expr = begin fun inf ->
     end
   end
 end
-
 and infer_let_val = begin fun inf ->
   begin fun cstrs ->
     begin fun pat ->
@@ -820,7 +824,6 @@ and infer_let_val = begin fun inf ->
     end
   end
 end
-
 and infer_let_fun = begin fun inf ->
   begin fun defs ->
     begin let init = (inf, ( [] )) in
@@ -858,7 +861,6 @@ and infer_let_fun = begin fun inf ->
     end
   end
 end
-
 and infer_cases = begin fun inf ->
   begin fun cstrs ->
     begin fun target_type ->
@@ -896,7 +898,6 @@ and infer_cases = begin fun inf ->
     end
   end
 end
-
 and infer_field_defs = begin fun inf ->
   begin fun cstrs ->
     begin fun pos ->
@@ -933,7 +934,6 @@ and infer_field_defs = begin fun inf ->
     end
   end
 end
-
 and require = begin fun pos ->
   begin fun req_type ->
     begin fun got_type ->

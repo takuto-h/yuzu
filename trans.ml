@@ -95,13 +95,29 @@ let rec translate_pattern = begin fun pat ->
       end
   end
 end
-
 and translate_field_pattern = begin fun field_pat ->
   begin match field_pat with
     | (path, None) ->
       ((sprintf "%s") (Names.show_val_path path))
     | (path, (Some pat)) ->
       (((sprintf "%s=%s") (Names.show_val_path path)) (translate_pattern pat))
+  end
+end
+
+let rec translate_inst_params = begin fun insts_ref ->
+  begin match (( ! ) insts_ref) with
+    | ( [] ) ->
+      ""
+    | (( :: ) (inst, insts)) ->
+      begin let str_init = ((sprintf "module %s") (Names.show_mod_path inst)) in
+      begin let str_params = (((YzList.fold_left str_init) insts) begin fun acc ->
+        begin fun inst ->
+          (((sprintf "%s, module %s") acc) (Names.show_mod_path inst))
+        end
+      end) in
+      ((sprintf " (%s)") str_params)
+      end
+      end
   end
 end
 
@@ -218,28 +234,12 @@ let rec translate_expr = begin fun trans ->
         end
         end
         end
-      | (Expr.LetFun ((( :: ) ((name, val_expr, _), defs)), cont_expr)) ->
-        begin let str_name = (Names.show_val_name name) in
-        begin let str_val = ((translate_expr trans) val_expr) in
-        begin let str_let_rec = (((sprintf "let rec %s = %s") str_name) str_val) in
-        begin let str_let_rec = (((YzList.fold_left str_let_rec) defs) begin fun acc ->
-          begin fun (name, val_expr, _) ->
-            begin let str_name = (Names.show_val_name name) in
-            begin let str_val = ((translate_expr trans) val_expr) in
-            ((((sprintf "%s\nand %s = %s") acc) str_name) str_val)
-            end
-            end
-          end
-        end) in
+      | (Expr.LetFun (defs, cont_expr)) ->
+        begin let str_let_rec = ((translate_let_fun trans) defs) in
         begin let str_cont = ((translate_expr trans) cont_expr) in
         ((((sprintf "begin %s in\n%s\n%s") str_let_rec) ((indent trans) str_cont)) ((indent trans) "end"))
         end
         end
-        end
-        end
-        end
-      | (Expr.LetFun (( [] ), cont_expr)) ->
-        (assert false)
       | (Expr.Or (lhs, rhs)) ->
         begin let str_lhs = ((translate_expr trans) lhs) in
         begin let str_rhs = ((translate_expr trans) rhs) in
@@ -287,7 +287,32 @@ let rec translate_expr = begin fun trans ->
     end
   end
 end
-
+and translate_let_fun = begin fun trans ->
+  begin fun defs ->
+    begin match defs with
+      | ( [] ) ->
+        (assert false)
+      | (( :: ) ((name, expr, insts_ref), defs)) ->
+        begin let str_name = (Names.show_val_name name) in
+        begin let str_params = (translate_inst_params insts_ref) in
+        begin let str_expr = ((translate_expr trans) expr) in
+        begin let str_let_rec = ((((sprintf "let rec %s%s = %s") str_name) str_params) str_expr) in
+        (((YzList.fold_left str_let_rec) defs) begin fun acc ->
+          begin fun (name, expr, insts_ref) ->
+            begin let str_name = (Names.show_val_name name) in
+            begin let str_expr = ((translate_expr trans) expr) in
+            ((((sprintf "%s\nand %s = %s") acc) str_name) str_expr)
+            end
+            end
+          end
+        end)
+        end
+        end
+        end
+        end
+    end
+  end
+end
 and translate_field_def = begin fun trans ->
   begin fun (path, expr) ->
     begin let str_path = (Names.show_val_path path) in
@@ -297,7 +322,6 @@ and translate_field_def = begin fun trans ->
     end
   end
 end
-
 and translate_case = begin fun trans ->
   begin fun c ->
     begin match c with
@@ -466,24 +490,8 @@ let rec translate_top = begin fun trans ->
         (((sprintf "let %s = %s\n") str_pat) str_expr)
         end
         end
-      | (Top.LetFun (( :: ) ((name, expr, _), defs))) ->
-        begin let str_name = (Names.show_val_name name) in
-        begin let str_expr = ((translate_expr trans) expr) in
-        begin let str_let_rec = (((sprintf "let rec %s = %s\n") str_name) str_expr) in
-        (((YzList.fold_left str_let_rec) defs) begin fun acc ->
-          begin fun (name, expr, _) ->
-            begin let str_name = (Names.show_val_name name) in
-            begin let str_expr = ((translate_expr trans) expr) in
-            ((((sprintf "%s\nand %s = %s\n") acc) str_name) str_expr)
-            end
-            end
-          end
-        end)
-        end
-        end
-        end
-      | (Top.LetFun ( [] )) ->
-        (assert false)
+      | (Top.LetFun defs) ->
+        ((sprintf "%s\n") ((translate_let_fun trans) defs))
       | (Top.Open path) ->
         begin let str_path = (Names.show_mod_path path) in
         ((sprintf "open %s\n") str_path)

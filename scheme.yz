@@ -20,4 +20,4 @@ def poly(n, preds, t): {
 
 def show({gen_num;preds;body}):
   var shower = Type.create_shower(gen_num)
-  sprintf("%s%s", Pred.show_list(shower, preds), Type.show(shower, body))
+  sprintf("%s %s", Pred.show_list(shower, preds), Type.show(shower, body))

@@ -76,6 +76,16 @@ rec:
       case (path, Some(pat)):
         sprintf("%s=%s", Names.show_val_path(path), translate_pattern(pat))
 
+def translate_inst_params(insts_ref):
+  match !insts_ref:
+    case []:
+      ""
+    case (inst::insts):
+      var str_init = sprintf("module %s", Names.show_mod_path(inst))
+      var str_params = YzList.fold_left(str_init, insts)^(acc, inst):
+        sprintf("%s, module %s", acc, Names.show_mod_path(inst))
+      sprintf(" (%s)", str_params)
+
 rec:
   def translate_expr(trans, expr):
     match expr.Expr.raw:
@@ -160,20 +170,12 @@ rec:
           "begin let %s = %s in\n%s\n%s",
           str_pat, str_val, indent(trans, str_cont), indent(trans, "end")
         )
-      case Expr.LetFun((name,val_expr,_)::defs, cont_expr):
-        var str_name = Names.show_val_name(name)
-        var str_val = translate_expr(trans, val_expr)
-        var str_let_rec = sprintf("let rec %s = %s", str_name, str_val)
-        var str_let_rec = YzList.fold_left(str_let_rec, defs)^(acc, (name,val_expr,_)):
-          var str_name = Names.show_val_name(name)
-          var str_val = translate_expr(trans, val_expr)
-          sprintf("%s\nand %s = %s", acc, str_name, str_val)
+      case Expr.LetFun(defs, cont_expr):
+        var str_let_rec = translate_let_fun(trans, defs)
         var str_cont = translate_expr(trans, cont_expr)
         sprintf(
           "begin %s in\n%s\n%s", str_let_rec, indent(trans, str_cont), indent(trans, "end")
         )
-      case Expr.LetFun([], cont_expr):
-        assert(false)
       case Expr.Or(lhs,rhs):
         var str_lhs = translate_expr(trans, lhs)
         var str_rhs = translate_expr(trans, rhs)
@@ -210,6 +212,20 @@ rec:
           str_cases,
           indent(trans, "end")
         )
+
+  def translate_let_fun(trans, defs):
+    match defs:
+      case []:
+        assert(false)
+      case ((name,expr,insts_ref)::defs):
+        var str_name = Names.show_val_name(name)
+        var str_params = translate_inst_params(insts_ref)
+        var str_expr = translate_expr(trans, expr)
+        var str_let_rec = sprintf("let rec %s%s = %s", str_name, str_params, str_expr)
+        YzList.fold_left(str_let_rec, defs)^(acc, (name,expr,insts_ref)):
+          var str_name = Names.show_val_name(name)
+          var str_expr = translate_expr(trans, expr)
+          sprintf("%s\nand %s = %s", acc, str_name, str_expr)
 
   def translate_field_def(trans, (path,expr)):
     var str_path = Names.show_val_path(path)
@@ -318,16 +334,8 @@ def translate_top(trans, top):
       var str_pat = translate_pattern(pat)
       var str_expr = translate_expr(trans, expr)
       sprintf("let %s = %s\n", str_pat, str_expr)
-    case Top.LetFun((name,expr,_)::defs):
-      var str_name = Names.show_val_name(name)
-      var str_expr = translate_expr(trans, expr)
-      var str_let_rec = sprintf("let rec %s = %s\n", str_name, str_expr)
-      YzList.fold_left(str_let_rec, defs)^(acc, (name,expr,_)):
-        var str_name = Names.show_val_name(name)
-        var str_expr = translate_expr(trans, expr)
-        sprintf("%s\nand %s = %s\n", acc, str_name, str_expr)
-    case Top.LetFun([]):
-      assert(false)
+    case Top.LetFun(defs):
+      sprintf("%s\n", translate_let_fun(trans, defs))
     case Top.Open(path):
       var str_path = Names.show_mod_path(path)
       sprintf("open %s\n", str_path)

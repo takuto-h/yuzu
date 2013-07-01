@@ -28,7 +28,7 @@ end
 
 let rec show = begin fun {gen_num;preds;body;} ->
   begin let shower = (Type.create_shower gen_num) in
-  (((sprintf "%s%s") ((Pred.show_list shower) preds)) ((Type.show shower) body))
+  (((sprintf "%s %s") ((Pred.show_list shower) preds)) ((Type.show shower) body))
   end
 end
 

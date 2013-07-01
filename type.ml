@@ -203,7 +203,6 @@ let rec show = begin fun shower ->
     end
   end
 end
-
 and show_list = begin fun shower ->
   begin fun sep ->
     begin fun ts ->
