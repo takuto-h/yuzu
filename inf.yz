@@ -583,24 +583,7 @@ def infer_top(inf, top):
         (add_asp(inf, name, scm), Decl.Val(name, scm)::decls)
       (inf, decls)
     case Top.Type(defs):
-      var inf = YzList.fold_left(inf, defs)^(inf, type_def):
-        match type_def:
-          case TypeDef.Repr(name,type_params,_) | TypeDef.Abbrev(name,type_params,_,_):
-            var typector = ([inf.mod_name], name)
-            var param_num = List.length(type_params)
-            add_typector(inf, name, (typector, param_num, None))
-      var inf = YzList.fold_left(inf, defs)^(inf, type_def):
-        match type_def:
-          case TypeDef.Repr(name, type_params, type_info):
-            load_type_info(inf, type_info)
-          case TypeDef.Abbrev(name, type_params, _, conv_type_expr):
-            var let_level = inf.let_level
-            var tmp_inf = incr_let_level(inf)
-            var conv_type = eval(tmp_inf, ref([]), conv_type_expr)
-            var conv_scm = generalize(let_level, conv_type)
-            var typector = ([inf.mod_name], name)
-            var param_num = List.length(type_params)
-            add_typector(inf, name, (typector, param_num, Some(conv_scm)))
+      var inf = load_type_defs(inf, defs)
       (inf, [])
     case Top.Open(mod_name::mod_path):
       var inf = inf.{opens = (mod_name, mod_path)::inf.opens}

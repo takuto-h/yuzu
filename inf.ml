@@ -1008,42 +1008,8 @@ let rec infer_top = begin fun inf ->
         end
         end
       | (Top.Type defs) ->
-        begin let inf = (((YzList.fold_left inf) defs) begin fun inf ->
-          begin fun type_def ->
-            begin match type_def with
-              | ((TypeDef.Repr (name, type_params, _)) | (TypeDef.Abbrev (name, type_params, _, _))) ->
-                begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
-                begin let param_num = (List.length type_params) in
-                (((add_typector inf) name) (typector, param_num, None))
-                end
-                end
-            end
-          end
-        end) in
-        begin let inf = (((YzList.fold_left inf) defs) begin fun inf ->
-          begin fun type_def ->
-            begin match type_def with
-              | (TypeDef.Repr (name, type_params, type_info)) ->
-                ((load_type_info inf) type_info)
-              | (TypeDef.Abbrev (name, type_params, _, conv_type_expr)) ->
-                begin let let_level = inf.let_level in
-                begin let tmp_inf = (incr_let_level inf) in
-                begin let conv_type = (((eval tmp_inf) (ref ( [] ))) conv_type_expr) in
-                begin let conv_scm = ((generalize let_level) conv_type) in
-                begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
-                begin let param_num = (List.length type_params) in
-                (((add_typector inf) name) (typector, param_num, (Some conv_scm)))
-                end
-                end
-                end
-                end
-                end
-                end
-            end
-          end
-        end) in
+        begin let inf = ((load_type_defs inf) defs) in
         (inf, ( [] ))
-        end
         end
       | (Top.Open (( :: ) (mod_name, mod_path))) ->
         begin let inf = {
