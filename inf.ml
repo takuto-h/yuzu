@@ -559,30 +559,39 @@ let rec solve_constraints = begin fun inf ->
         begin fun ((tc, t), inst_ref) ->
           begin try
             begin let insts = ((search_instances inf) tc) in
-            begin match t.Type.raw with
-              | ((Type.Con typector) | (Type.App (typector, _))) ->
-                begin try
-                  begin let inst = ((List.assoc typector) insts) in
-                  begin
-                  ((( := ) inst_ref) inst);
-                  ans
+            begin let rec loop = begin fun t ->
+              begin match t.Type.raw with
+                | ((Type.Con typector) | (Type.App (typector, _))) ->
+                  begin try
+                    begin let inst = ((List.assoc typector) insts) in
+                    begin
+                    ((( := ) inst_ref) inst);
+                    ans
+                    end
+                    end
+                  with
+                    | Not_found ->
+                      (failwith (((instance_not_found pos) tc) t))
                   end
+                | ((Type.Tuple _) | (Type.Fun (_, _))) ->
+                  (failwith (((instance_not_found pos) tc) t))
+                | (Type.Var (_, type_var)) ->
+                  begin match (( ! ) type_var) with
+                    | None ->
+                      begin let inst = (generate_mod_path ()) in
+                      begin
+                      ((( := ) inst_ref) inst);
+                      (( :: ) ((tc, t, inst), ans))
+                      end
+                      end
+                    | (Some t) ->
+                      (loop t)
                   end
-                with
-                  | Not_found ->
-                    (failwith (((instance_not_found pos) tc) t))
-                end
-              | ((Type.Tuple _) | (Type.Fun (_, _))) ->
-                (failwith (((instance_not_found pos) tc) t))
-              | (Type.Var (_, _)) ->
-                begin let inst = (generate_mod_path ()) in
-                begin
-                ((( := ) inst_ref) inst);
-                (( :: ) ((tc, t, inst), ans))
-                end
-                end
-              | (Type.Gen _) ->
-                (assert false)
+                | (Type.Gen _) ->
+                  (assert false)
+              end
+            end in
+            (loop t)
             end
             end
           with

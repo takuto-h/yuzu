@@ -338,23 +338,29 @@ def solve_constraints(inf, pos, cstrs):
   YzList.fold_left([], cstrs)^(ans, ((tc, t), inst_ref)):
     try:
       var insts = search_instances(inf, tc)
-      match t.Type.raw:
-        case Type.Con(typector) | Type.App(typector,_):
-          try:
-            var inst = List.assoc(typector, insts)
-            inst_ref := inst
-            ans
-          with:
-            case Not_found:
-              failwith(instance_not_found(pos, tc, t))
-        case Type.Tuple(_) | Type.Fun(_,_):
-          failwith(instance_not_found(pos, tc, t))
-        case Type.Var(_,_):
-          var inst = generate_mod_path()
-          inst_ref := inst
-          (tc, t, inst)::ans
-        case Type.Gen(_):
-          assert(false)
+      def loop(t):
+        match t.Type.raw:
+          case Type.Con(typector) | Type.App(typector,_):
+            try:
+              var inst = List.assoc(typector, insts)
+              inst_ref := inst
+              ans
+            with:
+              case Not_found:
+                failwith(instance_not_found(pos, tc, t))
+          case Type.Tuple(_) | Type.Fun(_,_):
+            failwith(instance_not_found(pos, tc, t))
+          case Type.Var(_,type_var):
+            match !type_var:
+              case None:
+                var inst = generate_mod_path()
+                inst_ref := inst
+                (tc, t, inst)::ans
+              case Some(t):
+                loop(t)
+          case Type.Gen(_):
+            assert(false)
+      loop(t)
     with:
       case Not_found:
         failwith(unbound_type_class(pos, tc))
