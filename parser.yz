@@ -26,7 +26,7 @@ var nil_pattern = Pattern.Ctor(([], Names.Op("[]")), None)
 var unit_pattern = Pattern.Con(Literal.Unit)
 
 def make_op_var(str):
-  Expr.Var([], Names.Op(str))
+  Expr.Var(([], Names.Op(str)), ref())
 
 var cons_op = ([], Names.Op("::"))
 var nil_expr = Expr.Ctor(([], Names.Op("[]")), None)
@@ -680,7 +680,7 @@ rec:
       case Token.LowId(_) | Token.Reserved("$"):
         var pos = parser.pos
         var val_name = parse_val_name(parser)
-        Expr.at(pos, Expr.Var(List.rev(mod_names), val_name))
+        Expr.at(pos, Expr.Var((List.rev(mod_names), val_name), ref()))
       case Token.CapId(_):
         var pos = parser.pos
         var capid = parse_capid(parser)

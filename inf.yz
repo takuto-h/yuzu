@@ -15,7 +15,7 @@ var default_opens = [("Pervasives", [])]
 
 def create(mods): {
   mods = mods;
-  curr_mod = Module.make([], [], [], [], []);
+  curr_mod = Module.make([], [], [], [], [], []);
   mod_name = "Dummy";
   opens = default_opens;
   let_level = 0;
@@ -43,6 +43,9 @@ def unbound_field_label(pos, path):
 
 def unbound_type_constructor(pos, typector):
   Pos.show_error(pos, sprintf("unbound type constructor: %s\n", Names.show_typector(typector)))
+
+def unbound_type_class(pos, typeclass):
+  Pos.show_error(pos, sprintf("unbound type class: %s\n", Names.show_typeclass(typeclass)))
 
 def invalid_application(pos, fun_type, arg_type, t1, t2):
   var shower = Type.create_shower(0)
@@ -116,6 +119,19 @@ def inconsistent_var_occurrence(pos):
 def field_not_mutable(pos, path):
   Pos.show_error(pos, sprintf("field not mutable: %s\n", Names.show_val_path(path)))
 
+def instance_not_found(pos, tc, t):
+  var shower = Type.create_shower(0)
+  sprintf(
+    "%s%s",
+    Pos.show_error(
+      pos,
+      sprintf(
+        "instance not found: %s(%s)\n", Names.show_typeclass(tc), Type.show(shower, t)
+      )
+    ),
+    Type.show_origin(shower, "constraint", t)
+  )
+
 def search_mods(search_mod, mods, mod_name, mod_path, name):
   var modl = List.assoc(mod_name, mods)
   search_mod(modl, mod_path, name)
@@ -154,6 +170,9 @@ def search_fields(inf, path):
 def search_typectors(inf, typector):
   search_alist(Module.search_typectors, inf.curr_mod.Module.typectors, inf, typector)
 
+def search_typeclasses(inf, typeclass):
+  search_alist(Module.search_typeclasses, inf.curr_mod.Module.typeclasses, inf, typeclass)
+
 def add_asp(inf, name, scm):
   inf.{curr_mod = inf.curr_mod.{Module.asp = (name, scm)::inf.curr_mod.Module.asp}}
 
@@ -187,15 +206,17 @@ def require_consistent(pos, type1, type2):
     case Type.Unification_error(t1, t2):
       failwith(inconsistent_types(pos, type1, type2, t1, t2))
 
-def instantiate(let_level, {Scheme.gen_num;Scheme.body}):
+def instantiate(let_level, {Scheme.gen_num;Scheme.preds;Scheme.body}):
   var type_vars = Array.init(gen_num)^(_): Type.make_var(let_level)
   def var_func(t, _, _):
     t
   def gen_func(t, n):
     Array.get(type_vars, n)
-  Type.map(var_func, gen_func, body)
+  var preds = List.map^((tc, t)){(tc, Type.map(var_func, gen_func, t))}(preds)
+  var body = Type.map(var_func, gen_func, body)
+  (preds, body)
 
-def generalize(let_level, t):
+def generalize(let_level, preds, t):
   var alist_ref = ref([])
   def var_func(t, lv, ref):
     if lv > let_level:
@@ -210,7 +231,8 @@ def generalize(let_level, t):
       t
   def gen_func(t, _):
     assert(false)
-  Scheme.poly(List.length(!alist_ref), [], Type.map(var_func, gen_func, t))
+  var preds = List.map^((tc,t)){(tc,Type.map(var_func, gen_func,t))}(preds)
+  Scheme.poly(List.length(!alist_ref), preds, Type.map(var_func, gen_func, t))
 
 def infer_literal(lit):
   match lit:
@@ -243,7 +265,8 @@ def infer_pattern(inf, pat):
     case Pattern.Ctor(ctor, opt_pat):
       try:
         var (req_arg, ctor_scm) = search_ctors(inf, ctor)
-        var ctor_type = instantiate(inf.let_level, ctor_scm)
+        var (preds0, ctor_type) = instantiate(inf.let_level, ctor_scm)
+        assert(preds0 = [])
         match (req_arg, opt_pat):
           case (false, None):
             (inf, ctor_type, ValNameMap.empty)
@@ -265,7 +288,8 @@ def infer_pattern(inf, pat):
         try:
           var (mod_path, name) = path
           var (is_mutable, access_fun_scm) = search_fields(inf, path)
-          var access_fun_type = instantiate(inf.let_level, access_fun_scm)
+          var (preds0, access_fun_type) = instantiate(inf.let_level, access_fun_scm)
+          assert(preds0 = [])
           ignore(apply(inf.let_level, pat.Pattern.pos, access_fun_type, record_type))
           match opt_pat:
             case None:
@@ -291,118 +315,156 @@ def infer_pattern(inf, pat):
         require_consistent(pat.Pattern.pos, lhs_type, rhs_type)
         (rhs_inf, rhs_type, rhs_map)
 
+def solve_constraints(inf, pos, cstrs):
+  YzList.fold_left([], cstrs)^(preds, ((tc, t), inst_ref)):
+    try:
+      var insts = search_typeclasses(inf, tc)
+      match t.Type.raw:
+        case Type.Con(typector) | Type.App(typector,_):
+          try:
+            var inst = List.assoc(typector, insts)
+            inst_ref := inst
+            preds
+          with:
+            case Not_found:
+              failwith(instance_not_found(pos, tc, t))
+        case Type.Tuple(_) | Type.Fun(_,_):
+          failwith(instance_not_found(pos, tc, t))
+        case Type.Var(_,_):
+          (tc, t)::preds
+        case Type.Gen(_):
+          assert(false)
+    with:
+      case Not_found:
+        failwith(unbound_type_class(pos, tc))
+
 rec:
-  def infer_expr(inf, expr):
+  def infer_expr(inf, cstrs, expr):
     match expr.Expr.raw:
       case Expr.Con(lit):
-        Type.at(Some(expr.Expr.pos), infer_literal(lit))
-      case Expr.Var(path):
+        (Type.at(Some(expr.Expr.pos), infer_literal(lit)), cstrs)
+      case Expr.Var(path, insts):
         try:
-          instantiate(inf.let_level, search_asp(inf, path))
+          var scm = search_asp(inf, path)
+          var (preds, t) = instantiate(inf.let_level, scm)
+          var (insts, cstrs) = YzList.fold_right(preds, ([], cstrs))^(pred, (insts, cstrs)):
+            var inst = ref()
+            var cstr = (pred, inst)
+            (inst::insts, cstr::cstrs)
+          (t, cstrs)
         with:
           case Not_found:
             failwith(unbound_variable(expr.Expr.pos, path))
       case Expr.Abs(pat, body_expr):
         var (inf, pat_type, map) = infer_pattern(inf, pat)
-        var body_type = infer_expr(inf, body_expr)
-        Type.at(Some(expr.Expr.pos), Type.Fun(pat_type, body_type))
+        var (body_type, cstrs) = infer_expr(inf, cstrs, body_expr)
+        (Type.at(Some(expr.Expr.pos), Type.Fun(pat_type, body_type)), cstrs)
       case Expr.App(fun_expr, arg_expr):
-        var fun_type = infer_expr(inf, fun_expr)
-        var arg_type = infer_expr(inf, arg_expr)
-        apply(inf.let_level, expr.Expr.pos, fun_type, arg_type)
+        var (fun_type, cstrs) = infer_expr(inf, cstrs, fun_expr)
+        var (arg_type, cstrs) = infer_expr(inf, cstrs, arg_expr)
+        (apply(inf.let_level, expr.Expr.pos, fun_type, arg_type), cstrs)
       case Expr.Ctor(ctor, opt_arg_expr):
         try:
           match (search_ctors(inf, ctor), opt_arg_expr):
             case ((false, scm), None):
-              instantiate(inf.let_level, scm)
+              var (preds0, ctor_type) = instantiate(inf.let_level, scm)
+              assert(preds0 = [])
+              (ctor_type, cstrs)
             case ((false, scm), Some(arg_expr)):
               failwith(wrong_number_of_arguments(expr.Expr.pos, 1, 0))
             case ((true, scm), None):
               failwith(wrong_number_of_arguments(expr.Expr.pos, 0, 1))
             case ((true, scm), Some(arg_expr)):
-              var arg_type = infer_expr(inf, arg_expr)
-              apply(inf.let_level, expr.Expr.pos, instantiate(inf.let_level, scm), arg_type)
+              var (arg_type, cstrs) = infer_expr(inf, cstrs, arg_expr)
+              var (preds0, ctor_type) = instantiate(inf.let_level, scm)
+              assert(preds0 = [])
+              (apply(inf.let_level, expr.Expr.pos, ctor_type, arg_type), cstrs)
         with:
           case Not_found:
             failwith(unbound_constructor(expr.Expr.pos, ctor))
       case Expr.If(cond_expr, then_expr, else_expr):
-        var cond_type = infer_expr(inf, cond_expr)
-        var then_type = infer_expr(inf, then_expr)
-        var else_type = infer_expr(inf, else_expr)
+        var (cond_type, cstrs) = infer_expr(inf, cstrs, cond_expr)
+        var (then_type, cstrs) = infer_expr(inf, cstrs, then_expr)
+        var (else_type, cstrs) = infer_expr(inf, cstrs, else_expr)
         require(cond_expr.Expr.pos, Type.at(None, bool_type), cond_type)
         try:
           Type.unify(then_type, else_type)
         with:
           case Type.Unification_error(t1, t2):
             failwith(invalid_if_expr(expr.Expr.pos, then_type, else_type, t1, t2))
-        else_type
+        (else_type, cstrs)
       case Expr.Tuple(exprs):
-        Type.at(Some(expr.Expr.pos), Type.Tuple(List.map(infer_expr(inf), exprs)))
+        var (ts, cstrs) = YzList.fold_right(exprs, ([], cstrs))^(expr, (ts, cstrs)):
+          var (t, cstrs) = infer_expr(inf, cstrs, expr)
+          (t::ts, cstrs)
+        (Type.at(Some(expr.Expr.pos), Type.Tuple(ts)), cstrs)
       case Expr.Or(lhs, rhs):
         var pos = expr.Expr.pos
-        var or_op = Expr.at(pos, Expr.Var([], Names.Op("||")))
+        var or_op = Expr.at(pos, Expr.Var(([], Names.Op("||")), ref()))
         var or_expr = Expr.at(pos, Expr.App(Expr.at(pos, Expr.App(or_op, lhs)), rhs))
-        infer_expr(inf, or_expr)
+        infer_expr(inf, cstrs, or_expr)
       case Expr.And(lhs, rhs):
         var pos = expr.Expr.pos
-        var and_op = Expr.at(pos, Expr.Var([], Names.Op("&&")))
+        var and_op = Expr.at(pos, Expr.Var(([], Names.Op("&&")), ref()))
         var and_expr = Expr.at(pos, Expr.App(Expr.at(pos, Expr.App(and_op, lhs)), rhs))
-        infer_expr(inf, and_expr)
+        infer_expr(inf, cstrs, and_expr)
       case Expr.Seq(lhs, rhs):
-        var lhs_type = infer_expr(inf, lhs)
-        var rhs_type = infer_expr(inf, rhs)
+        var (lhs_type, cstrs) = infer_expr(inf, cstrs, lhs)
+        var (rhs_type, cstrs) = infer_expr(inf, cstrs, rhs)
         require(lhs.Expr.pos, Type.at(None, unit_type), lhs_type)
-        rhs_type
+        (rhs_type, cstrs)
       case Expr.LetVal(pat,val_expr,cont_expr):
-        var (inf, map) = infer_let_val(inf, pat, val_expr)
-        infer_expr(inf, cont_expr)
+        var (inf, cstrs, map) = infer_let_val(inf, cstrs, pat, val_expr)
+        infer_expr(inf, cstrs, cont_expr)
       case Expr.LetFun(defs, cont_expr):
         var (inf, decls) = infer_let_fun(inf, defs)
-        infer_expr(inf, cont_expr)
+        infer_expr(inf, cstrs, cont_expr)
       case Expr.Match(target_expr, cases):
-        var target_type = infer_expr(inf, target_expr)
+        var (target_type, cstrs) = infer_expr(inf, cstrs, target_expr)
         var ret_type = Type.make_var(inf.let_level)
-        infer_cases(inf, target_type, ret_type, cases)
+        infer_cases(inf, cstrs, target_type, ret_type, cases)
       case Expr.Try(expr, cases):
         var target_type = Type.at(None, exn_type)
-        var ret_type = infer_expr(inf, expr)
-        infer_cases(inf, target_type, ret_type, cases)
+        var (ret_type, cstrs) = infer_expr(inf, cstrs, expr)
+        infer_cases(inf, cstrs, target_type, ret_type, cases)
       case Expr.Field(record_expr,path):
-        var record_type = infer_expr(inf, record_expr)
+        var (record_type, cstrs) = infer_expr(inf, cstrs, record_expr)
         try:
           var (is_mutable, access_fun_scm) = search_fields(inf, path)
-          var access_fun_type = instantiate(inf.let_level, access_fun_scm)
-          apply(inf.let_level, expr.Expr.pos, access_fun_type, record_type)
+          var (preds0, access_fun_type) = instantiate(inf.let_level, access_fun_scm)
+          assert(preds0 = [])
+          (apply(inf.let_level, expr.Expr.pos, access_fun_type, record_type), cstrs)
         with:
           case Not_found:
             failwith(unbound_field_label(expr.Expr.pos, path))
       case Expr.Assign(record_expr, path, val_expr):
-        var record_type = infer_expr(inf, record_expr)
-        var val_type = infer_expr(inf, val_expr)
+        var (record_type, cstrs) = infer_expr(inf, cstrs, record_expr)
+        var (val_type, cstrs) = infer_expr(inf, cstrs, val_expr)
         try:
           var (is_mutable, access_fun_scm) = search_fields(inf, path)
           if not(is_mutable):
             failwith(field_not_mutable(expr.Expr.pos, path))
           else:
-          var access_fun_type = instantiate(inf.let_level, access_fun_scm)
+          var (preds0, access_fun_type) = instantiate(inf.let_level, access_fun_scm)
+          assert(preds0 = [])
           var field_type = apply(inf.let_level, expr.Expr.pos, access_fun_type, record_type)
           require(val_expr.Expr.pos, field_type, val_type)
-          Type.at(Some(expr.Expr.pos), unit_type)
+          (Type.at(Some(expr.Expr.pos), unit_type), cstrs)
         with:
           case Not_found:
             failwith(unbound_field_label(expr.Expr.pos, path))
       case Expr.Record(field_defs):
         var record_type = Type.make_var(inf.let_level)
-        infer_field_defs(inf, expr.Expr.pos, record_type, field_defs)
+        infer_field_defs(inf, cstrs, expr.Expr.pos, record_type, field_defs)
       case Expr.Update(record_expr, field_defs):
-        var record_type = infer_expr(inf, record_expr)
-        infer_field_defs(inf, expr.Expr.pos, record_type, field_defs)
+        var (record_type, cstrs) = infer_expr(inf, cstrs, record_expr)
+        infer_field_defs(inf, cstrs, expr.Expr.pos, record_type, field_defs)
 
-  def infer_let_val(inf, pat, val_expr):
-    var val_type = infer_expr(inf, val_expr)
+  def infer_let_val(inf, cstrs, pat, val_expr):
+    var (val_type, cstrs) = infer_expr(inf, cstrs, val_expr)
     var (inf, pat_type, map) = infer_pattern(inf, pat)
     require(val_expr.Expr.pos, pat_type, val_type)
-    (inf, map)
+    (inf, cstrs, map)
 
   def infer_let_fun(inf, defs):
     var init = (inf, [])
@@ -411,38 +473,42 @@ rec:
       (tmp_inf, (name, val_expr, t)::defs)
     var let_level = tmp_inf.let_level
     var tmp_inf = incr_let_level(tmp_inf)
-    YzList.fold_left((inf, []), defs)^((inf, decls), (name, val_expr, type_var)):
-      var val_type = infer_expr(tmp_inf, val_expr)
+    YzList.fold_left((inf,[]), defs)^((inf,decls), (name,val_expr,type_var)):
+      var (val_type, cstrs) = infer_expr(tmp_inf, [], val_expr)
       require(val_expr.Expr.pos, type_var, val_type)
-      var scm = generalize(let_level, val_type)
+      var preds = solve_constraints(inf, val_expr.Expr.pos, cstrs)
+      var scm = generalize(let_level, preds, val_type)
       (add_asp(inf, name, scm), Decl.Val(name, scm)::decls)
 
-  def infer_cases(inf, target_type, ret_type, cases):
-    YzList.fold_left((), cases)^((), (pat, opt_guard, body_expr)):
+  def infer_cases(inf, cstrs, target_type, ret_type, cases):
+    var cstrs = YzList.fold_left(cstrs, cases)^(cstrs, (pat, opt_guard, body_expr)):
       var (inf, pat_type, map) = infer_pattern(inf, pat)
       require(pat.Pattern.pos, target_type, pat_type)
       match opt_guard:
         case None:
           ()
         case Some(guard):
-          var guard_type = infer_expr(inf, guard)
+          var (guard_type, cstrs) = infer_expr(inf, cstrs, guard)
           require(guard.Expr.pos, Type.at(None, bool_type), guard_type)
-      var body_type = infer_expr(inf, body_expr)
+      var (body_type, cstrs) = infer_expr(inf, cstrs, body_expr)
       require(body_expr.Expr.pos, ret_type, body_type)
-    ret_type
+      cstrs
+    (ret_type, cstrs)
   
-  def infer_field_defs(inf, pos, record_type, field_defs):
-    YzList.fold_left((), field_defs)^((), (path, val_expr)):
+  def infer_field_defs(inf, cstrs, pos, record_type, field_defs):
+    var cstrs = YzList.fold_left(cstrs, field_defs)^(cstrs, (path, val_expr)):
       try:
         var (is_mutable, access_fun_scm) = search_fields(inf, path)
-        var access_fun_type = instantiate(inf.let_level, access_fun_scm)
+        var (preds0, access_fun_type) = instantiate(inf.let_level, access_fun_scm)
+        assert(preds0 = [])
         var field_type = apply(inf.let_level, pos, access_fun_type,record_type)
-        var val_type = infer_expr(inf, val_expr)
+        var (val_type, cstrs) = infer_expr(inf, cstrs, val_expr)
         require(val_expr.Expr.pos, field_type, val_type)
+        cstrs
       with:
         case Not_found:
           failwith(unbound_field_label(pos, path))
-    record_type
+    (record_type, cstrs)
 
   def require(pos, req_type, got_type):
     try:
@@ -459,7 +525,8 @@ def expand_abbrev(inf, pos, t, opt_conv):
     case None:
       t
     case Some(conv_fun_scm):
-      var conv_fun_type = instantiate(inf.let_level, conv_fun_scm)
+      var (preds0, conv_fun_type) = instantiate(inf.let_level, conv_fun_scm)
+      assert(preds0 = [])
       apply(inf.let_level, pos, conv_fun_type, t)
 
 def eval(inf, env_ref, type_expr):
@@ -510,7 +577,7 @@ def load_type_info(inf, type_info):
       var tmp_inf = incr_let_level(inf)
       YzList.fold_left(inf, ctor_decls)^(inf, (ctor_name, opt_param, ctor_type_expr)):
         var ctor_type = eval(tmp_inf, ref([]), ctor_type_expr)
-        var ctor_scm = generalize(let_level, ctor_type)
+        var ctor_scm = generalize(let_level, [], ctor_type)
         match opt_param:
           case None:
             add_ctor(inf, ctor_name, (false, ctor_scm))
@@ -521,14 +588,14 @@ def load_type_info(inf, type_info):
       var tmp_inf = incr_let_level(inf)
       YzList.fold_left(inf, field_decls)^(inf, (is_mutable,field_name,_,access_type_expr)):
         var access_type = eval(tmp_inf, ref([]), access_type_expr)
-        var access_scm = generalize(let_level, access_type)
+        var access_scm = generalize(let_level, [], access_type)
         add_field(inf, field_name, (is_mutable, access_scm))
 
 def load_exn_decl(inf, (ctor_name, opt_param, ctor_type_expr)):
   var let_level = inf.let_level
   var tmp_inf = incr_let_level(inf)
   var ctor_type = eval(tmp_inf, ref([]), ctor_type_expr)
-  var ctor_scm = generalize(let_level, ctor_type)
+  var ctor_scm = generalize(let_level, [], ctor_type)
   match opt_param:
     case None:
       add_ctor(inf, ctor_name, (false, ctor_scm))
@@ -550,7 +617,7 @@ def load_type_defs(inf, defs):
         var let_level = inf.let_level
         var tmp_inf = incr_let_level(inf)
         var conv_type = eval(tmp_inf, ref([]), conv_type_expr)
-        var conv_scm = generalize(let_level, conv_type)
+        var conv_scm = generalize(let_level, [], conv_type)
         var typector = ([inf.mod_name], name)
         var param_num = List.length(type_params)
         add_typector(inf, name, (typector, param_num, Some(conv_scm)))
@@ -558,9 +625,10 @@ def load_type_defs(inf, defs):
 def infer_top(inf, top):
   match top.Top.raw:
     case Top.Expr(expr):
-      (inf, [Decl.Val(Names.Id("_"), Scheme.mono(infer_expr(inf, expr)))])
+      var (t, cstrs) = infer_expr(inf, [], expr)
+      (inf, [Decl.Val(Names.Id("_"), Scheme.mono(t))])
     case Top.LetVal(pat,val_expr):
-      var (inf, map) = infer_let_val(inf, pat, val_expr)
+      var (inf, cstrs, map) = infer_let_val(inf, [], pat, val_expr)
       (inf, make_decls(map))
     case Top.LetFun(defs):
       var (inf, decls) = infer_let_fun(inf, defs)
@@ -583,7 +651,7 @@ def load_decl(inf, decl):
       var let_level = inf.let_level
       var tmp_inf = incr_let_level(inf)
       var t = eval(tmp_inf, ref([]), type_expr)
-      var scm = generalize(let_level, t)
+      var scm = generalize(let_level, [], t)
       add_asp(inf, name, scm)
     case DeclExpr.AbstrType(name, param_num):
       var typector = ([inf.mod_name], name)

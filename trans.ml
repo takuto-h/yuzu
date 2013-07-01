@@ -110,7 +110,7 @@ let rec translate_expr = begin fun trans ->
     begin match expr.Expr.raw with
       | (Expr.Con lit) ->
         (translate_literal lit)
-      | (Expr.Var path) ->
+      | (Expr.Var (path, inst_ref)) ->
         (Names.show_val_path path)
       | (Expr.Abs (param_pat, body_expr)) ->
         begin let str_param = (translate_pattern param_pat) in

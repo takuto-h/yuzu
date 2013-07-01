@@ -37,7 +37,7 @@ let nil_pattern = (Pattern.Ctor ((( [] ), (Names.Op "[]")), None))
 let unit_pattern = (Pattern.Con Literal.Unit)
 
 let rec make_op_var = begin fun str ->
-  (Expr.Var (( [] ), (Names.Op str)))
+  (Expr.Var ((( [] ), (Names.Op str)), (ref ())))
 end
 
 let cons_op = (( [] ), (Names.Op "::"))
@@ -1100,7 +1100,7 @@ and parse_var_or_ctor_app = begin fun parser ->
       | ((Token.LowId _) | (Token.Reserved "$")) ->
         begin let pos = parser.pos in
         begin let val_name = (parse_val_name parser) in
-        ((Expr.at pos) (Expr.Var ((List.rev mod_names), val_name)))
+        ((Expr.at pos) (Expr.Var (((List.rev mod_names), val_name), (ref ()))))
         end
         end
       | (Token.CapId _) ->

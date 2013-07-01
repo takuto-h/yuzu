@@ -17,7 +17,7 @@ let default_opens = (( :: ) (("Pervasives", ( [] )), ( [] )))
 let rec create = begin fun mods ->
   {
     mods = mods;
-    curr_mod = (((((Module.make ( [] )) ( [] )) ( [] )) ( [] )) ( [] ));
+    curr_mod = ((((((Module.make ( [] )) ( [] )) ( [] )) ( [] )) ( [] )) ( [] ));
     mod_name = "Dummy";
     opens = default_opens;
     let_level = 0;
@@ -64,6 +64,12 @@ end
 let rec unbound_type_constructor = begin fun pos ->
   begin fun typector ->
     ((Pos.show_error pos) ((sprintf "unbound type constructor: %s\n") (Names.show_typector typector)))
+  end
+end
+
+let rec unbound_type_class = begin fun pos ->
+  begin fun typeclass ->
+    ((Pos.show_error pos) ((sprintf "unbound type class: %s\n") (Names.show_typeclass typeclass)))
   end
 end
 
@@ -138,6 +144,16 @@ end
 let rec field_not_mutable = begin fun pos ->
   begin fun path ->
     ((Pos.show_error pos) ((sprintf "field not mutable: %s\n") (Names.show_val_path path)))
+  end
+end
+
+let rec instance_not_found = begin fun pos ->
+  begin fun tc ->
+    begin fun t ->
+      begin let shower = (Type.create_shower 0) in
+      (((sprintf "%s%s") ((Pos.show_error pos) (((sprintf "instance not found: %s(%s)\n") (Names.show_typeclass tc)) ((Type.show shower) t)))) (((Type.show_origin shower) "constraint") t))
+      end
+    end
   end
 end
 
@@ -216,6 +232,12 @@ end
 let rec search_typectors = begin fun inf ->
   begin fun typector ->
     ((((search_alist Module.search_typectors) inf.curr_mod.Module.typectors) inf) typector)
+  end
+end
+
+let rec search_typeclasses = begin fun inf ->
+  begin fun typeclass ->
+    ((((search_alist Module.search_typeclasses) inf.curr_mod.Module.typeclasses) inf) typeclass)
   end
 end
 
@@ -319,7 +341,7 @@ let rec require_consistent = begin fun pos ->
 end
 
 let rec instantiate = begin fun let_level ->
-  begin fun {Scheme.gen_num;Scheme.body;} ->
+  begin fun {Scheme.gen_num;Scheme.preds;Scheme.body;} ->
     begin let type_vars = ((Array.init gen_num) begin fun _ ->
       (Type.make_var let_level)
     end) in
@@ -335,7 +357,13 @@ let rec instantiate = begin fun let_level ->
         ((Array.get type_vars) n)
       end
     end in
-    (((Type.map var_func) gen_func) body)
+    begin let preds = ((List.map begin fun (tc, t) ->
+      (tc, (((Type.map var_func) gen_func) t))
+    end) preds) in
+    begin let body = (((Type.map var_func) gen_func) body) in
+    (preds, body)
+    end
+    end
     end
     end
     end
@@ -343,37 +371,43 @@ let rec instantiate = begin fun let_level ->
 end
 
 let rec generalize = begin fun let_level ->
-  begin fun t ->
-    begin let alist_ref = (ref ( [] )) in
-    begin let rec var_func = begin fun t ->
-      begin fun lv ->
-        begin fun ref ->
-          begin if ((( > ) lv) let_level) then
-            begin try
-              ((List.assq ref) (( ! ) alist_ref))
-            with
-              | Not_found ->
-                begin let gen = ((Type.at t.Type.pos) (Type.Gen (List.length (( ! ) alist_ref)))) in
-                begin
-                ((( := ) alist_ref) (( :: ) ((ref, gen), (( ! ) alist_ref))));
-                gen
-                end
-                end
+  begin fun preds ->
+    begin fun t ->
+      begin let alist_ref = (ref ( [] )) in
+      begin let rec var_func = begin fun t ->
+        begin fun lv ->
+          begin fun ref ->
+            begin if ((( > ) lv) let_level) then
+              begin try
+                ((List.assq ref) (( ! ) alist_ref))
+              with
+                | Not_found ->
+                  begin let gen = ((Type.at t.Type.pos) (Type.Gen (List.length (( ! ) alist_ref)))) in
+                  begin
+                  ((( := ) alist_ref) (( :: ) ((ref, gen), (( ! ) alist_ref))));
+                  gen
+                  end
+                  end
+              end
+            else
+              t
             end
-          else
-            t
           end
         end
+      end in
+      begin let rec gen_func = begin fun t ->
+        begin fun _ ->
+          (assert false)
+        end
+      end in
+      begin let preds = ((List.map begin fun (tc, t) ->
+        (tc, (((Type.map var_func) gen_func) t))
+      end) preds) in
+      (((Scheme.poly (List.length (( ! ) alist_ref))) preds) (((Type.map var_func) gen_func) t))
       end
-    end in
-    begin let rec gen_func = begin fun t ->
-      begin fun _ ->
-        (assert false)
       end
-    end in
-    (((Scheme.poly (List.length (( ! ) alist_ref))) ( [] )) (((Type.map var_func) gen_func) t))
-    end
-    end
+      end
+      end
     end
   end
 end
@@ -421,7 +455,9 @@ let rec infer_pattern = begin fun inf ->
       | (Pattern.Ctor (ctor, opt_pat)) ->
         begin try
           begin let (req_arg, ctor_scm) = ((search_ctors inf) ctor) in
-          begin let ctor_type = ((instantiate inf.let_level) ctor_scm) in
+          begin let (preds0, ctor_type) = ((instantiate inf.let_level) ctor_scm) in
+          begin
+          (assert ((( = ) preds0) ( [] )));
           begin match (req_arg, opt_pat) with
             | (false, None) ->
               (inf, ctor_type, ValNameMap.empty)
@@ -438,6 +474,7 @@ let rec infer_pattern = begin fun inf ->
           end
           end
           end
+          end
         with
           | Not_found ->
             (failwith ((unbound_constructor pat.Pattern.pos) ctor))
@@ -450,7 +487,9 @@ let rec infer_pattern = begin fun inf ->
             begin try
               begin let (mod_path, name) = path in
               begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
-              begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
+              begin let (preds0, access_fun_type) = ((instantiate inf.let_level) access_fun_scm) in
+              begin
+              (assert ((( = ) preds0) ( [] )));
               begin
               (ignore ((((apply inf.let_level) pat.Pattern.pos) access_fun_type) record_type));
               begin match opt_pat with
@@ -464,6 +503,7 @@ let rec infer_pattern = begin fun inf ->
                     YzOption.or_
                   end) map1) map2))
                   end
+              end
               end
               end
               end
@@ -502,173 +542,253 @@ let rec infer_pattern = begin fun inf ->
   end
 end
 
+let rec solve_constraints = begin fun inf ->
+  begin fun pos ->
+    begin fun cstrs ->
+      (((YzList.fold_left ( [] )) cstrs) begin fun preds ->
+        begin fun ((tc, t), inst_ref) ->
+          begin try
+            begin let insts = ((search_typeclasses inf) tc) in
+            begin match t.Type.raw with
+              | ((Type.Con typector) | (Type.App (typector, _))) ->
+                begin try
+                  begin let inst = ((List.assoc typector) insts) in
+                  begin
+                  ((( := ) inst_ref) inst);
+                  preds
+                  end
+                  end
+                with
+                  | Not_found ->
+                    (failwith (((instance_not_found pos) tc) t))
+                end
+              | ((Type.Tuple _) | (Type.Fun (_, _))) ->
+                (failwith (((instance_not_found pos) tc) t))
+              | (Type.Var (_, _)) ->
+                (( :: ) ((tc, t), preds))
+              | (Type.Gen _) ->
+                (assert false)
+            end
+            end
+          with
+            | Not_found ->
+              (failwith ((unbound_type_class pos) tc))
+          end
+        end
+      end)
+    end
+  end
+end
+
 let rec infer_expr = begin fun inf ->
-  begin fun expr ->
-    begin match expr.Expr.raw with
-      | (Expr.Con lit) ->
-        ((Type.at (Some expr.Expr.pos)) (infer_literal lit))
-      | (Expr.Var path) ->
-        begin try
-          ((instantiate inf.let_level) ((search_asp inf) path))
-        with
-          | Not_found ->
-            (failwith ((unbound_variable expr.Expr.pos) path))
-        end
-      | (Expr.Abs (pat, body_expr)) ->
-        begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
-        begin let body_type = ((infer_expr inf) body_expr) in
-        ((Type.at (Some expr.Expr.pos)) (Type.Fun (pat_type, body_type)))
-        end
-        end
-      | (Expr.App (fun_expr, arg_expr)) ->
-        begin let fun_type = ((infer_expr inf) fun_expr) in
-        begin let arg_type = ((infer_expr inf) arg_expr) in
-        ((((apply inf.let_level) expr.Expr.pos) fun_type) arg_type)
-        end
-        end
-      | (Expr.Ctor (ctor, opt_arg_expr)) ->
-        begin try
-          begin match (((search_ctors inf) ctor), opt_arg_expr) with
-            | ((false, scm), None) ->
-              ((instantiate inf.let_level) scm)
-            | ((false, scm), (Some arg_expr)) ->
-              (failwith (((wrong_number_of_arguments expr.Expr.pos) 1) 0))
-            | ((true, scm), None) ->
-              (failwith (((wrong_number_of_arguments expr.Expr.pos) 0) 1))
-            | ((true, scm), (Some arg_expr)) ->
-              begin let arg_type = ((infer_expr inf) arg_expr) in
-              ((((apply inf.let_level) expr.Expr.pos) ((instantiate inf.let_level) scm)) arg_type)
+  begin fun cstrs ->
+    begin fun expr ->
+      begin match expr.Expr.raw with
+        | (Expr.Con lit) ->
+          (((Type.at (Some expr.Expr.pos)) (infer_literal lit)), cstrs)
+        | (Expr.Var (path, insts)) ->
+          begin try
+            begin let scm = ((search_asp inf) path) in
+            begin let (preds, t) = ((instantiate inf.let_level) scm) in
+            begin let (insts, cstrs) = (((YzList.fold_right preds) (( [] ), cstrs)) begin fun pred ->
+              begin fun (insts, cstrs) ->
+                begin let inst = (ref ()) in
+                begin let cstr = (pred, inst) in
+                ((( :: ) (inst, insts)), (( :: ) (cstr, cstrs)))
+                end
+                end
               end
+            end) in
+            (t, cstrs)
+            end
+            end
+            end
+          with
+            | Not_found ->
+              (failwith ((unbound_variable expr.Expr.pos) path))
           end
-        with
-          | Not_found ->
-            (failwith ((unbound_constructor expr.Expr.pos) ctor))
-        end
-      | (Expr.If (cond_expr, then_expr, else_expr)) ->
-        begin let cond_type = ((infer_expr inf) cond_expr) in
-        begin let then_type = ((infer_expr inf) then_expr) in
-        begin let else_type = ((infer_expr inf) else_expr) in
-        begin
-        (((require cond_expr.Expr.pos) ((Type.at None) bool_type)) cond_type);
-        begin
-        begin try
-          ((Type.unify then_type) else_type)
-        with
-          | (Type.Unification_error (t1, t2)) ->
-            (failwith (((((invalid_if_expr expr.Expr.pos) then_type) else_type) t1) t2))
-        end;
-        else_type
-        end
-        end
-        end
-        end
-        end
-      | (Expr.Tuple exprs) ->
-        ((Type.at (Some expr.Expr.pos)) (Type.Tuple ((List.map (infer_expr inf)) exprs)))
-      | (Expr.Or (lhs, rhs)) ->
-        begin let pos = expr.Expr.pos in
-        begin let or_op = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op "||")))) in
-        begin let or_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (or_op, lhs))), rhs))) in
-        ((infer_expr inf) or_expr)
-        end
-        end
-        end
-      | (Expr.And (lhs, rhs)) ->
-        begin let pos = expr.Expr.pos in
-        begin let and_op = ((Expr.at pos) (Expr.Var (( [] ), (Names.Op "&&")))) in
-        begin let and_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (and_op, lhs))), rhs))) in
-        ((infer_expr inf) and_expr)
-        end
-        end
-        end
-      | (Expr.Seq (lhs, rhs)) ->
-        begin let lhs_type = ((infer_expr inf) lhs) in
-        begin let rhs_type = ((infer_expr inf) rhs) in
-        begin
-        (((require lhs.Expr.pos) ((Type.at None) unit_type)) lhs_type);
-        rhs_type
-        end
-        end
-        end
-      | (Expr.LetVal (pat, val_expr, cont_expr)) ->
-        begin let (inf, map) = (((infer_let_val inf) pat) val_expr) in
-        ((infer_expr inf) cont_expr)
-        end
-      | (Expr.LetFun (defs, cont_expr)) ->
-        begin let (inf, decls) = ((infer_let_fun inf) defs) in
-        ((infer_expr inf) cont_expr)
-        end
-      | (Expr.Match (target_expr, cases)) ->
-        begin let target_type = ((infer_expr inf) target_expr) in
-        begin let ret_type = (Type.make_var inf.let_level) in
-        ((((infer_cases inf) target_type) ret_type) cases)
-        end
-        end
-      | (Expr.Try (expr, cases)) ->
-        begin let target_type = ((Type.at None) exn_type) in
-        begin let ret_type = ((infer_expr inf) expr) in
-        ((((infer_cases inf) target_type) ret_type) cases)
-        end
-        end
-      | (Expr.Field (record_expr, path)) ->
-        begin let record_type = ((infer_expr inf) record_expr) in
-        begin try
-          begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
-          begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
-          ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type)
+        | (Expr.Abs (pat, body_expr)) ->
+          begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+          begin let (body_type, cstrs) = (((infer_expr inf) cstrs) body_expr) in
+          (((Type.at (Some expr.Expr.pos)) (Type.Fun (pat_type, body_type))), cstrs)
           end
           end
-        with
-          | Not_found ->
-            (failwith ((unbound_field_label expr.Expr.pos) path))
-        end
-        end
-      | (Expr.Assign (record_expr, path, val_expr)) ->
-        begin let record_type = ((infer_expr inf) record_expr) in
-        begin let val_type = ((infer_expr inf) val_expr) in
-        begin try
-          begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
-          begin if (not is_mutable) then
-            (failwith ((field_not_mutable expr.Expr.pos) path))
-          else
-            begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
-            begin let field_type = ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type) in
+        | (Expr.App (fun_expr, arg_expr)) ->
+          begin let (fun_type, cstrs) = (((infer_expr inf) cstrs) fun_expr) in
+          begin let (arg_type, cstrs) = (((infer_expr inf) cstrs) arg_expr) in
+          (((((apply inf.let_level) expr.Expr.pos) fun_type) arg_type), cstrs)
+          end
+          end
+        | (Expr.Ctor (ctor, opt_arg_expr)) ->
+          begin try
+            begin match (((search_ctors inf) ctor), opt_arg_expr) with
+              | ((false, scm), None) ->
+                begin let (preds0, ctor_type) = ((instantiate inf.let_level) scm) in
+                begin
+                (assert ((( = ) preds0) ( [] )));
+                (ctor_type, cstrs)
+                end
+                end
+              | ((false, scm), (Some arg_expr)) ->
+                (failwith (((wrong_number_of_arguments expr.Expr.pos) 1) 0))
+              | ((true, scm), None) ->
+                (failwith (((wrong_number_of_arguments expr.Expr.pos) 0) 1))
+              | ((true, scm), (Some arg_expr)) ->
+                begin let (arg_type, cstrs) = (((infer_expr inf) cstrs) arg_expr) in
+                begin let (preds0, ctor_type) = ((instantiate inf.let_level) scm) in
+                begin
+                (assert ((( = ) preds0) ( [] )));
+                (((((apply inf.let_level) expr.Expr.pos) ctor_type) arg_type), cstrs)
+                end
+                end
+                end
+            end
+          with
+            | Not_found ->
+              (failwith ((unbound_constructor expr.Expr.pos) ctor))
+          end
+        | (Expr.If (cond_expr, then_expr, else_expr)) ->
+          begin let (cond_type, cstrs) = (((infer_expr inf) cstrs) cond_expr) in
+          begin let (then_type, cstrs) = (((infer_expr inf) cstrs) then_expr) in
+          begin let (else_type, cstrs) = (((infer_expr inf) cstrs) else_expr) in
+          begin
+          (((require cond_expr.Expr.pos) ((Type.at None) bool_type)) cond_type);
+          begin
+          begin try
+            ((Type.unify then_type) else_type)
+          with
+            | (Type.Unification_error (t1, t2)) ->
+              (failwith (((((invalid_if_expr expr.Expr.pos) then_type) else_type) t1) t2))
+          end;
+          (else_type, cstrs)
+          end
+          end
+          end
+          end
+          end
+        | (Expr.Tuple exprs) ->
+          begin let (ts, cstrs) = (((YzList.fold_right exprs) (( [] ), cstrs)) begin fun expr ->
+            begin fun (ts, cstrs) ->
+              begin let (t, cstrs) = (((infer_expr inf) cstrs) expr) in
+              ((( :: ) (t, ts)), cstrs)
+              end
+            end
+          end) in
+          (((Type.at (Some expr.Expr.pos)) (Type.Tuple ts)), cstrs)
+          end
+        | (Expr.Or (lhs, rhs)) ->
+          begin let pos = expr.Expr.pos in
+          begin let or_op = ((Expr.at pos) (Expr.Var ((( [] ), (Names.Op "||")), (ref ())))) in
+          begin let or_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (or_op, lhs))), rhs))) in
+          (((infer_expr inf) cstrs) or_expr)
+          end
+          end
+          end
+        | (Expr.And (lhs, rhs)) ->
+          begin let pos = expr.Expr.pos in
+          begin let and_op = ((Expr.at pos) (Expr.Var ((( [] ), (Names.Op "&&")), (ref ())))) in
+          begin let and_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (and_op, lhs))), rhs))) in
+          (((infer_expr inf) cstrs) and_expr)
+          end
+          end
+          end
+        | (Expr.Seq (lhs, rhs)) ->
+          begin let (lhs_type, cstrs) = (((infer_expr inf) cstrs) lhs) in
+          begin let (rhs_type, cstrs) = (((infer_expr inf) cstrs) rhs) in
+          begin
+          (((require lhs.Expr.pos) ((Type.at None) unit_type)) lhs_type);
+          (rhs_type, cstrs)
+          end
+          end
+          end
+        | (Expr.LetVal (pat, val_expr, cont_expr)) ->
+          begin let (inf, cstrs, map) = ((((infer_let_val inf) cstrs) pat) val_expr) in
+          (((infer_expr inf) cstrs) cont_expr)
+          end
+        | (Expr.LetFun (defs, cont_expr)) ->
+          begin let (inf, decls) = ((infer_let_fun inf) defs) in
+          (((infer_expr inf) cstrs) cont_expr)
+          end
+        | (Expr.Match (target_expr, cases)) ->
+          begin let (target_type, cstrs) = (((infer_expr inf) cstrs) target_expr) in
+          begin let ret_type = (Type.make_var inf.let_level) in
+          (((((infer_cases inf) cstrs) target_type) ret_type) cases)
+          end
+          end
+        | (Expr.Try (expr, cases)) ->
+          begin let target_type = ((Type.at None) exn_type) in
+          begin let (ret_type, cstrs) = (((infer_expr inf) cstrs) expr) in
+          (((((infer_cases inf) cstrs) target_type) ret_type) cases)
+          end
+          end
+        | (Expr.Field (record_expr, path)) ->
+          begin let (record_type, cstrs) = (((infer_expr inf) cstrs) record_expr) in
+          begin try
+            begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
+            begin let (preds0, access_fun_type) = ((instantiate inf.let_level) access_fun_scm) in
             begin
-            (((require val_expr.Expr.pos) field_type) val_type);
-            ((Type.at (Some expr.Expr.pos)) unit_type)
+            (assert ((( = ) preds0) ( [] )));
+            (((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type), cstrs)
             end
             end
             end
+          with
+            | Not_found ->
+              (failwith ((unbound_field_label expr.Expr.pos) path))
           end
           end
-        with
-          | Not_found ->
-            (failwith ((unbound_field_label expr.Expr.pos) path))
-        end
-        end
-        end
-      | (Expr.Record field_defs) ->
-        begin let record_type = (Type.make_var inf.let_level) in
-        ((((infer_field_defs inf) expr.Expr.pos) record_type) field_defs)
-        end
-      | (Expr.Update (record_expr, field_defs)) ->
-        begin let record_type = ((infer_expr inf) record_expr) in
-        ((((infer_field_defs inf) expr.Expr.pos) record_type) field_defs)
-        end
+        | (Expr.Assign (record_expr, path, val_expr)) ->
+          begin let (record_type, cstrs) = (((infer_expr inf) cstrs) record_expr) in
+          begin let (val_type, cstrs) = (((infer_expr inf) cstrs) val_expr) in
+          begin try
+            begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
+            begin if (not is_mutable) then
+              (failwith ((field_not_mutable expr.Expr.pos) path))
+            else
+              begin let (preds0, access_fun_type) = ((instantiate inf.let_level) access_fun_scm) in
+              begin
+              (assert ((( = ) preds0) ( [] )));
+              begin let field_type = ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type) in
+              begin
+              (((require val_expr.Expr.pos) field_type) val_type);
+              (((Type.at (Some expr.Expr.pos)) unit_type), cstrs)
+              end
+              end
+              end
+              end
+            end
+            end
+          with
+            | Not_found ->
+              (failwith ((unbound_field_label expr.Expr.pos) path))
+          end
+          end
+          end
+        | (Expr.Record field_defs) ->
+          begin let record_type = (Type.make_var inf.let_level) in
+          (((((infer_field_defs inf) cstrs) expr.Expr.pos) record_type) field_defs)
+          end
+        | (Expr.Update (record_expr, field_defs)) ->
+          begin let (record_type, cstrs) = (((infer_expr inf) cstrs) record_expr) in
+          (((((infer_field_defs inf) cstrs) expr.Expr.pos) record_type) field_defs)
+          end
+      end
     end
   end
 end
 
 and infer_let_val = begin fun inf ->
-  begin fun pat ->
-    begin fun val_expr ->
-      begin let val_type = ((infer_expr inf) val_expr) in
-      begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
-      begin
-      (((require val_expr.Expr.pos) pat_type) val_type);
-      (inf, map)
-      end
-      end
+  begin fun cstrs ->
+    begin fun pat ->
+      begin fun val_expr ->
+        begin let (val_type, cstrs) = (((infer_expr inf) cstrs) val_expr) in
+        begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+        begin
+        (((require val_expr.Expr.pos) pat_type) val_type);
+        (inf, cstrs, map)
+        end
+        end
+        end
       end
     end
   end
@@ -688,11 +808,13 @@ and infer_let_fun = begin fun inf ->
     begin let tmp_inf = (incr_let_level tmp_inf) in
     (((YzList.fold_left (inf, ( [] ))) defs) begin fun (inf, decls) ->
       begin fun (name, val_expr, type_var) ->
-        begin let val_type = ((infer_expr tmp_inf) val_expr) in
+        begin let (val_type, cstrs) = (((infer_expr tmp_inf) ( [] )) val_expr) in
         begin
         (((require val_expr.Expr.pos) type_var) val_type);
-        begin let scm = ((generalize let_level) val_type) in
+        begin let preds = (((solve_constraints inf) val_expr.Expr.pos) cstrs) in
+        begin let scm = (((generalize let_level) preds) val_type) in
         ((((add_asp inf) name) scm), (( :: ) ((Decl.Val (name, scm)), decls)))
+        end
         end
         end
         end
@@ -706,33 +828,37 @@ and infer_let_fun = begin fun inf ->
 end
 
 and infer_cases = begin fun inf ->
-  begin fun target_type ->
-    begin fun ret_type ->
-      begin fun cases ->
-        begin
-        (((YzList.fold_left ()) cases) begin fun () ->
-          begin fun (pat, opt_guard, body_expr) ->
-            begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
-            begin
-            (((require pat.Pattern.pos) target_type) pat_type);
-            begin
-            begin match opt_guard with
-              | None ->
-                ()
-              | (Some guard) ->
-                begin let guard_type = ((infer_expr inf) guard) in
-                (((require guard.Expr.pos) ((Type.at None) bool_type)) guard_type)
-                end
-            end;
-            begin let body_type = ((infer_expr inf) body_expr) in
-            (((require body_expr.Expr.pos) ret_type) body_type)
+  begin fun cstrs ->
+    begin fun target_type ->
+      begin fun ret_type ->
+        begin fun cases ->
+          begin let cstrs = (((YzList.fold_left cstrs) cases) begin fun cstrs ->
+            begin fun (pat, opt_guard, body_expr) ->
+              begin let (inf, pat_type, map) = ((infer_pattern inf) pat) in
+              begin
+              (((require pat.Pattern.pos) target_type) pat_type);
+              begin
+              begin match opt_guard with
+                | None ->
+                  ()
+                | (Some guard) ->
+                  begin let (guard_type, cstrs) = (((infer_expr inf) cstrs) guard) in
+                  (((require guard.Expr.pos) ((Type.at None) bool_type)) guard_type)
+                  end
+              end;
+              begin let (body_type, cstrs) = (((infer_expr inf) cstrs) body_expr) in
+              begin
+              (((require body_expr.Expr.pos) ret_type) body_type);
+              cstrs
+              end
+              end
+              end
+              end
+              end
             end
-            end
-            end
-            end
+          end) in
+          (ret_type, cstrs)
           end
-        end);
-        ret_type
         end
       end
     end
@@ -740,29 +866,36 @@ and infer_cases = begin fun inf ->
 end
 
 and infer_field_defs = begin fun inf ->
-  begin fun pos ->
-    begin fun record_type ->
-      begin fun field_defs ->
-        begin
-        (((YzList.fold_left ()) field_defs) begin fun () ->
-          begin fun (path, val_expr) ->
-            begin try
-              begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
-              begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
-              begin let field_type = ((((apply inf.let_level) pos) access_fun_type) record_type) in
-              begin let val_type = ((infer_expr inf) val_expr) in
-              (((require val_expr.Expr.pos) field_type) val_type)
+  begin fun cstrs ->
+    begin fun pos ->
+      begin fun record_type ->
+        begin fun field_defs ->
+          begin let cstrs = (((YzList.fold_left cstrs) field_defs) begin fun cstrs ->
+            begin fun (path, val_expr) ->
+              begin try
+                begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
+                begin let (preds0, access_fun_type) = ((instantiate inf.let_level) access_fun_scm) in
+                begin
+                (assert ((( = ) preds0) ( [] )));
+                begin let field_type = ((((apply inf.let_level) pos) access_fun_type) record_type) in
+                begin let (val_type, cstrs) = (((infer_expr inf) cstrs) val_expr) in
+                begin
+                (((require val_expr.Expr.pos) field_type) val_type);
+                cstrs
+                end
+                end
+                end
+                end
+                end
+                end
+              with
+                | Not_found ->
+                  (failwith ((unbound_field_label pos) path))
               end
-              end
-              end
-              end
-            with
-              | Not_found ->
-                (failwith ((unbound_field_label pos) path))
             end
+          end) in
+          (record_type, cstrs)
           end
-        end);
-        record_type
         end
       end
     end
@@ -800,8 +933,11 @@ let rec expand_abbrev = begin fun inf ->
           | None ->
             t
           | (Some conv_fun_scm) ->
-            begin let conv_fun_type = ((instantiate inf.let_level) conv_fun_scm) in
+            begin let (preds0, conv_fun_type) = ((instantiate inf.let_level) conv_fun_scm) in
+            begin
+            (assert ((( = ) preds0) ( [] )));
             ((((apply inf.let_level) pos) conv_fun_type) t)
+            end
             end
         end
       end
@@ -881,7 +1017,7 @@ let rec load_type_info = begin fun inf ->
         (((YzList.fold_left inf) ctor_decls) begin fun inf ->
           begin fun (ctor_name, opt_param, ctor_type_expr) ->
             begin let ctor_type = (((eval tmp_inf) (ref ( [] ))) ctor_type_expr) in
-            begin let ctor_scm = ((generalize let_level) ctor_type) in
+            begin let ctor_scm = (((generalize let_level) ( [] )) ctor_type) in
             begin match opt_param with
               | None ->
                 (((add_ctor inf) ctor_name) (false, ctor_scm))
@@ -900,7 +1036,7 @@ let rec load_type_info = begin fun inf ->
         (((YzList.fold_left inf) field_decls) begin fun inf ->
           begin fun (is_mutable, field_name, _, access_type_expr) ->
             begin let access_type = (((eval tmp_inf) (ref ( [] ))) access_type_expr) in
-            begin let access_scm = ((generalize let_level) access_type) in
+            begin let access_scm = (((generalize let_level) ( [] )) access_type) in
             (((add_field inf) field_name) (is_mutable, access_scm))
             end
             end
@@ -917,7 +1053,7 @@ let rec load_exn_decl = begin fun inf ->
     begin let let_level = inf.let_level in
     begin let tmp_inf = (incr_let_level inf) in
     begin let ctor_type = (((eval tmp_inf) (ref ( [] ))) ctor_type_expr) in
-    begin let ctor_scm = ((generalize let_level) ctor_type) in
+    begin let ctor_scm = (((generalize let_level) ( [] )) ctor_type) in
     begin match opt_param with
       | None ->
         (((add_ctor inf) ctor_name) (false, ctor_scm))
@@ -954,7 +1090,7 @@ let rec load_type_defs = begin fun inf ->
             begin let let_level = inf.let_level in
             begin let tmp_inf = (incr_let_level inf) in
             begin let conv_type = (((eval tmp_inf) (ref ( [] ))) conv_type_expr) in
-            begin let conv_scm = ((generalize let_level) conv_type) in
+            begin let conv_scm = (((generalize let_level) ( [] )) conv_type) in
             begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
             begin let param_num = (List.length type_params) in
             (((add_typector inf) name) (typector, param_num, (Some conv_scm)))
@@ -975,9 +1111,11 @@ let rec infer_top = begin fun inf ->
   begin fun top ->
     begin match top.Top.raw with
       | (Top.Expr expr) ->
-        (inf, (( :: ) ((Decl.Val ((Names.Id "_"), (Scheme.mono ((infer_expr inf) expr)))), ( [] ))))
+        begin let (t, cstrs) = (((infer_expr inf) ( [] )) expr) in
+        (inf, (( :: ) ((Decl.Val ((Names.Id "_"), (Scheme.mono t))), ( [] ))))
+        end
       | (Top.LetVal (pat, val_expr)) ->
-        begin let (inf, map) = (((infer_let_val inf) pat) val_expr) in
+        begin let (inf, cstrs, map) = ((((infer_let_val inf) ( [] )) pat) val_expr) in
         (inf, (make_decls map))
         end
       | (Top.LetFun defs) ->
@@ -1012,7 +1150,7 @@ let rec load_decl = begin fun inf ->
         begin let let_level = inf.let_level in
         begin let tmp_inf = (incr_let_level inf) in
         begin let t = (((eval tmp_inf) (ref ( [] ))) type_expr) in
-        begin let scm = ((generalize let_level) t) in
+        begin let scm = (((generalize let_level) ( [] )) t) in
         (((add_asp inf) name) scm)
         end
         end

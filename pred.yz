@@ -1,13 +1,10 @@
 
 open Printf
 
-type t:
-  def IsIn(Names.typeclass * Type.t)
+type t = Names.typeclass * Type.t
 
-def show(shower, pred):
-  match pred:
-    case IsIn(tc, t):
-      sprintf("%s(%s)", Names.show_typeclass(tc), Type.show(shower, t))
+def show(shower, (tc, t)):
+    sprintf("%s(%s)", Names.show_typeclass(tc), Type.show(shower, t))
 
 def show_list(shower, preds):
   match preds:

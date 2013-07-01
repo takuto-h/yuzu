@@ -1,15 +1,10 @@
 open Printf
 
-type t = 
-  | IsIn of (Names.typeclass * Type.t)
-
+type t = (Names.typeclass * Type.t)
 
 let rec show = begin fun shower ->
-  begin fun pred ->
-    begin match pred with
-      | (IsIn (tc, t)) ->
-        (((sprintf "%s(%s)") (Names.show_typeclass tc)) ((Type.show shower) t))
-    end
+  begin fun (tc, t) ->
+    (((sprintf "%s(%s)") (Names.show_typeclass tc)) ((Type.show shower) t))
   end
 end
 

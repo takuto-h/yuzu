@@ -81,7 +81,7 @@ rec:
     match expr.Expr.raw:
       case Expr.Con(lit):
         translate_literal(lit)
-      case Expr.Var(path):
+      case Expr.Var(path, inst_ref):
         Names.show_val_path(path)
       case Expr.Abs(param_pat,body_expr):
         var str_param = translate_pattern(param_pat)

@@ -8,6 +8,7 @@ type t = {
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
   fields : ((Names.ctor_name * (mutability * Scheme.t))) list;
   typectors : ((Names.typector_name * (Names.typector * int * (Scheme.t) option))) list;
+  typeclasses : ((Names.typeclass_name * ((Names.typector * unit)) list)) list;
 }
 
 let rec make = begin fun mods ->
@@ -15,13 +16,16 @@ let rec make = begin fun mods ->
     begin fun ctors ->
       begin fun fields ->
         begin fun typectors ->
-          {
-            mods = mods;
-            asp = asp;
-            ctors = ctors;
-            fields = fields;
-            typectors = typectors;
-          }
+          begin fun typeclasses ->
+            {
+              mods = mods;
+              asp = asp;
+              ctors = ctors;
+              fields = fields;
+              typectors = typectors;
+              typeclasses = typeclasses;
+            }
+          end
         end
       end
     end
@@ -80,6 +84,16 @@ let rec search_typectors = begin fun modl ->
     begin fun name ->
       ((((search_alist begin fun modl ->
         modl.typectors
+      end) modl) mod_path) name)
+    end
+  end
+end
+
+let rec search_typeclasses = begin fun modl ->
+  begin fun mod_path ->
+    begin fun name ->
+      ((((search_alist begin fun modl ->
+        modl.typeclasses
       end) modl) mod_path) name)
     end
   end

@@ -5,7 +5,7 @@ type t = {
 
 and raw = 
   | Con of Literal.t
-  | Var of Names.val_path
+  | Var of (Names.val_path * (unit) ref)
   | Abs of (Pattern.t * t)
   | App of (t * t)
   | Ctor of (Names.ctor * (t) option)

@@ -6,7 +6,7 @@ rec:
 
   type raw:
     def Con(Literal.t)
-    def Var(Names.val_path)
+    def Var(Names.val_path * ref(unit))
     def Abs(Pattern.t * t)
     def App(t * t)
     def Ctor(Names.ctor * option(t))
