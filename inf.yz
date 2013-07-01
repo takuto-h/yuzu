@@ -6,25 +6,19 @@ type mutability = bool
 
 type t:
   mods : list(Names.mod_name * Module.t)
-  opens : list(Names.mod_name * Names.mod_path)
-  asp : list(Names.val_name * Scheme.t)
-  ctors : list(Names.ctor_name * (require_argument * Scheme.t))
-  fields : list(Names.ctor_name * (mutability * Scheme.t))
-  typectors : list(Names.typector_name * (Names.typector * int * option(Scheme.t)))
-  let_level : int
+  curr_mod : Module.t
   mod_name : Names.mod_name
+  opens : list(Names.mod_name * Names.mod_path)
+  let_level : int
 
 var default_opens = [("Pervasives", [])]
-  
-def create(): {
-  mods = [];
-  opens = default_opens;
-  asp = [];
-  ctors = [];
-  fields = [];
-  typectors = [];
-  let_level = 0;
+
+def create(mods): {
+  mods = mods;
+  curr_mod = Module.make([], [], [], [], []);
   mod_name = "Dummy";
+  opens = default_opens;
+  let_level = 0;
 }
 
 def incr_let_level(inf): inf.{
@@ -149,16 +143,16 @@ def search_alist(search_mod, alist, inf, path):
       search_mods(search_mod, inf.mods, mod_name, mod_path, name)
 
 def search_asp(inf, path):
-  search_alist(Module.search_asp, inf.asp, inf, path)
+  search_alist(Module.search_asp, inf.curr_mod.Module.asp, inf, path)
 
 def search_ctors(inf, ctor):
-  search_alist(Module.search_ctors, inf.ctors, inf, ctor)
+  search_alist(Module.search_ctors, inf.curr_mod.Module.ctors, inf, ctor)
 
 def search_fields(inf, path):
-  search_alist(Module.search_fields, inf.fields, inf, path)
+  search_alist(Module.search_fields, inf.curr_mod.Module.fields, inf, path)
 
 def search_typectors(inf, typector):
-  search_alist(Module.search_typectors, inf.typectors, inf, typector)
+  search_alist(Module.search_typectors, inf.curr_mod.Module.typectors, inf, typector)
 
 def instantiate(let_level, {Scheme.gen_num;Scheme.body}):
   var type_vars = Array.init(gen_num)^(_): Type.make_var(let_level)
@@ -181,9 +175,21 @@ def infer_literal(lit):
     case Literal.Bool(_):
       bool_type
 
-def add_asp(inf, name):
+def add_asp(inf, name, scm):
+  inf.{curr_mod = inf.curr_mod.{Module.asp = (name, scm)::inf.curr_mod.Module.asp}}
+
+def add_ctor(inf, name, info):
+  inf.{curr_mod = inf.curr_mod.{Module.ctors = (name, info)::inf.curr_mod.Module.ctors}}
+
+def add_field(inf, name, info):
+  inf.{curr_mod = inf.curr_mod.{Module.fields = (name, info)::inf.curr_mod.Module.fields}}
+
+def add_typector(inf, name, info):
+  inf.{curr_mod = inf.curr_mod.{Module.typectors = (name, info)::inf.curr_mod.Module.typectors}}
+
+def add_type_var(inf, name):
   var t = Type.make_var(inf.let_level)
-  var inf = inf.{asp = (name,Scheme.mono(t))::inf.asp}
+  var inf = add_asp(inf, name, Scheme.mono(t))
   (inf, t)
 
 def apply(let_level, pos, fun_type, arg_type):
@@ -209,7 +215,7 @@ def infer_pattern(inf, pat):
     case Pattern.Con(lit):
       (inf, Type.at(Some(pat.Pattern.pos), infer_literal(lit)), ValNameMap.empty)
     case Pattern.Var(name):
-      var (inf, t) = add_asp(inf, name)
+      var (inf, t) = add_type_var(inf, name)
       (inf, t, ValNameMap.singleton(name, t))
     case Pattern.Tuple(pats):
       var init = (inf, [], ValNameMap.empty)
@@ -246,7 +252,7 @@ def infer_pattern(inf, pat):
           ignore(apply(inf.let_level, pat.Pattern.pos, access_fun_type, record_type))
           match opt_pat:
             case None:
-              var (inf, t) = add_asp(inf, name)
+              var (inf, t) = add_type_var(inf, name)
               (inf, ValNameMap.add(name, t, map1))
             case Some(pat):
               var (inf, t, map2) = infer_pattern(inf, pat)
@@ -257,7 +263,7 @@ def infer_pattern(inf, pat):
       (inf, record_type, map)
     case Pattern.As(pat,name):
       var (inf, t, map) = infer_pattern(inf, pat)
-      var inf = inf.{asp = (name, Scheme.mono(t))::inf.asp}
+      var inf = add_asp(inf, name, Scheme.mono(t))
       (inf, t, ValNameMap.add(name, t, map))
     case Pattern.Or(lhs,rhs):
       var (lhs_inf, lhs_type, lhs_map) = infer_pattern(inf, lhs)
@@ -356,12 +362,12 @@ rec:
         var let_level = inf.let_level
         var tmp_inf = incr_let_level(inf)
         var tmp_inf = YzList.fold_left(tmp_inf, defs)^(tmp_inf, (name, val_expr)):
-          var (tmp_inf, t) = add_asp(tmp_inf, name)
+          var (tmp_inf, t) = add_type_var(tmp_inf, name)
           tmp_inf
         var inf = YzList.fold_left(inf, defs)^(inf, (name, val_expr)):
           var val_type = infer_expr(tmp_inf, val_expr)
           var scm = generalize(let_level, val_type)
-          inf.{asp = (name, scm)::inf.asp}
+          add_asp(inf, name, scm)
         infer_expr(inf, cont_expr)
       case Expr.Match(target_expr, cases):
         var target_type = infer_expr(inf, target_expr)
@@ -514,16 +520,16 @@ def load_type_info(inf, type_info):
         var ctor_scm = generalize(let_level, ctor_type)
         match opt_param:
           case None:
-            inf.{ctors = (ctor_name, (false, ctor_scm))::inf.ctors}
+            add_ctor(inf, ctor_name, (false, ctor_scm))
           case Some(_):
-            inf.{ctors = (ctor_name, (true, ctor_scm))::inf.ctors}
+            add_ctor(inf, ctor_name, (true, ctor_scm))
     case TypeInfo.Record(field_decls):
       var let_level = inf.let_level
       var tmp_inf = incr_let_level(inf)
       YzList.fold_left(inf, field_decls)^(inf, (is_mutable,field_name,_,access_type_expr)):
         var access_type = eval(tmp_inf, ref([]), access_type_expr)
         var access_scm = generalize(let_level, access_type)
-        inf.{fields = (field_name, (is_mutable, access_scm))::inf.fields}
+        add_field(inf, field_name, (is_mutable, access_scm))
 
 def load_exn_decl(inf, (ctor_name, opt_param, ctor_type_expr)):
   var let_level = inf.let_level
@@ -532,9 +538,9 @@ def load_exn_decl(inf, (ctor_name, opt_param, ctor_type_expr)):
   var ctor_scm = generalize(let_level, ctor_type)
   match opt_param:
     case None:
-      inf.{ctors = (ctor_name, (false, ctor_scm))::inf.ctors}
+      add_ctor(inf, ctor_name, (false, ctor_scm))
     case Some(_):
-      inf.{ctors = (ctor_name, (true, ctor_scm))::inf.ctors}
+      add_ctor(inf, ctor_name, (true, ctor_scm))
 
 def infer_top(inf, top):
   match top.Top.raw:
@@ -549,12 +555,12 @@ def infer_top(inf, top):
       var let_level = inf.let_level
       var tmp_inf = incr_let_level(inf)
       var tmp_inf = YzList.fold_left(tmp_inf, defs)^(tmp_inf, (name, val_expr)):
-        var (tmp_inf, t) = add_asp(tmp_inf, name)
+        var (tmp_inf, t) = add_type_var(tmp_inf, name)
         tmp_inf
       var (inf, decls) = YzList.fold_left((inf, []), defs)^((inf, decls), (name, val_expr)):
         var val_type = infer_expr(tmp_inf, val_expr)
         var scm = generalize(let_level, val_type)
-        (inf.{asp = (name, scm)::inf.asp}, Decl.Val(name, scm)::decls)
+        (add_asp(inf, name, scm), Decl.Val(name, scm)::decls)
       (inf, decls)
     case Top.Type(defs):
       var inf = YzList.fold_left(inf, defs)^(inf, type_def):
@@ -562,7 +568,7 @@ def infer_top(inf, top):
           case TypeDef.Repr(name,type_params,_) | TypeDef.Abbrev(name,type_params,_,_):
             var typector = ([inf.mod_name], name)
             var param_num = List.length(type_params)
-            inf.{typectors = (name, (typector, param_num, None))::inf.typectors}
+            add_typector(inf, name, (typector, param_num, None))
       var inf = YzList.fold_left(inf, defs)^(inf, type_def):
         match type_def:
           case TypeDef.Repr(name, type_params, type_info):
@@ -574,7 +580,7 @@ def infer_top(inf, top):
             var conv_scm = generalize(let_level, conv_type)
             var typector = ([inf.mod_name], name)
             var param_num = List.length(type_params)
-            inf.{typectors = (name, (typector, param_num, Some(conv_scm)))::inf.typectors}
+            add_typector(inf, name, (typector, param_num, Some(conv_scm)))
       (inf, [])
     case Top.Open(mod_name::mod_path):
       var inf = inf.{opens = (mod_name, mod_path)::inf.opens}
@@ -592,24 +598,24 @@ def load_decl(inf, decl):
       var tmp_inf = incr_let_level(inf)
       var t = eval(tmp_inf, ref([]), type_expr)
       var scm = generalize(let_level, t)
-      inf.{asp = (name, scm)::inf.asp}
+      add_asp(inf, name, scm)
     case DeclExpr.AbstrType(name, param_num):
       var typector = ([inf.mod_name], name)
-      inf.{typectors = (name, (typector, param_num, None))::inf.typectors}
+      add_typector(inf, name, (typector, param_num, None))
     case DeclExpr.ConcrType(TypeDef.Repr(name, type_params, type_info)):
       var typector = ([inf.mod_name], name)
       var param_num = List.length(type_params)
-      var inf = inf.{typectors = (name, (typector, param_num, None))::inf.typectors}
+      var inf = add_typector(inf, name, (typector, param_num, None))
       load_type_info(inf, type_info)
     case DeclExpr.ConcrType(TypeDef.Abbrev(name, type_params, _, conv_type_expr)):
       var typector = ([inf.mod_name], name)
       var param_num = List.length(type_params)
-      var tmp_inf = inf.{typectors = (name, (typector, param_num, None))::inf.typectors}
+      var tmp_inf = add_typector(inf, name, (typector, param_num, None))
       var let_level = tmp_inf.let_level
       var tmp_inf = incr_let_level(tmp_inf)
       var conv_type = eval(tmp_inf, ref([]), conv_type_expr)
       var conv_scm = generalize(let_level, conv_type)
-      inf.{typectors = (name, (typector, param_num, Some(conv_scm)))::inf.typectors}
+      add_typector(inf, name, (typector, param_num, Some(conv_scm)))
     case DeclExpr.Exception(exn_decl):
       load_exn_decl(inf, exn_decl)
       
@@ -617,14 +623,4 @@ def enter_module(inf, mod_name):
   inf.{mod_name = mod_name}
 
 def leave_module(inf, mod_name):
-  var new_mod = Module.make([], inf.asp, inf.ctors, inf.fields, inf.typectors)
-  {
-    mods = (mod_name, new_mod)::inf.mods;
-    opens = default_opens;
-    asp = [];
-    ctors = [];
-    fields = [];
-    typectors = [];
-    let_level = 0;
-    mod_name = "Pervasives";
-  }
+  create((mod_name, inf.curr_mod)::inf.mods)

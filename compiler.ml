@@ -13,7 +13,7 @@ let basic_offset = 2
 
 let rec create = begin fun () ->
   {
-    inf = (Inf.create ());
+    inf = (Inf.create ( [] ));
     dummy = ();
   }
 end

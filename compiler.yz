@@ -10,7 +10,7 @@ var initial_buffer_size = 256
 var basic_offset = 2
 
 def create(): {
-  inf = Inf.create();
+  inf = Inf.create([]);
   dummy = ();
 }
 

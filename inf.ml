@@ -6,27 +6,21 @@ type mutability = bool
 
 type t = {
   mods : ((Names.mod_name * Module.t)) list;
-  opens : ((Names.mod_name * Names.mod_path)) list;
-  asp : ((Names.val_name * Scheme.t)) list;
-  ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
-  fields : ((Names.ctor_name * (mutability * Scheme.t))) list;
-  typectors : ((Names.typector_name * (Names.typector * int * (Scheme.t) option))) list;
-  let_level : int;
+  curr_mod : Module.t;
   mod_name : Names.mod_name;
+  opens : ((Names.mod_name * Names.mod_path)) list;
+  let_level : int;
 }
 
 let default_opens = (( :: ) (("Pervasives", ( [] )), ( [] )))
 
-let rec create = begin fun () ->
+let rec create = begin fun mods ->
   {
-    mods = ( [] );
-    opens = default_opens;
-    asp = ( [] );
-    ctors = ( [] );
-    fields = ( [] );
-    typectors = ( [] );
-    let_level = 0;
+    mods = mods;
+    curr_mod = (((((Module.make ( [] )) ( [] )) ( [] )) ( [] )) ( [] ));
     mod_name = "Dummy";
+    opens = default_opens;
+    let_level = 0;
   }
 end
 
@@ -203,25 +197,25 @@ end
 
 let rec search_asp = begin fun inf ->
   begin fun path ->
-    ((((search_alist Module.search_asp) inf.asp) inf) path)
+    ((((search_alist Module.search_asp) inf.curr_mod.Module.asp) inf) path)
   end
 end
 
 let rec search_ctors = begin fun inf ->
   begin fun ctor ->
-    ((((search_alist Module.search_ctors) inf.ctors) inf) ctor)
+    ((((search_alist Module.search_ctors) inf.curr_mod.Module.ctors) inf) ctor)
   end
 end
 
 let rec search_fields = begin fun inf ->
   begin fun path ->
-    ((((search_alist Module.search_fields) inf.fields) inf) path)
+    ((((search_alist Module.search_fields) inf.curr_mod.Module.fields) inf) path)
   end
 end
 
 let rec search_typectors = begin fun inf ->
   begin fun typector ->
-    ((((search_alist Module.search_typectors) inf.typectors) inf) typector)
+    ((((search_alist Module.search_typectors) inf.curr_mod.Module.typectors) inf) typector)
   end
 end
 
@@ -266,11 +260,64 @@ end
 
 let rec add_asp = begin fun inf ->
   begin fun name ->
+    begin fun scm ->
+      {
+        inf with
+        curr_mod = {
+          inf.curr_mod with
+          Module.asp = (( :: ) ((name, scm), inf.curr_mod.Module.asp));
+        };
+      }
+    end
+  end
+end
+
+let rec add_ctor = begin fun inf ->
+  begin fun name ->
+    begin fun info ->
+      {
+        inf with
+        curr_mod = {
+          inf.curr_mod with
+          Module.ctors = (( :: ) ((name, info), inf.curr_mod.Module.ctors));
+        };
+      }
+    end
+  end
+end
+
+let rec add_field = begin fun inf ->
+  begin fun name ->
+    begin fun info ->
+      {
+        inf with
+        curr_mod = {
+          inf.curr_mod with
+          Module.fields = (( :: ) ((name, info), inf.curr_mod.Module.fields));
+        };
+      }
+    end
+  end
+end
+
+let rec add_typector = begin fun inf ->
+  begin fun name ->
+    begin fun info ->
+      {
+        inf with
+        curr_mod = {
+          inf.curr_mod with
+          Module.typectors = (( :: ) ((name, info), inf.curr_mod.Module.typectors));
+        };
+      }
+    end
+  end
+end
+
+let rec add_type_var = begin fun inf ->
+  begin fun name ->
     begin let t = (Type.make_var inf.let_level) in
-    begin let inf = {
-      inf with
-      asp = (( :: ) ((name, (Scheme.mono t)), inf.asp));
-    } in
+    begin let inf = (((add_asp inf) name) (Scheme.mono t)) in
     (inf, t)
     end
     end
@@ -318,7 +365,7 @@ let rec infer_pattern = begin fun inf ->
       | (Pattern.Con lit) ->
         (inf, ((Type.at (Some pat.Pattern.pos)) (infer_literal lit)), ValNameMap.empty)
       | (Pattern.Var name) ->
-        begin let (inf, t) = ((add_asp inf) name) in
+        begin let (inf, t) = ((add_type_var inf) name) in
         (inf, t, ((ValNameMap.singleton name) t))
         end
       | (Pattern.Tuple pats) ->
@@ -372,7 +419,7 @@ let rec infer_pattern = begin fun inf ->
               (ignore ((((apply inf.let_level) pat.Pattern.pos) access_fun_type) record_type));
               begin match opt_pat with
                 | None ->
-                  begin let (inf, t) = ((add_asp inf) name) in
+                  begin let (inf, t) = ((add_type_var inf) name) in
                   (inf, (((ValNameMap.add name) t) map1))
                   end
                 | (Some pat) ->
@@ -398,10 +445,7 @@ let rec infer_pattern = begin fun inf ->
         end
       | (Pattern.As (pat, name)) ->
         begin let (inf, t, map) = ((infer_pattern inf) pat) in
-        begin let inf = {
-          inf with
-          asp = (( :: ) ((name, (Scheme.mono t)), inf.asp));
-        } in
+        begin let inf = (((add_asp inf) name) (Scheme.mono t)) in
         (inf, t, (((ValNameMap.add name) t) map))
         end
         end
@@ -560,7 +604,7 @@ let rec infer_expr = begin fun inf ->
         begin let tmp_inf = (incr_let_level inf) in
         begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
           begin fun (name, val_expr) ->
-            begin let (tmp_inf, t) = ((add_asp tmp_inf) name) in
+            begin let (tmp_inf, t) = ((add_type_var tmp_inf) name) in
             tmp_inf
             end
           end
@@ -569,10 +613,7 @@ let rec infer_expr = begin fun inf ->
           begin fun (name, val_expr) ->
             begin let val_type = ((infer_expr tmp_inf) val_expr) in
             begin let scm = ((generalize let_level) val_type) in
-            {
-              inf with
-              asp = (( :: ) ((name, scm), inf.asp));
-            }
+            (((add_asp inf) name) scm)
             end
             end
           end
@@ -841,15 +882,9 @@ let rec load_type_info = begin fun inf ->
             begin let ctor_scm = ((generalize let_level) ctor_type) in
             begin match opt_param with
               | None ->
-                {
-                  inf with
-                  ctors = (( :: ) ((ctor_name, (false, ctor_scm)), inf.ctors));
-                }
+                (((add_ctor inf) ctor_name) (false, ctor_scm))
               | (Some _) ->
-                {
-                  inf with
-                  ctors = (( :: ) ((ctor_name, (true, ctor_scm)), inf.ctors));
-                }
+                (((add_ctor inf) ctor_name) (true, ctor_scm))
             end
             end
             end
@@ -864,10 +899,7 @@ let rec load_type_info = begin fun inf ->
           begin fun (is_mutable, field_name, _, access_type_expr) ->
             begin let access_type = (((eval tmp_inf) (ref ( [] ))) access_type_expr) in
             begin let access_scm = ((generalize let_level) access_type) in
-            {
-              inf with
-              fields = (( :: ) ((field_name, (is_mutable, access_scm)), inf.fields));
-            }
+            (((add_field inf) field_name) (is_mutable, access_scm))
             end
             end
           end
@@ -886,15 +918,9 @@ let rec load_exn_decl = begin fun inf ->
     begin let ctor_scm = ((generalize let_level) ctor_type) in
     begin match opt_param with
       | None ->
-        {
-          inf with
-          ctors = (( :: ) ((ctor_name, (false, ctor_scm)), inf.ctors));
-        }
+        (((add_ctor inf) ctor_name) (false, ctor_scm))
       | (Some _) ->
-        {
-          inf with
-          ctors = (( :: ) ((ctor_name, (true, ctor_scm)), inf.ctors));
-        }
+        (((add_ctor inf) ctor_name) (true, ctor_scm))
     end
     end
     end
@@ -922,7 +948,7 @@ let rec infer_top = begin fun inf ->
         begin let tmp_inf = (incr_let_level inf) in
         begin let tmp_inf = (((YzList.fold_left tmp_inf) defs) begin fun tmp_inf ->
           begin fun (name, val_expr) ->
-            begin let (tmp_inf, t) = ((add_asp tmp_inf) name) in
+            begin let (tmp_inf, t) = ((add_type_var tmp_inf) name) in
             tmp_inf
             end
           end
@@ -931,10 +957,7 @@ let rec infer_top = begin fun inf ->
           begin fun (name, val_expr) ->
             begin let val_type = ((infer_expr tmp_inf) val_expr) in
             begin let scm = ((generalize let_level) val_type) in
-            ({
-              inf with
-              asp = (( :: ) ((name, scm), inf.asp));
-            }, (( :: ) ((Decl.Val (name, scm)), decls)))
+            ((((add_asp inf) name) scm), (( :: ) ((Decl.Val (name, scm)), decls)))
             end
             end
           end
@@ -951,10 +974,7 @@ let rec infer_top = begin fun inf ->
               | ((TypeDef.Repr (name, type_params, _)) | (TypeDef.Abbrev (name, type_params, _, _))) ->
                 begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
                 begin let param_num = (List.length type_params) in
-                {
-                  inf with
-                  typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
-                }
+                (((add_typector inf) name) (typector, param_num, None))
                 end
                 end
             end
@@ -972,10 +992,7 @@ let rec infer_top = begin fun inf ->
                 begin let conv_scm = ((generalize let_level) conv_type) in
                 begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
                 begin let param_num = (List.length type_params) in
-                {
-                  inf with
-                  typectors = (( :: ) ((name, (typector, param_num, (Some conv_scm))), inf.typectors));
-                }
+                (((add_typector inf) name) (typector, param_num, (Some conv_scm)))
                 end
                 end
                 end
@@ -1013,28 +1030,19 @@ let rec load_decl = begin fun inf ->
         begin let tmp_inf = (incr_let_level inf) in
         begin let t = (((eval tmp_inf) (ref ( [] ))) type_expr) in
         begin let scm = ((generalize let_level) t) in
-        {
-          inf with
-          asp = (( :: ) ((name, scm), inf.asp));
-        }
+        (((add_asp inf) name) scm)
         end
         end
         end
         end
       | (DeclExpr.AbstrType (name, param_num)) ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
-        {
-          inf with
-          typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
-        }
+        (((add_typector inf) name) (typector, param_num, None))
         end
       | (DeclExpr.ConcrType (TypeDef.Repr (name, type_params, type_info))) ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
         begin let param_num = (List.length type_params) in
-        begin let inf = {
-          inf with
-          typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
-        } in
+        begin let inf = (((add_typector inf) name) (typector, param_num, None)) in
         ((load_type_info inf) type_info)
         end
         end
@@ -1042,18 +1050,12 @@ let rec load_decl = begin fun inf ->
       | (DeclExpr.ConcrType (TypeDef.Abbrev (name, type_params, _, conv_type_expr))) ->
         begin let typector = ((( :: ) (inf.mod_name, ( [] ))), name) in
         begin let param_num = (List.length type_params) in
-        begin let tmp_inf = {
-          inf with
-          typectors = (( :: ) ((name, (typector, param_num, None)), inf.typectors));
-        } in
+        begin let tmp_inf = (((add_typector inf) name) (typector, param_num, None)) in
         begin let let_level = tmp_inf.let_level in
         begin let tmp_inf = (incr_let_level tmp_inf) in
         begin let conv_type = (((eval tmp_inf) (ref ( [] ))) conv_type_expr) in
         begin let conv_scm = ((generalize let_level) conv_type) in
-        {
-          inf with
-          typectors = (( :: ) ((name, (typector, param_num, (Some conv_scm))), inf.typectors));
-        }
+        (((add_typector inf) name) (typector, param_num, (Some conv_scm)))
         end
         end
         end
@@ -1078,18 +1080,7 @@ end
 
 let rec leave_module = begin fun inf ->
   begin fun mod_name ->
-    begin let new_mod = (((((Module.make ( [] )) inf.asp) inf.ctors) inf.fields) inf.typectors) in
-    {
-      mods = (( :: ) ((mod_name, new_mod), inf.mods));
-      opens = default_opens;
-      asp = ( [] );
-      ctors = ( [] );
-      fields = ( [] );
-      typectors = ( [] );
-      let_level = 0;
-      mod_name = "Pervasives";
-    }
-    end
+    (create (( :: ) ((mod_name, inf.curr_mod), inf.mods)))
   end
 end
 
