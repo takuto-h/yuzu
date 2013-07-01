@@ -649,51 +649,11 @@ let rec infer_expr = begin fun inf ->
         end
       | (Expr.Record field_defs) ->
         begin let record_type = (Type.make_var inf.let_level) in
-        begin
-        (((YzList.fold_left ()) field_defs) begin fun () ->
-          begin fun (path, val_expr) ->
-            begin try
-              begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
-              begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
-              begin let field_type = ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type) in
-              begin let val_type = ((infer_expr inf) val_expr) in
-              (((require val_expr.Expr.pos) field_type) val_type)
-              end
-              end
-              end
-              end
-            with
-              | Not_found ->
-                (failwith ((unbound_field_label expr.Expr.pos) path))
-            end
-          end
-        end);
-        record_type
-        end
+        ((((infer_field_defs inf) expr.Expr.pos) record_type) field_defs)
         end
       | (Expr.Update (record_expr, field_defs)) ->
         begin let record_type = ((infer_expr inf) record_expr) in
-        begin
-        (((YzList.fold_left ()) field_defs) begin fun () ->
-          begin fun (path, val_expr) ->
-            begin try
-              begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
-              begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
-              begin let field_type = ((((apply inf.let_level) expr.Expr.pos) access_fun_type) record_type) in
-              begin let val_type = ((infer_expr inf) val_expr) in
-              (((require val_expr.Expr.pos) field_type) val_type)
-              end
-              end
-              end
-              end
-            with
-              | Not_found ->
-                (failwith ((unbound_field_label expr.Expr.pos) path))
-            end
-          end
-        end);
-        record_type
-        end
+        ((((infer_field_defs inf) expr.Expr.pos) record_type) field_defs)
         end
     end
   end
@@ -773,6 +733,36 @@ and infer_cases = begin fun inf ->
           end
         end);
         ret_type
+        end
+      end
+    end
+  end
+end
+
+and infer_field_defs = begin fun inf ->
+  begin fun pos ->
+    begin fun record_type ->
+      begin fun field_defs ->
+        begin
+        (((YzList.fold_left ()) field_defs) begin fun () ->
+          begin fun (path, val_expr) ->
+            begin try
+              begin let (is_mutable, access_fun_scm) = ((search_fields inf) path) in
+              begin let access_fun_type = ((instantiate inf.let_level) access_fun_scm) in
+              begin let field_type = ((((apply inf.let_level) pos) access_fun_type) record_type) in
+              begin let val_type = ((infer_expr inf) val_expr) in
+              (((require val_expr.Expr.pos) field_type) val_type)
+              end
+              end
+              end
+              end
+            with
+              | Not_found ->
+                (failwith ((unbound_field_label pos) path))
+            end
+          end
+        end);
+        record_type
         end
       end
     end

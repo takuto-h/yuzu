@@ -393,30 +393,10 @@ rec:
             failwith(unbound_field_label(expr.Expr.pos, path))
       case Expr.Record(field_defs):
         var record_type = Type.make_var(inf.let_level)
-        YzList.fold_left((), field_defs)^((), (path, val_expr)):
-          try:
-            var (is_mutable, access_fun_scm) = search_fields(inf, path)
-            var access_fun_type = instantiate(inf.let_level, access_fun_scm)
-            var field_type = apply(inf.let_level,expr.Expr.pos,access_fun_type,record_type)
-            var val_type = infer_expr(inf, val_expr)
-            require(val_expr.Expr.pos, field_type, val_type)
-          with:
-            case Not_found:
-              failwith(unbound_field_label(expr.Expr.pos, path))
-        record_type
+        infer_field_defs(inf, expr.Expr.pos, record_type, field_defs)
       case Expr.Update(record_expr, field_defs):
         var record_type = infer_expr(inf, record_expr)
-        YzList.fold_left((), field_defs)^((), (path, val_expr)):
-          try:
-            var (is_mutable, access_fun_scm) = search_fields(inf, path)
-            var access_fun_type = instantiate(inf.let_level, access_fun_scm)
-            var field_type = apply(inf.let_level,expr.Expr.pos,access_fun_type,record_type)
-            var val_type = infer_expr(inf, val_expr)
-            require(val_expr.Expr.pos, field_type, val_type)
-          with:
-            case Not_found:
-              failwith(unbound_field_label(expr.Expr.pos, path))
-        record_type
+        infer_field_defs(inf, expr.Expr.pos, record_type, field_defs)
 
   def infer_let_val(inf, pat, val_expr):
     var val_type = infer_expr(inf, val_expr)
@@ -450,6 +430,19 @@ rec:
       var body_type = infer_expr(inf, body_expr)
       require(body_expr.Expr.pos, ret_type, body_type)
     ret_type
+  
+  def infer_field_defs(inf, pos, record_type, field_defs):
+    YzList.fold_left((), field_defs)^((), (path, val_expr)):
+      try:
+        var (is_mutable, access_fun_scm) = search_fields(inf, path)
+        var access_fun_type = instantiate(inf.let_level, access_fun_scm)
+        var field_type = apply(inf.let_level, pos, access_fun_type,record_type)
+        var val_type = infer_expr(inf, val_expr)
+        require(val_expr.Expr.pos, field_type, val_type)
+      with:
+        case Not_found:
+          failwith(unbound_field_label(pos, path))
+    record_type
 
   def require(pos, req_type, got_type):
     try:
