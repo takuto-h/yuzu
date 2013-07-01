@@ -135,11 +135,11 @@ let rec unify = begin fun t1 ->
         (raise (Unification_error (t1, t2)))
       | ((Gen _), _) ->
         (assert false)
-      | ((App (tc1, ts1)), (App (tc2, ts2))) when ((( = ) tc1) tc2) ->
+      | ((App (tc1, ts1)), (App (tc2, ts2))) when (((( = ) tc1) tc2) && ((( = ) (List.length ts1)) (List.length ts2))) ->
         (((List.iter2 unify) ts1) ts2)
       | ((App (_, _)), _) ->
         (raise (Unification_error (t1, t2)))
-      | ((Tuple ts1), (Tuple ts2)) ->
+      | ((Tuple ts1), (Tuple ts2)) when ((( = ) (List.length ts1)) (List.length ts2)) ->
         (((List.iter2 unify) ts1) ts2)
       | ((Tuple _), _) ->
         (raise (Unification_error (t1, t2)))

@@ -106,11 +106,11 @@ def unify(t1, t2):
       raise(Unification_error(t1, t2))
     case (Gen(_),_):
       assert(false)
-    case (App(tc1,ts1),App(tc2,ts2)) when tc1 = tc2:
+    case (App(tc1,ts1),App(tc2,ts2)) when tc1 = tc2 && List.length(ts1) = List.length(ts2):
       List.iter2(unify, ts1, ts2)
     case (App(_,_),_):
       raise(Unification_error(t1, t2))
-    case (Tuple(ts1),Tuple(ts2)):
+    case (Tuple(ts1),Tuple(ts2)) when List.length(ts1) = List.length(ts2):
       List.iter2(unify, ts1, ts2)
     case (Tuple(_),_):
       raise(Unification_error(t1, t2))
