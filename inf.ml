@@ -12,12 +12,28 @@ type t = {
   let_level : int;
 }
 
+let unit_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "unit"))
+
+let int_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "int"))
+
+let string_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "string"))
+
+let char_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "char"))
+
+let bool_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "bool"))
+
+let exn_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "exn"))
+
 let default_opens = (( :: ) (("Pervasives", ( [] )), ( [] )))
+
+let default_asp = (( :: ) (((Names.Id "show"), (((Scheme.poly 1) (( :: ) (((( [] ), "Show"), ((Type.at None) (Type.Gen 0))), ( [] )))) ((Type.at None) (Type.Fun (((Type.at None) (Type.Gen 0)), ((Type.at None) string_type)))))), ( [] )))
+
+let default_instances = (( :: ) (("Show", (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "int"), (( :: ) ("ShowInt", ( [] )))), (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "bool"), (( :: ) ("ShowBool", ( [] )))), ( [] )))))), ( [] )))
 
 let rec create = begin fun mods ->
   {
     mods = mods;
-    curr_mod = ((((((Module.make ( [] )) ( [] )) ( [] )) ( [] )) ( [] )) ( [] ));
+    curr_mod = ((((((Module.make ( [] )) default_asp) ( [] )) ( [] )) ( [] )) default_instances);
     mod_name = "Dummy";
     opens = default_opens;
     let_level = 0;
@@ -30,18 +46,6 @@ let rec incr_let_level = begin fun inf ->
     let_level = ((( + ) inf.let_level) 1);
   }
 end
-
-let unit_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "unit"))
-
-let int_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "int"))
-
-let string_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "string"))
-
-let char_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "char"))
-
-let bool_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "bool"))
-
-let exn_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "exn"))
 
 let rec unbound_variable = begin fun pos ->
   begin fun path ->
@@ -371,7 +375,7 @@ let rec instantiate = begin fun let_level ->
 end
 
 let rec generalize = begin fun let_level ->
-  begin fun preds ->
+  begin fun ans ->
     begin fun t ->
       begin let alist_ref = (ref ( [] )) in
       begin let rec var_func = begin fun t ->
@@ -400,9 +404,9 @@ let rec generalize = begin fun let_level ->
           (assert false)
         end
       end in
-      begin let preds = ((List.map begin fun (tc, t) ->
+      begin let preds = ((List.map begin fun (tc, t, _) ->
         (tc, (((Type.map var_func) gen_func) t))
-      end) preds) in
+      end) ans) in
       (((Scheme.poly (List.length (( ! ) alist_ref))) preds) (((Type.map var_func) gen_func) t))
       end
       end
@@ -542,10 +546,16 @@ let rec infer_pattern = begin fun inf ->
   end
 end
 
+let unique_num = 0
+
+let rec generate_mod_path = begin fun () ->
+  (( :: ) (((sprintf "Mod%d") unique_num), ( [] )))
+end
+
 let rec solve_constraints = begin fun inf ->
   begin fun pos ->
     begin fun cstrs ->
-      (((YzList.fold_left ( [] )) cstrs) begin fun preds ->
+      (((YzList.fold_left ( [] )) cstrs) begin fun ans ->
         begin fun ((tc, t), inst_ref) ->
           begin try
             begin let insts = ((search_instances inf) tc) in
@@ -555,7 +565,7 @@ let rec solve_constraints = begin fun inf ->
                   begin let inst = ((List.assoc typector) insts) in
                   begin
                   ((( := ) inst_ref) inst);
-                  preds
+                  ans
                   end
                   end
                 with
@@ -565,7 +575,12 @@ let rec solve_constraints = begin fun inf ->
               | ((Type.Tuple _) | (Type.Fun (_, _))) ->
                 (failwith (((instance_not_found pos) tc) t))
               | (Type.Var (_, _)) ->
-                (( :: ) ((tc, t), preds))
+                begin let inst = (generate_mod_path ()) in
+                begin
+                ((( := ) inst_ref) inst);
+                (( :: ) ((tc, t, inst), ans))
+                end
+                end
               | (Type.Gen _) ->
                 (assert false)
             end
@@ -592,7 +607,7 @@ let rec infer_expr = begin fun inf ->
             begin let (preds, t) = ((instantiate inf.let_level) scm) in
             begin let (insts, cstrs) = (((YzList.fold_right preds) (( [] ), cstrs)) begin fun pred ->
               begin fun (insts, cstrs) ->
-                begin let inst = (ref ()) in
+                begin let inst = (ref (( :: ) ("Mod", ( [] )))) in
                 begin let cstr = (pred, inst) in
                 ((( :: ) (inst, insts)), (( :: ) (cstr, cstrs)))
                 end
@@ -678,7 +693,7 @@ let rec infer_expr = begin fun inf ->
           end
         | (Expr.Or (lhs, rhs)) ->
           begin let pos = expr.Expr.pos in
-          begin let or_op = ((Expr.at pos) (Expr.Var ((( [] ), (Names.Op "||")), (ref ())))) in
+          begin let or_op = ((Expr.at pos) (Expr.Var ((( [] ), (Names.Op "||")), (ref ( [] ))))) in
           begin let or_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (or_op, lhs))), rhs))) in
           (((infer_expr inf) cstrs) or_expr)
           end
@@ -686,7 +701,7 @@ let rec infer_expr = begin fun inf ->
           end
         | (Expr.And (lhs, rhs)) ->
           begin let pos = expr.Expr.pos in
-          begin let and_op = ((Expr.at pos) (Expr.Var ((( [] ), (Names.Op "&&")), (ref ())))) in
+          begin let and_op = ((Expr.at pos) (Expr.Var ((( [] ), (Names.Op "&&")), (ref ( [] ))))) in
           begin let and_expr = ((Expr.at pos) (Expr.App (((Expr.at pos) (Expr.App (and_op, lhs))), rhs))) in
           (((infer_expr inf) cstrs) and_expr)
           end
@@ -811,9 +826,14 @@ and infer_let_fun = begin fun inf ->
         begin let (val_type, cstrs) = (((infer_expr tmp_inf) ( [] )) val_expr) in
         begin
         (((require val_expr.Expr.pos) type_var) val_type);
-        begin let preds = (((solve_constraints inf) val_expr.Expr.pos) cstrs) in
-        begin let scm = (((generalize let_level) preds) val_type) in
+        begin let ans = (((solve_constraints inf) val_expr.Expr.pos) cstrs) in
+        begin
+        ((( := ) r) ((List.map begin fun (tc, t, inst) ->
+          inst
+        end) ans));
+        begin let scm = (((generalize let_level) ans) val_type) in
         ((((add_asp inf) name) scm), (( :: ) ((Decl.Val (name, scm)), decls)))
+        end
         end
         end
         end
@@ -1112,11 +1132,21 @@ let rec infer_top = begin fun inf ->
     begin match top.Top.raw with
       | (Top.Expr expr) ->
         begin let (t, cstrs) = (((infer_expr inf) ( [] )) expr) in
-        (inf, (( :: ) ((Decl.Val ((Names.Id "_"), (Scheme.mono t))), ( [] ))))
+        begin match (((solve_constraints inf) top.Top.pos) cstrs) with
+          | ( [] ) ->
+            (inf, (( :: ) ((Decl.Val ((Names.Id "_"), (Scheme.mono t))), ( [] ))))
+          | (( :: ) ((tc, t, inst), _)) ->
+            (failwith (((instance_not_found top.Top.pos) tc) t))
+        end
         end
       | (Top.LetVal (pat, val_expr)) ->
         begin let (inf, cstrs, map) = ((((infer_let_val inf) ( [] )) pat) val_expr) in
-        (inf, (make_decls map))
+        begin match (((solve_constraints inf) top.Top.pos) cstrs) with
+          | ( [] ) ->
+            (inf, (make_decls map))
+          | (( :: ) ((tc, t, inst), _)) ->
+            (failwith (((instance_not_found top.Top.pos) tc) t))
+        end
         end
       | (Top.LetFun defs) ->
         begin let (inf, decls) = ((infer_let_fun inf) defs) in

@@ -8,7 +8,7 @@ type t = {
   ctors : ((Names.ctor_name * (require_argument * Scheme.t))) list;
   fields : ((Names.ctor_name * (mutability * Scheme.t))) list;
   typectors : ((Names.typector_name * (Names.typector * int * (Scheme.t) option))) list;
-  instances : ((Names.typeclass_name * ((Names.typector * unit)) list)) list;
+  instances : ((Names.typeclass_name * ((Names.typector * Names.mod_path)) list)) list;
 }
 
 let rec make = begin fun mods ->

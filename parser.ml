@@ -37,7 +37,7 @@ let nil_pattern = (Pattern.Ctor ((( [] ), (Names.Op "[]")), None))
 let unit_pattern = (Pattern.Con Literal.Unit)
 
 let rec make_op_var = begin fun str ->
-  (Expr.Var ((( [] ), (Names.Op str)), (ref ())))
+  (Expr.Var ((( [] ), (Names.Op str)), (ref ( [] ))))
 end
 
 let cons_op = (( [] ), (Names.Op "::"))
@@ -1100,7 +1100,7 @@ and parse_var_or_ctor_app = begin fun parser ->
       | ((Token.LowId _) | (Token.Reserved "$")) ->
         begin let pos = parser.pos in
         begin let val_name = (parse_val_name parser) in
-        ((Expr.at pos) (Expr.Var (((List.rev mod_names), val_name), (ref ()))))
+        ((Expr.at pos) (Expr.Var (((List.rev mod_names), val_name), (ref ( [] )))))
         end
         end
       | (Token.CapId _) ->
@@ -1291,7 +1291,7 @@ and parse_let_fun = begin fun parser ->
   begin let fun_name = (parse_val_name parser) in
   begin let params = (parse_params parser) in
   begin let body_expr = (parse_block parser) in
-  (fun_name, (((make_abs pos) params) body_expr), (ref ()))
+  (fun_name, (((make_abs pos) params) body_expr), (ref ( [] )))
   end
   end
   end
@@ -1500,7 +1500,7 @@ and parse_top_let_fun = begin fun parser ->
   begin let fun_name = (parse_val_name parser) in
   begin let params = (parse_params parser) in
   begin let body_expr = (parse_block parser) in
-  (fun_name, (((make_abs pos) params) body_expr), (ref ()))
+  (fun_name, (((make_abs pos) params) body_expr), (ref ( [] )))
   end
   end
   end

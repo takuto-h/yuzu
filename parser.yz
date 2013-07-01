@@ -26,7 +26,7 @@ var nil_pattern = Pattern.Ctor(([], Names.Op("[]")), None)
 var unit_pattern = Pattern.Con(Literal.Unit)
 
 def make_op_var(str):
-  Expr.Var(([], Names.Op(str)), ref())
+  Expr.Var(([], Names.Op(str)), ref([]))
 
 var cons_op = ([], Names.Op("::"))
 var nil_expr = Expr.Ctor(([], Names.Op("[]")), None)
@@ -680,7 +680,7 @@ rec:
       case Token.LowId(_) | Token.Reserved("$"):
         var pos = parser.pos
         var val_name = parse_val_name(parser)
-        Expr.at(pos, Expr.Var((List.rev(mod_names), val_name), ref()))
+        Expr.at(pos, Expr.Var((List.rev(mod_names), val_name), ref([])))
       case Token.CapId(_):
         var pos = parser.pos
         var capid = parse_capid(parser)
@@ -789,7 +789,7 @@ rec:
     var fun_name = parse_val_name(parser)
     var params = parse_params(parser)
     var body_expr = parse_block(parser)
-    (fun_name, make_abs(pos, params, body_expr), ref())
+    (fun_name, make_abs(pos, params, body_expr), ref([]))
     
   def parse_sep(parser, sep_or_term):
     match sep_or_term(parser.token):
@@ -908,7 +908,7 @@ rec:
     var fun_name = parse_val_name(parser)
     var params = parse_params(parser)
     var body_expr = parse_block(parser)
-    (fun_name, make_abs(pos, params, body_expr), ref())
+    (fun_name, make_abs(pos, params, body_expr), ref([]))
   
   def parse_top_open(parser, pos):
     var mod_path = parse_mod_path(parser, [])

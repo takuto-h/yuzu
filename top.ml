@@ -1,7 +1,7 @@
 type raw = 
   | Expr of Expr.t
   | LetVal of (Pattern.t * Expr.t)
-  | LetFun of ((Names.val_name * Expr.t * (unit) ref)) list
+  | LetFun of ((Names.val_name * Expr.t * ((Names.mod_path) list) ref)) list
   | Open of Names.mod_path
   | Type of (TypeDef.t) list
   | Exception of ExnDecl.t
