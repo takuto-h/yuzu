@@ -454,6 +454,14 @@ rec:
 def make_decls(map):
   List.rev(ValNameMap.fold^(name, t, acc){Decl.Val(name, Scheme.mono(t))::acc}(map, []))
 
+def expand_abbrev(inf, pos, t, opt_conv):
+  match opt_conv:
+    case None:
+      t
+    case Some(conv_fun_scm):
+      var conv_fun_type = instantiate(inf.let_level, conv_fun_scm)
+      apply(inf.let_level, pos, conv_fun_type, t)
+
 def eval(inf, env_ref, type_expr):
   match type_expr.TypeExpr.raw:
     case TypeExpr.Con(typector):
@@ -461,12 +469,7 @@ def eval(inf, env_ref, type_expr):
         var (typector, param_num, opt_conv) = search_typectors(inf, typector)
         if param_num = 0:
           var t = Type.at(Some(type_expr.TypeExpr.pos), Type.Con(typector))
-          match opt_conv:
-            case None:
-              t
-            case Some(conv_fun_scm):
-              var conv_fun_type = instantiate(inf.let_level, conv_fun_scm)
-              apply(inf.let_level, type_expr.TypeExpr.pos, conv_fun_type, t)
+          expand_abbrev(inf, type_expr.TypeExpr.pos, t, opt_conv)
         else:
           failwith(wrong_number_of_arguments(type_expr.TypeExpr.pos, 0, param_num))
       with:
@@ -487,12 +490,7 @@ def eval(inf, env_ref, type_expr):
         if param_num = arg_num:
           var ts = List.map(eval(inf, env_ref), ts)
           var t = Type.at(Some(type_expr.TypeExpr.pos), Type.App(typector, ts))
-          match opt_conv:
-            case None:
-              t
-            case Some(conv_fun_scm):
-              var conv_fun_type = instantiate(inf.let_level, conv_fun_scm)
-              apply(inf.let_level, type_expr.TypeExpr.pos, conv_fun_type, t)
+          expand_abbrev(inf, type_expr.TypeExpr.pos, t, opt_conv)
         else:
           failwith(wrong_number_of_arguments(type_expr.TypeExpr.pos, arg_num, param_num))
       with:

@@ -792,6 +792,23 @@ let rec make_decls = begin fun map ->
   end) map) ( [] )))
 end
 
+let rec expand_abbrev = begin fun inf ->
+  begin fun pos ->
+    begin fun t ->
+      begin fun opt_conv ->
+        begin match opt_conv with
+          | None ->
+            t
+          | (Some conv_fun_scm) ->
+            begin let conv_fun_type = ((instantiate inf.let_level) conv_fun_scm) in
+            ((((apply inf.let_level) pos) conv_fun_type) t)
+            end
+        end
+      end
+    end
+  end
+end
+
 let rec eval = begin fun inf ->
   begin fun env_ref ->
     begin fun type_expr ->
@@ -801,14 +818,7 @@ let rec eval = begin fun inf ->
             begin let (typector, param_num, opt_conv) = ((search_typectors inf) typector) in
             begin if ((( = ) param_num) 0) then
               begin let t = ((Type.at (Some type_expr.TypeExpr.pos)) (Type.Con typector)) in
-              begin match opt_conv with
-                | None ->
-                  t
-                | (Some conv_fun_scm) ->
-                  begin let conv_fun_type = ((instantiate inf.let_level) conv_fun_scm) in
-                  ((((apply inf.let_level) type_expr.TypeExpr.pos) conv_fun_type) t)
-                  end
-              end
+              ((((expand_abbrev inf) type_expr.TypeExpr.pos) t) opt_conv)
               end
             else
               (failwith (((wrong_number_of_arguments type_expr.TypeExpr.pos) 0) param_num))
@@ -837,14 +847,7 @@ let rec eval = begin fun inf ->
             begin if ((( = ) param_num) arg_num) then
               begin let ts = ((List.map ((eval inf) env_ref)) ts) in
               begin let t = ((Type.at (Some type_expr.TypeExpr.pos)) (Type.App (typector, ts))) in
-              begin match opt_conv with
-                | None ->
-                  t
-                | (Some conv_fun_scm) ->
-                  begin let conv_fun_type = ((instantiate inf.let_level) conv_fun_scm) in
-                  ((((apply inf.let_level) type_expr.TypeExpr.pos) conv_fun_type) t)
-                  end
-              end
+              ((((expand_abbrev inf) type_expr.TypeExpr.pos) t) opt_conv)
               end
               end
             else
