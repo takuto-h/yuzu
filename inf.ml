@@ -219,45 +219,6 @@ let rec search_typectors = begin fun inf ->
   end
 end
 
-let rec instantiate = begin fun let_level ->
-  begin fun {Scheme.gen_num;Scheme.body;} ->
-    begin let type_vars = ((Array.init gen_num) begin fun _ ->
-      (Type.make_var let_level)
-    end) in
-    begin let rec var_func = begin fun t ->
-      begin fun _ ->
-        begin fun _ ->
-          t
-        end
-      end
-    end in
-    begin let rec gen_func = begin fun t ->
-      begin fun n ->
-        ((Array.get type_vars) n)
-      end
-    end in
-    (((Type.map var_func) gen_func) body)
-    end
-    end
-    end
-  end
-end
-
-let rec infer_literal = begin fun lit ->
-  begin match lit with
-    | Literal.Unit ->
-      unit_type
-    | (Literal.Int _) ->
-      int_type
-    | (Literal.String _) ->
-      string_type
-    | (Literal.Char _) ->
-      char_type
-    | (Literal.Bool _) ->
-      bool_type
-  end
-end
-
 let rec add_asp = begin fun inf ->
   begin fun name ->
     begin fun scm ->
@@ -354,6 +315,81 @@ let rec require_consistent = begin fun pos ->
           (failwith (((((inconsistent_types pos) type1) type2) t1) t2))
       end
     end
+  end
+end
+
+let rec instantiate = begin fun let_level ->
+  begin fun {Scheme.gen_num;Scheme.body;} ->
+    begin let type_vars = ((Array.init gen_num) begin fun _ ->
+      (Type.make_var let_level)
+    end) in
+    begin let rec var_func = begin fun t ->
+      begin fun _ ->
+        begin fun _ ->
+          t
+        end
+      end
+    end in
+    begin let rec gen_func = begin fun t ->
+      begin fun n ->
+        ((Array.get type_vars) n)
+      end
+    end in
+    (((Type.map var_func) gen_func) body)
+    end
+    end
+    end
+  end
+end
+
+let rec generalize = begin fun let_level ->
+  begin fun t ->
+    begin let alist_ref = (ref ( [] )) in
+    begin let rec var_func = begin fun t ->
+      begin fun lv ->
+        begin fun ref ->
+          begin if ((( > ) lv) let_level) then
+            begin try
+              ((List.assq ref) (( ! ) alist_ref))
+            with
+              | Not_found ->
+                begin let gen = ((Type.at t.Type.pos) (Type.Gen (List.length (( ! ) alist_ref)))) in
+                begin
+                ((( := ) alist_ref) (( :: ) ((ref, gen), (( ! ) alist_ref))));
+                gen
+                end
+                end
+            end
+          else
+            t
+          end
+        end
+      end
+    end in
+    begin let rec gen_func = begin fun t ->
+      begin fun _ ->
+        (assert false)
+      end
+    end in
+    ((Scheme.poly (List.length (( ! ) alist_ref))) (((Type.map var_func) gen_func) t))
+    end
+    end
+    end
+  end
+end
+
+let rec infer_literal = begin fun lit ->
+  begin match lit with
+    | Literal.Unit ->
+      unit_type
+    | (Literal.Int _) ->
+      int_type
+    | (Literal.String _) ->
+      string_type
+    | (Literal.Char _) ->
+      char_type
+    | (Literal.Bool _) ->
+      bool_type
   end
 end
 
@@ -462,42 +498,6 @@ let rec infer_pattern = begin fun inf ->
         end
         end
         end
-    end
-  end
-end
-
-let rec generalize = begin fun let_level ->
-  begin fun t ->
-    begin let alist_ref = (ref ( [] )) in
-    begin let rec var_func = begin fun t ->
-      begin fun lv ->
-        begin fun ref ->
-          begin if ((( > ) lv) let_level) then
-            begin try
-              ((List.assq ref) (( ! ) alist_ref))
-            with
-              | Not_found ->
-                begin let gen = ((Type.at t.Type.pos) (Type.Gen (List.length (( ! ) alist_ref)))) in
-                begin
-                ((( := ) alist_ref) (( :: ) ((ref, gen), (( ! ) alist_ref))));
-                gen
-                end
-                end
-            end
-          else
-            t
-          end
-        end
-      end
-    end in
-    begin let rec gen_func = begin fun t ->
-      begin fun _ ->
-        (assert false)
-      end
-    end in
-    ((Scheme.poly (List.length (( ! ) alist_ref))) (((Type.map var_func) gen_func) t))
-    end
-    end
     end
   end
 end
