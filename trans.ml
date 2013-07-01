@@ -110,8 +110,21 @@ let rec translate_expr = begin fun trans ->
     begin match expr.Expr.raw with
       | (Expr.Con lit) ->
         (translate_literal lit)
-      | (Expr.Var (path, inst_ref)) ->
-        (Names.show_val_path path)
+      | (Expr.Var (path, insts_ref)) ->
+        begin match (( ! ) insts_ref) with
+          | ( [] ) ->
+            (Names.show_val_path path)
+          | (( :: ) (inst_ref, insts_ref)) ->
+            begin let str_init = ((sprintf "module %s") (Names.show_mod_path (( ! ) inst_ref))) in
+            begin let str_args = (((YzList.fold_left str_init) insts_ref) begin fun acc ->
+              begin fun inst_ref ->
+                (((sprintf "%s, module %s") acc) (Names.show_mod_path (( ! ) inst_ref)))
+              end
+            end) in
+            (((sprintf "(%s (%s))") (Names.show_val_path path)) str_args)
+            end
+            end
+        end
       | (Expr.Abs (param_pat, body_expr)) ->
         begin let str_param = (translate_pattern param_pat) in
         begin let trans_body = (incr_indent_level trans) in

@@ -610,7 +610,7 @@ let rec infer_expr = begin fun inf ->
       begin match expr.Expr.raw with
         | (Expr.Con lit) ->
           (((Type.at (Some expr.Expr.pos)) (infer_literal lit)), cstrs)
-        | (Expr.Var (path, insts)) ->
+        | (Expr.Var (path, insts_ref)) ->
           begin try
             begin let scm = ((search_asp inf) path) in
             begin let (preds, t) = ((instantiate inf.let_level) scm) in
@@ -623,7 +623,10 @@ let rec infer_expr = begin fun inf ->
                 end
               end
             end) in
+            begin
+            ((( := ) insts_ref) insts);
             (t, cstrs)
+            end
             end
             end
             end

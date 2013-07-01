@@ -81,8 +81,15 @@ rec:
     match expr.Expr.raw:
       case Expr.Con(lit):
         translate_literal(lit)
-      case Expr.Var(path, inst_ref):
-        Names.show_val_path(path)
+      case Expr.Var(path, insts_ref):
+        match !insts_ref:
+          case []:
+            Names.show_val_path(path)
+          case (inst_ref::insts_ref):
+            var str_init = sprintf("module %s", Names.show_mod_path(!inst_ref))
+            var str_args = YzList.fold_left(str_init, insts_ref)^(acc, inst_ref):
+              sprintf("%s, module %s", acc, Names.show_mod_path(!inst_ref))
+            sprintf("(%s (%s))", Names.show_val_path(path), str_args)
       case Expr.Abs(param_pat,body_expr):
         var str_param = translate_pattern(param_pat)
         var trans_body = incr_indent_level(trans)

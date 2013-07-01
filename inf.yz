@@ -370,7 +370,7 @@ rec:
     match expr.Expr.raw:
       case Expr.Con(lit):
         (Type.at(Some(expr.Expr.pos), infer_literal(lit)), cstrs)
-      case Expr.Var(path, insts):
+      case Expr.Var(path, insts_ref):
         try:
           var scm = search_asp(inf, path)
           var (preds, t) = instantiate(inf.let_level, scm)
@@ -378,6 +378,7 @@ rec:
             var inst = ref(["Mod"])
             var cstr = (pred, inst)
             (inst::insts, cstr::cstrs)
+          insts_ref := insts
           (t, cstrs)
         with:
           case Not_found:
