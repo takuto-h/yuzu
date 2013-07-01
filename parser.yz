@@ -594,26 +594,28 @@ rec:
         
   def parse_dot_expr(parser):
     var expr = parse_prim_expr(parser)
-    match parser.token:
-      case Token.Reserved("."):
-        var pos = parser.pos
-        lookahead(parser)
-        match parser.token:
-          case Token.Reserved("{"):
-            lookahead(parser)
-            Expr.at(pos, Expr.Update(expr, parse_braced_elems(parser, parse_field_def)))
-          case _:
-            var path = parse_val_path(parser, [])
-            match parser.token:
-              case Token.AssignOp("<-"):
-                var pos = parser.pos
-                lookahead(parser)
-                var rhs = parse_expr(parser)
-                Expr.at(pos, Expr.Assign(expr, path, rhs))
-              case _:
-                Expr.at(pos, Expr.Field(expr, path))
-      case _:
-        expr
+    def loop(expr):
+      match parser.token:
+        case Token.Reserved("."):
+          var pos = parser.pos
+          lookahead(parser)
+          match parser.token:
+            case Token.Reserved("{"):
+              lookahead(parser)
+              var raw = Expr.Update(expr, parse_braced_elems(parser, parse_field_def))
+              loop(Expr.at(pos, raw))
+            case _:
+              var path = parse_val_path(parser, [])
+              match parser.token:
+                case Token.AssignOp("<-"):
+                  lookahead(parser)
+                  var rhs = parse_expr(parser)
+                  Expr.at(pos, Expr.Assign(expr, path, rhs))
+                case _:
+                  loop(Expr.at(pos, Expr.Field(expr, path)))
+        case _:
+          expr
+    loop(expr)
 
   def parse_prim_expr(parser):
     var fun_expr = parse_atomic_expr(parser)

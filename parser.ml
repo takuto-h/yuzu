@@ -959,38 +959,42 @@ end
 
 and parse_dot_expr = begin fun parser ->
   begin let expr = (parse_prim_expr parser) in
-  begin match parser.token with
-    | (Token.Reserved ".") ->
-      begin let pos = parser.pos in
-      begin
-      (lookahead parser);
-      begin match parser.token with
-        | (Token.Reserved "{") ->
-          begin
-          (lookahead parser);
-          ((Expr.at pos) (Expr.Update (expr, ((parse_braced_elems parser) parse_field_def))))
-          end
-        | _ ->
-          begin let path = ((parse_val_path parser) ( [] )) in
-          begin match parser.token with
-            | (Token.AssignOp "<-") ->
-              begin let pos = parser.pos in
-              begin
-              (lookahead parser);
-              begin let rhs = (parse_expr parser) in
-              ((Expr.at pos) (Expr.Assign (expr, path, rhs)))
-              end
-              end
-              end
-            | _ ->
-              ((Expr.at pos) (Expr.Field (expr, path)))
-          end
-          end
-      end
-      end
-      end
-    | _ ->
-      expr
+  begin let rec loop = begin fun expr ->
+    begin match parser.token with
+      | (Token.Reserved ".") ->
+        begin let pos = parser.pos in
+        begin
+        (lookahead parser);
+        begin match parser.token with
+          | (Token.Reserved "{") ->
+            begin
+            (lookahead parser);
+            begin let raw = (Expr.Update (expr, ((parse_braced_elems parser) parse_field_def))) in
+            (loop ((Expr.at pos) raw))
+            end
+            end
+          | _ ->
+            begin let path = ((parse_val_path parser) ( [] )) in
+            begin match parser.token with
+              | (Token.AssignOp "<-") ->
+                begin
+                (lookahead parser);
+                begin let rhs = (parse_expr parser) in
+                ((Expr.at pos) (Expr.Assign (expr, path, rhs)))
+                end
+                end
+              | _ ->
+                (loop ((Expr.at pos) (Expr.Field (expr, path))))
+            end
+            end
+        end
+        end
+        end
+      | _ ->
+        expr
+    end
+  end in
+  (loop expr)
   end
   end
 end
