@@ -5,6 +5,7 @@ type raw =
   | Open of Names.mod_path
   | Type of (TypeDef.t) list
   | Exception of ExnDecl.t
+  | Class of (Names.typeclass_name * TypeExpr.t * ((Names.val_name * SchemeExpr.t)) list)
 
 
 type t = {

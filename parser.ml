@@ -1412,6 +1412,13 @@ let rec parse_top = begin fun parser ->
       ((parse_top_open parser) pos)
       end
       end
+    | (Token.Reserved "class") ->
+      begin let pos = parser.pos in
+      begin
+      (lookahead parser);
+      ((parse_top_class parser) pos)
+      end
+      end
     | (Token.Reserved "exception") ->
       begin let pos = parser.pos in
       begin
@@ -1454,6 +1461,29 @@ and parse_top_let_fun = begin fun parser ->
   end
   end
   end
+  end
+end
+and parse_top_class = begin fun parser ->
+  begin fun pos ->
+    begin let typeclass_name = (parse_lowid parser) in
+    begin
+    ((parse_token parser) (Token.Reserved "("));
+    begin let type_param = (parse_type_var parser) in
+    begin
+    ((parse_token parser) (Token.Reserved ")"));
+    begin let preds = (( :: ) ((typeclass_name, type_param), ( [] ))) in
+    begin let decls = ((parse_block_like_elems parser) parse_decl_val) in
+    begin let decls = ((List.map begin fun (name, type_expr) ->
+      (name, ((SchemeExpr.make preds) type_expr))
+    end) decls) in
+    ((Top.at pos) (Top.Class (typeclass_name, type_param, decls)))
+    end
+    end
+    end
+    end
+    end
+    end
+    end
   end
 end
 and parse_top_open = begin fun parser ->
@@ -1637,15 +1667,14 @@ and parse_field_decl = begin fun record_type ->
     end
   end
 end
-
-let rec parse_decl_val = begin fun parser ->
+and parse_decl_val = begin fun parser ->
   begin
   ((parse_token parser) (Token.Reserved "val"));
   begin let name = (parse_val_name parser) in
   begin
   ((parse_token parser) (Token.Reserved ":"));
   begin let type_expr = (parse_type parser) in
-  (DeclExpr.Val (name, type_expr))
+  (name, type_expr)
   end
   end
   end
@@ -1655,7 +1684,7 @@ end
 let rec parse_decl_expr = begin fun parser ->
   begin match parser.token with
     | (Token.Reserved "val") ->
-      (parse_decl_val parser)
+      (DeclExpr.Val (parse_decl_val parser))
     | (Token.Reserved "type") ->
       begin match (parse_type_def parser) with
         | (Left (typector_name, type_params)) ->

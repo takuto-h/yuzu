@@ -885,6 +885,10 @@ rec:
         var pos = parser.pos
         lookahead(parser)
         parse_top_open(parser, pos)
+      case Token.Reserved("class"):
+        var pos = parser.pos
+        lookahead(parser)
+        parse_top_class(parser, pos)
       case Token.Reserved("exception"):
         var pos = parser.pos
         lookahead(parser)
@@ -910,6 +914,18 @@ rec:
     var body_expr = parse_block(parser)
     (fun_name, make_abs(pos, params, body_expr), ref([]))
   
+  def parse_top_class(parser, pos):
+    var typeclass_name = parse_lowid(parser)
+    parse_token(parser, Token.Reserved("("))
+    var type_param = parse_type_var(parser)
+    parse_token(parser, Token.Reserved(")"))
+    var preds = [(typeclass_name, type_param)]
+    var decls = parse_block_like_elems(parser, parse_decl_val)
+    var decls = List.map^((name, type_expr)){
+      (name, SchemeExpr.make(preds, type_expr))
+    }(decls)
+    Top.at(pos, Top.Class(typeclass_name, type_param, decls))
+
   def parse_top_open(parser, pos):
     var mod_path = parse_mod_path(parser, [])
     Top.at(pos, Top.Open(mod_path))
@@ -1018,19 +1034,20 @@ rec:
     var t = parse_type(parser)
     (is_mutable, field_name, t, TypeExpr.at(pos, TypeExpr.Fun(record_type, t)))
 
-// END rec: def parse_top
+  def parse_decl_val(parser):
+    parse_token(parser, Token.Reserved("val"))
+    var name = parse_val_name(parser)
+    parse_token(parser, Token.Reserved(":"))
+    var type_expr = parse_type(parser)
+    (name, type_expr)
 
-def parse_decl_val(parser):
-  parse_token(parser, Token.Reserved("val"))
-  var name = parse_val_name(parser)
-  parse_token(parser, Token.Reserved(":"))
-  var type_expr = parse_type(parser)
-  DeclExpr.Val(name, type_expr)
+
+// END rec: def parse_top
 
 def parse_decl_expr(parser):
   match parser.token:
     case Token.Reserved("val"):
-      parse_decl_val(parser)
+      DeclExpr.Val(parse_decl_val(parser))
     case Token.Reserved("type"):
       match parse_type_def(parser):
       case Left(typector_name, type_params):

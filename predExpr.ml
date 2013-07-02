@@ -1,2 +1,2 @@
-type t = (Names.typeclass * TypeExpr.t)
+type t = (Names.typeclass_name * TypeExpr.t)
 

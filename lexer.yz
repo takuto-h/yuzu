@@ -13,11 +13,13 @@ var initial_buffer_size = 16
 var reserved = [
   "as";
   "case";
+  "class";
   "def";
   "else";
   "exception";
   "false";
   "if";
+  "instance";
   "match";
   "mutable";
   "open";

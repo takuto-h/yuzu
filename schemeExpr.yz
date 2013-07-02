@@ -2,3 +2,8 @@
 type t:
   preds : list(PredExpr.t)
   body : TypeExpr.t
+
+def make(preds, body): {
+  preds = preds;
+  body = body;
+}
