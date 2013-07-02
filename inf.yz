@@ -29,8 +29,8 @@ var default_asp = [
 
 var default_instances = [
   ("Show", [
-    ((["Pervasives"], "int"), ["ShowInt"]);
-    ((["Pervasives"], "bool"), ["ShowBool"]);
+    ((["Pervasives"], "int"), ([], Names.Id("show_int")));
+    ((["Pervasives"], "bool"), ([], Names.Id("show_bool")));
   ])
 ]
 
@@ -331,10 +331,9 @@ def infer_pattern(inf, pat):
 
 var unique_num = ref(0)
 
-def generate_mod_path():
-  var path = [sprintf("Mod%d", !unique_num)]
+def generate_val_path():
   unique_num := !unique_num + 1
-  path
+  ([], Names.Id(sprintf("inst%d", !unique_num)))
 
 def solve_constraints(inf, pos, cstrs):
   YzList.fold_left([], cstrs)^(ans, ((tc, t), inst_ref)):
@@ -355,7 +354,7 @@ def solve_constraints(inf, pos, cstrs):
           case Type.Var(_,type_var):
             match !type_var:
               case None:
-                var inst = generate_mod_path()
+                var inst = generate_val_path()
                 inst_ref := inst
                 (tc, t, inst)::ans
               case Some(t):
@@ -377,7 +376,7 @@ rec:
           var scm = search_asp(inf, path)
           var (preds, t) = instantiate(inf.let_level, scm)
           var (insts, cstrs) = YzList.fold_right(preds, ([], cstrs))^(pred, (insts, cstrs)):
-            var inst = ref(["Mod"])
+            var inst = ref(([], Names.Id("inst0")))
             var cstr = (pred, inst)
             (inst::insts, cstr::cstrs)
           insts_ref := insts

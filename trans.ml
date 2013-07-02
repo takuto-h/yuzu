@@ -109,10 +109,10 @@ let rec translate_inst_params = begin fun insts_ref ->
     | ( [] ) ->
       ""
     | (( :: ) (inst, insts)) ->
-      begin let str_init = ((sprintf "module %s") (Names.show_mod_path inst)) in
+      begin let str_init = ((sprintf "%s") (Names.show_val_path inst)) in
       begin let str_params = (((YzList.fold_left str_init) insts) begin fun acc ->
         begin fun inst ->
-          (((sprintf "%s, module %s") acc) (Names.show_mod_path inst))
+          (((sprintf "%s, %s") acc) (Names.show_val_path inst))
         end
       end) in
       ((sprintf " (%s)") str_params)
@@ -131,10 +131,10 @@ let rec translate_expr = begin fun trans ->
           | ( [] ) ->
             (Names.show_val_path path)
           | (( :: ) (inst_ref, insts_ref)) ->
-            begin let str_init = ((sprintf "module %s") (Names.show_mod_path (( ! ) inst_ref))) in
+            begin let str_init = ((sprintf "%s") (Names.show_val_path (( ! ) inst_ref))) in
             begin let str_args = (((YzList.fold_left str_init) insts_ref) begin fun acc ->
               begin fun inst_ref ->
-                (((sprintf "%s, module %s") acc) (Names.show_mod_path (( ! ) inst_ref)))
+                (((sprintf "%s, %s") acc) (Names.show_val_path (( ! ) inst_ref)))
               end
             end) in
             (((sprintf "(%s (%s))") (Names.show_val_path path)) str_args)
@@ -300,8 +300,10 @@ and translate_let_fun = begin fun trans ->
         (((YzList.fold_left str_let_rec) defs) begin fun acc ->
           begin fun (name, expr, insts_ref) ->
             begin let str_name = (Names.show_val_name name) in
+            begin let str_params = (translate_inst_params insts_ref) in
             begin let str_expr = ((translate_expr trans) expr) in
-            ((((sprintf "%s\nand %s = %s") acc) str_name) str_expr)
+            (((((sprintf "%s\nand %s%s = %s") acc) str_name) str_params) str_expr)
+            end
             end
             end
           end

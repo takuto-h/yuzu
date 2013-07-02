@@ -8,7 +8,7 @@ type t:
   ctors : list(Names.ctor_name * (require_argument * Scheme.t))
   fields : list(Names.ctor_name * (mutability * Scheme.t))
   typectors : list(Names.typector_name * (Names.typector * int * option(Scheme.t)))
-  instances : list(Names.typeclass_name * list(Names.typector * Names.mod_path))
+  instances : list(Names.typeclass_name * list(Names.typector * Names.val_path))
 
 def make(mods, asp, ctors, fields, typectors, instances): {
   mods = mods;

@@ -5,7 +5,7 @@ type t = {
 
 and raw = 
   | Con of Literal.t
-  | Var of (Names.val_path * (((Names.mod_path) ref) list) ref)
+  | Var of (Names.val_path * (((Names.val_path) ref) list) ref)
   | Abs of (Pattern.t * t)
   | App of (t * t)
   | Ctor of (Names.ctor * (t) option)
@@ -15,7 +15,7 @@ and raw =
   | And of (t * t)
   | Seq of (t * t)
   | LetVal of (Pattern.t * t * t)
-  | LetFun of (((Names.val_name * t * ((Names.mod_path) list) ref)) list * t)
+  | LetFun of (((Names.val_name * t * ((Names.val_path) list) ref)) list * t)
   | Match of (t * ((Pattern.t * (t) option * t)) list)
   | Try of (t * ((Pattern.t * (t) option * t)) list)
   | Record of ((Names.val_path * t)) list

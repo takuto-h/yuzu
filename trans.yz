@@ -81,9 +81,9 @@ def translate_inst_params(insts_ref):
     case []:
       ""
     case (inst::insts):
-      var str_init = sprintf("module %s", Names.show_mod_path(inst))
+      var str_init = sprintf("%s", Names.show_val_path(inst))
       var str_params = YzList.fold_left(str_init, insts)^(acc, inst):
-        sprintf("%s, module %s", acc, Names.show_mod_path(inst))
+        sprintf("%s, %s", acc, Names.show_val_path(inst))
       sprintf(" (%s)", str_params)
 
 rec:
@@ -96,9 +96,9 @@ rec:
           case []:
             Names.show_val_path(path)
           case (inst_ref::insts_ref):
-            var str_init = sprintf("module %s", Names.show_mod_path(!inst_ref))
+            var str_init = sprintf("%s", Names.show_val_path(!inst_ref))
             var str_args = YzList.fold_left(str_init, insts_ref)^(acc, inst_ref):
-              sprintf("%s, module %s", acc, Names.show_mod_path(!inst_ref))
+              sprintf("%s, %s", acc, Names.show_val_path(!inst_ref))
             sprintf("(%s (%s))", Names.show_val_path(path), str_args)
       case Expr.Abs(param_pat,body_expr):
         var str_param = translate_pattern(param_pat)
@@ -224,8 +224,9 @@ rec:
         var str_let_rec = sprintf("let rec %s%s = %s", str_name, str_params, str_expr)
         YzList.fold_left(str_let_rec, defs)^(acc, (name,expr,insts_ref)):
           var str_name = Names.show_val_name(name)
+          var str_params = translate_inst_params(insts_ref)
           var str_expr = translate_expr(trans, expr)
-          sprintf("%s\nand %s = %s", acc, str_name, str_expr)
+          sprintf("%s\nand %s%s = %s", acc, str_name, str_params, str_expr)
 
   def translate_field_def(trans, (path,expr)):
     var str_path = Names.show_val_path(path)

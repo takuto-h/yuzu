@@ -28,7 +28,7 @@ let default_opens = (( :: ) (("Pervasives", ( [] )), ( [] )))
 
 let default_asp = (( :: ) (((Names.Id "show"), (((Scheme.poly 1) (( :: ) (((( [] ), "Show"), ((Type.at None) (Type.Gen 0))), ( [] )))) ((Type.at None) (Type.Fun (((Type.at None) (Type.Gen 0)), ((Type.at None) string_type)))))), ( [] )))
 
-let default_instances = (( :: ) (("Show", (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "int"), (( :: ) ("ShowInt", ( [] )))), (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "bool"), (( :: ) ("ShowBool", ( [] )))), ( [] )))))), ( [] )))
+let default_instances = (( :: ) (("Show", (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "int"), (( [] ), (Names.Id "show_int"))), (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "bool"), (( [] ), (Names.Id "show_bool"))), ( [] )))))), ( [] )))
 
 let rec create = begin fun mods ->
   {
@@ -548,12 +548,10 @@ end
 
 let unique_num = (ref 0)
 
-let rec generate_mod_path = begin fun () ->
-  begin let path = (( :: ) (((sprintf "Mod%d") (( ! ) unique_num)), ( [] ))) in
+let rec generate_val_path = begin fun () ->
   begin
   ((( := ) unique_num) ((( + ) (( ! ) unique_num)) 1));
-  path
-  end
+  (( [] ), (Names.Id ((sprintf "inst%d") (( ! ) unique_num))))
   end
 end
 
@@ -583,7 +581,7 @@ let rec solve_constraints = begin fun inf ->
                 | (Type.Var (_, type_var)) ->
                   begin match (( ! ) type_var) with
                     | None ->
-                      begin let inst = (generate_mod_path ()) in
+                      begin let inst = (generate_val_path ()) in
                       begin
                       ((( := ) inst_ref) inst);
                       (( :: ) ((tc, t, inst), ans))
@@ -621,7 +619,7 @@ let rec infer_expr = begin fun inf ->
             begin let (preds, t) = ((instantiate inf.let_level) scm) in
             begin let (insts, cstrs) = (((YzList.fold_right preds) (( [] ), cstrs)) begin fun pred ->
               begin fun (insts, cstrs) ->
-                begin let inst = (ref (( :: ) ("Mod", ( [] )))) in
+                begin let inst = (ref (( [] ), (Names.Id "inst0"))) in
                 begin let cstr = (pred, inst) in
                 ((( :: ) (inst, insts)), (( :: ) (cstr, cstrs)))
                 end
