@@ -1,6 +1,4 @@
 
-open Printf
-
 var preloads = [
   "pervasives.yzi";
 
@@ -11,8 +9,8 @@ var preloads = [
   "list.yzi";
   "printf.yzi";
   "stack.yzi";
-  "string.yzi";
   "stream.yzi";
+  "string.yzi";
   "sys.yzi";
 ]
 
