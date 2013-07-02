@@ -210,7 +210,7 @@ def generalize(let_level, t):
       t
   def gen_func(t, _):
     assert(false)
-  Scheme.poly(List.length(!alist_ref), [], Type.map(var_func, gen_func, t))
+  Scheme.poly(List.length(!alist_ref), Type.map(var_func, gen_func, t))
 
 def infer_literal(lit):
   match lit:

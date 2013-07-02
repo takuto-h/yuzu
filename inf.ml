@@ -371,7 +371,7 @@ let rec generalize = begin fun let_level ->
         (assert false)
       end
     end in
-    (((Scheme.poly (List.length (( ! ) alist_ref))) ( [] )) (((Type.map var_func) gen_func) t))
+    ((Scheme.poly (List.length (( ! ) alist_ref))) (((Type.map var_func) gen_func) t))
     end
     end
     end

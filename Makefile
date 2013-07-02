@@ -1,8 +1,8 @@
 
 YZ_SRCS =\
   yzPervasives.yz yzOption.yz yzList.yz pos.yz source.yz token.yz lexer.yz literal.yz\
-  names.yz valName.yz valNameMap.yzi pattern.yz typeExpr.yz expr.yz typeInfo.yz typeDef.yz\
-  exnDecl.yz declExpr.yz top.yz parser.yz type.yz pred.yz scheme.yz module.yz decl.yz\
+  names.yz valName.yz valNameMap.yzi pattern.yz typeExpr.yz expr.yz typeInfo.yz\
+  typeDef.yz exnDecl.yz declExpr.yz top.yz parser.yz type.yz scheme.yz module.yz decl.yz\
   inf.yz trans.yz compiler.yz main.yz
 
 ML_SRCS = $(addsuffix .ml, $(basename $(YZ_SRCS)))
