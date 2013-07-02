@@ -14,7 +14,7 @@ TOP = ./yui
 all: $(COMPILER)
 
 $(COMPILER): $(ML_SRCS)
-	ocamlc -g -o $(COMPILER) $(ML_SRCS)
+	ocamlc -g -annot -o $(COMPILER) $(ML_SRCS)
 
 $(TOP): $(ML_SRCS)
 	ocamlmktop -o $(TOP) $(ML_SRCS)
