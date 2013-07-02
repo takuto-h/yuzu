@@ -1020,14 +1020,17 @@ rec:
 
 // END rec: def parse_top
 
+def parse_decl_val(parser):
+  parse_token(parser, Token.Reserved("val"))
+  var name = parse_val_name(parser)
+  parse_token(parser, Token.Reserved(":"))
+  var type_expr = parse_type(parser)
+  DeclExpr.Val(name, type_expr)
+
 def parse_decl_expr(parser):
   match parser.token:
     case Token.Reserved("val"):
-      lookahead(parser)
-      var name = parse_val_name(parser)
-      parse_token(parser, Token.Reserved(":"))
-      var type_expr = parse_type(parser)
-      DeclExpr.Val(name, type_expr)
+      parse_decl_val(parser)
     case Token.Reserved("type"):
       match parse_type_def(parser):
       case Left(typector_name, type_params):

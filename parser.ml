@@ -1638,20 +1638,24 @@ and parse_field_decl = begin fun record_type ->
   end
 end
 
+let rec parse_decl_val = begin fun parser ->
+  begin
+  ((parse_token parser) (Token.Reserved "val"));
+  begin let name = (parse_val_name parser) in
+  begin
+  ((parse_token parser) (Token.Reserved ":"));
+  begin let type_expr = (parse_type parser) in
+  (DeclExpr.Val (name, type_expr))
+  end
+  end
+  end
+  end
+end
+
 let rec parse_decl_expr = begin fun parser ->
   begin match parser.token with
     | (Token.Reserved "val") ->
-      begin
-      (lookahead parser);
-      begin let name = (parse_val_name parser) in
-      begin
-      ((parse_token parser) (Token.Reserved ":"));
-      begin let type_expr = (parse_type parser) in
-      (DeclExpr.Val (name, type_expr))
-      end
-      end
-      end
-      end
+      (parse_decl_val parser)
     | (Token.Reserved "type") ->
       begin match (parse_type_def parser) with
         | (Left (typector_name, type_params)) ->
