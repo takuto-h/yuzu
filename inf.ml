@@ -26,9 +26,9 @@ let exn_type = (Type.Con ((( :: ) ("Pervasives", ( [] ))), "exn"))
 
 let default_opens = (( :: ) (("Pervasives", ( [] )), ( [] )))
 
-let default_asp = (( :: ) (((Names.Id "show"), (((Scheme.poly 1) (( :: ) (((( [] ), "Show"), ((Type.at None) (Type.Gen 0))), ( [] )))) ((Type.at None) (Type.Fun (((Type.at None) (Type.Gen 0)), ((Type.at None) string_type)))))), ( [] )))
+let default_asp = (( :: ) (((Names.Id "show"), (((Scheme.poly 1) (( :: ) (((( [] ), "show"), ((Type.at None) (Type.Gen 0))), ( [] )))) ((Type.at None) (Type.Fun (((Type.at None) (Type.Gen 0)), ((Type.at None) string_type)))))), ( [] )))
 
-let default_instances = (( :: ) (("Show", (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "int"), (( [] ), (Names.Id "show_int"))), (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "bool"), (( [] ), (Names.Id "show_bool"))), ( [] )))))), ( [] )))
+let default_instances = (( :: ) (("show", (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "int"), (( [] ), (Names.Id "show_int"))), (( :: ) ((((( :: ) ("Pervasives", ( [] ))), "bool"), (( [] ), (Names.Id "show_bool"))), ( [] )))))), ( [] )))
 
 let rec create = begin fun mods ->
   {

@@ -22,13 +22,13 @@ var default_opens = [("Pervasives", [])]
 
 var default_asp = [
   (Names.Id("show"), Scheme.poly(1,
-    [(([], "Show"), Type.at(None, Type.Gen(0)))],
+    [(([], "show"), Type.at(None, Type.Gen(0)))],
     Type.at(None, Type.Fun(Type.at(None, Type.Gen(0)), Type.at(None, string_type))
   )));
 ]
 
 var default_instances = [
-  ("Show", [
+  ("show", [
     ((["Pervasives"], "int"), ([], Names.Id("show_int")));
     ((["Pervasives"], "bool"), ([], Names.Id("show_bool")));
   ])

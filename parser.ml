@@ -1474,7 +1474,7 @@ and parse_top_class = begin fun parser ->
     begin let preds = (( :: ) ((typeclass_name, type_param), ( [] ))) in
     begin let decls = ((parse_block_like_elems parser) parse_decl_val) in
     begin let decls = ((List.map begin fun (name, type_expr) ->
-      (name, ((SchemeExpr.make preds) type_expr))
+      (name, type_expr, ((SchemeExpr.make preds) type_expr))
     end) decls) in
     ((Top.at pos) (Top.Class (typeclass_name, type_param, decls)))
     end

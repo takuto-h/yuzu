@@ -922,7 +922,7 @@ rec:
     var preds = [(typeclass_name, type_param)]
     var decls = parse_block_like_elems(parser, parse_decl_val)
     var decls = List.map^((name, type_expr)){
-      (name, SchemeExpr.make(preds, type_expr))
+      (name, type_expr, SchemeExpr.make(preds, type_expr))
     }(decls)
     Top.at(pos, Top.Class(typeclass_name, type_param, decls))
 
