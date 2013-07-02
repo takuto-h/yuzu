@@ -1,0 +1,4 @@
+
+type t:
+  preds : list(PredExpr.t)
+  body : TypeExpr.t
