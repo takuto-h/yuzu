@@ -199,6 +199,9 @@ def add_field(inf, name, info):
 def add_typector(inf, name, info):
   inf.{curr_mod = inf.curr_mod.{Module.typectors = (name, info)::inf.curr_mod.Module.typectors}}
 
+def add_typeclass(inf, name):
+  inf.{curr_mod = inf.curr_mod.{Module.instances = (name, [])::inf.curr_mod.Module.instances}}
+
 def add_type_var(inf, name):
   var t = Type.make_var(inf.let_level)
   var inf = add_asp(inf, name, Scheme.mono(t))
@@ -230,7 +233,7 @@ def instantiate(let_level, {Scheme.gen_num;Scheme.preds;Scheme.body}):
   var body = Type.map(var_func, gen_func, body)
   (preds, body)
 
-def generalize(let_level, ans, t):
+def generalize(let_level, preds, t):
   var alist_ref = ref([])
   def var_func(t, lv, ref):
     if lv > let_level:
@@ -245,7 +248,7 @@ def generalize(let_level, ans, t):
       t
   def gen_func(t, _):
     assert(false)
-  var preds = List.map^((tc,t,_)){(tc,Type.map(var_func, gen_func,t))}(ans)
+  var preds = List.map^((tc,t)){(tc,Type.map(var_func, gen_func,t))}(preds)
   Scheme.poly(List.length(!alist_ref), preds, Type.map(var_func, gen_func, t))
 
 def infer_literal(lit):
@@ -507,7 +510,8 @@ rec:
       require(val_expr.Expr.pos, type_var, val_type)
       var ans = solve_constraints(inf, val_expr.Expr.pos, cstrs)
       r := List.map^((tc,t,inst)){inst}(ans)
-      var scm = generalize(let_level, ans, val_type)
+      var preds = List.map^((tc,t,inst)){(tc,t)}(ans)
+      var scm = generalize(let_level, preds, val_type)
       (add_asp(inf, name, scm), Decl.Val(name, scm)::decls)
 
   def infer_cases(inf, cstrs, target_type, ret_type, cases):
@@ -600,6 +604,11 @@ def eval(inf, env_ref, type_expr):
       var t20 = eval(inf, env_ref, t2)
       Type.at(Some(type_expr.TypeExpr.pos), Type.Fun(t10, t20))
 
+def eval_scheme(inf, env_ref, {SchemeExpr.preds;SchemeExpr.body}):
+  var preds = List.map^((tc,t)){(([], tc), eval(inf, env_ref, t))}(preds)
+  var body = eval(inf, env_ref, body)
+  (preds, body)
+
 def load_type_info(inf, type_info):
   match type_info:
     case TypeInfo.Variant(ctor_decls):
@@ -681,6 +690,15 @@ def infer_top(inf, top):
       assert(false)
     case Top.Exception(exn_decl):
       var inf = load_exn_decl(inf, exn_decl)
+      (inf, [])
+    case Top.Class(typeclass_name, type_param, decls):
+      var inf = YzList.fold_left(inf, decls)^(inf, (val_name, type_expr, scm_expr)):
+        var let_level = inf.let_level
+        var tmp_inf = incr_let_level(inf)
+        var (preds, body) = eval_scheme(tmp_inf, ref([]), scm_expr)
+        var scm = generalize(let_level, preds, body)
+        add_asp(inf, val_name, scm)
+      var inf = add_typeclass(inf, typeclass_name)
       (inf, [])
 
 def load_decl(inf, decl):

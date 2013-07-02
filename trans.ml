@@ -518,6 +518,18 @@ let rec translate_top = begin fun trans ->
         begin let str_exn_decl = (translate_exn_decl exn_decl) in
         ((sprintf "exception %s\n") str_exn_decl)
         end
+      | (Top.Class (typeclass_name, type_param, decls)) ->
+        begin let field_decls = ((List.map begin fun (val_name, type_expr, scm_expr) ->
+          (false, val_name, type_expr, type_expr)
+        end) decls) in
+        begin let type_info = (TypeInfo.Record field_decls) in
+        begin let type_def = (TypeDef.Repr (typeclass_name, (( :: ) (type_param, ( [] ))), type_info)) in
+        begin let top = ((Top.at top.Top.pos) (Top.Type (( :: ) (type_def, ( [] ))))) in
+        ((translate_top trans) top)
+        end
+        end
+        end
+        end
     end
   end
 end

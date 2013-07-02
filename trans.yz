@@ -352,3 +352,11 @@ def translate_top(trans, top):
     case Top.Exception(exn_decl):
       var str_exn_decl = translate_exn_decl(exn_decl)
       sprintf("exception %s\n", str_exn_decl)
+    case Top.Class(typeclass_name, type_param, decls):
+      var field_decls = List.map^((val_name, type_expr, scm_expr)){
+        (false, val_name, type_expr, type_expr)
+      }(decls)
+      var type_info = TypeInfo.Record(field_decls)
+      var type_def = TypeDef.Repr(typeclass_name, [type_param], type_info)
+      var top = Top.at(top.Top.pos, Top.Type([type_def]))
+      translate_top(trans, top)

@@ -301,6 +301,18 @@ let rec add_typector = begin fun inf ->
   end
 end
 
+let rec add_typeclass = begin fun inf ->
+  begin fun name ->
+    {
+      inf with
+      curr_mod = {
+        inf.curr_mod with
+        Module.instances = (( :: ) ((name, ( [] )), inf.curr_mod.Module.instances));
+      };
+    }
+  end
+end
+
 let rec add_type_var = begin fun inf ->
   begin fun name ->
     begin let t = (Type.make_var inf.let_level) in
@@ -375,7 +387,7 @@ let rec instantiate = begin fun let_level ->
 end
 
 let rec generalize = begin fun let_level ->
-  begin fun ans ->
+  begin fun preds ->
     begin fun t ->
       begin let alist_ref = (ref ( [] )) in
       begin let rec var_func = begin fun t ->
@@ -404,9 +416,9 @@ let rec generalize = begin fun let_level ->
           (assert false)
         end
       end in
-      begin let preds = ((List.map begin fun (tc, t, _) ->
+      begin let preds = ((List.map begin fun (tc, t) ->
         (tc, (((Type.map var_func) gen_func) t))
-      end) ans) in
+      end) preds) in
       (((Scheme.poly (List.length (( ! ) alist_ref))) preds) (((Type.map var_func) gen_func) t))
       end
       end
@@ -844,8 +856,12 @@ and infer_let_fun = begin fun inf ->
         ((( := ) r) ((List.map begin fun (tc, t, inst) ->
           inst
         end) ans));
-        begin let scm = (((generalize let_level) ans) val_type) in
+        begin let preds = ((List.map begin fun (tc, t, inst) ->
+          (tc, t)
+        end) ans) in
+        begin let scm = (((generalize let_level) preds) val_type) in
         ((((add_asp inf) name) scm), (( :: ) ((Decl.Val (name, scm)), decls)))
+        end
         end
         end
         end
@@ -1038,6 +1054,20 @@ let rec eval = begin fun inf ->
   end
 end
 
+let rec eval_scheme = begin fun inf ->
+  begin fun env_ref ->
+    begin fun {SchemeExpr.preds;SchemeExpr.body;} ->
+      begin let preds = ((List.map begin fun (tc, t) ->
+        ((( [] ), tc), (((eval inf) env_ref) t))
+      end) preds) in
+      begin let body = (((eval inf) env_ref) body) in
+      (preds, body)
+      end
+      end
+    end
+  end
+end
+
 let rec load_type_info = begin fun inf ->
   begin fun type_info ->
     begin match type_info with
@@ -1178,6 +1208,24 @@ let rec infer_top = begin fun inf ->
       | (Top.Exception exn_decl) ->
         begin let inf = ((load_exn_decl inf) exn_decl) in
         (inf, ( [] ))
+        end
+      | (Top.Class (typeclass_name, type_param, decls)) ->
+        begin let inf = (((YzList.fold_left inf) decls) begin fun inf ->
+          begin fun (val_name, type_expr, scm_expr) ->
+            begin let let_level = inf.let_level in
+            begin let tmp_inf = (incr_let_level inf) in
+            begin let (preds, body) = (((eval_scheme tmp_inf) (ref ( [] ))) scm_expr) in
+            begin let scm = (((generalize let_level) preds) body) in
+            (((add_asp inf) val_name) scm)
+            end
+            end
+            end
+            end
+          end
+        end) in
+        begin let inf = ((add_typeclass inf) typeclass_name) in
+        (inf, ( [] ))
+        end
         end
     end
   end
