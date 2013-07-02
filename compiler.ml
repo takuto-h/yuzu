@@ -52,7 +52,7 @@ let rec compile_source = begin fun compiler ->
   end
 end
 
-let rec load_iface_file = begin fun compiler ->
+let rec load_file = begin fun compiler ->
   begin fun fname_in ->
     begin let chopped = ((Filename.chop_suffix fname_in) ".yzi") in
     begin let mod_name = (String.capitalize chopped) in
@@ -233,7 +233,7 @@ let rec load_and_compile = begin fun compiler ->
           ((load_and_compile compiler) fnames)
         end)
       | (( :: ) (fname_in, fnames)) when ((Filename.check_suffix fname_in) ".yzi") ->
-        ((YzOption.bind ((load_iface_file compiler) fname_in)) begin fun compiler ->
+        ((YzOption.bind ((load_file compiler) fname_in)) begin fun compiler ->
           ((load_and_compile compiler) fnames)
         end)
       | (( :: ) (fname_in, _)) ->

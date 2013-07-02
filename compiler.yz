@@ -31,7 +31,7 @@ def compile_source(compiler, src, parse, compile):
       flush(stderr)
       None
 
-def load_iface_file(compiler, fname_in):
+def load_file(compiler, fname_in):
   var chopped = Filename.chop_suffix(fname_in, ".yzi")
   var mod_name = String.capitalize(chopped)
   with_open_in(fname_in)^(chan_in):
@@ -110,7 +110,7 @@ def load_and_compile(compiler, fnames):
       YzOption.bind(compile_file(compiler, fname_in))^(compiler):
       load_and_compile(compiler, fnames)
     case fname_in::fnames when Filename.check_suffix(fname_in, ".yzi"):
-      YzOption.bind(load_iface_file(compiler, fname_in))^(compiler):
+      YzOption.bind(load_file(compiler, fname_in))^(compiler):
       load_and_compile(compiler, fnames)
     case fname_in::_:
       eprintf("Not knowing what to do with '%s'\n", fname_in)
